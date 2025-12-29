@@ -18,7 +18,7 @@ export const taskSchema = z.object({
   title: z.string(),
   description: z.string().optional().nullable(),
   contactId: z.number().optional().nullable(),
-  categoryId: z.number(),
+  categoryId: z.number().optional().nullable(),
   assignedTo: z.number(),
   createdBy: z.number(),
   priority: z.enum(['P1', 'P2', 'P3']),
