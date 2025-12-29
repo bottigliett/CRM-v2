@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import type { Row } from "@tanstack/react-table"
 import { MoreHorizontal, Eye, Star } from "lucide-react"
 
@@ -17,6 +18,16 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 import { labels } from "../data/data"
 import { taskSchema, type Task } from "../data/schema"
@@ -35,6 +46,7 @@ export function DataTableRowActions<TData>({
   onTaskUpdated,
 }: DataTableRowActionsProps<TData>) {
   const task = taskSchema.parse(row.original)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const handleToggleFavorite = async () => {
     try {
@@ -49,14 +61,16 @@ export function DataTableRowActions<TData>({
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm('Sei sicuro di voler eliminare questo task?')) return
+  const handleDelete = () => {
+    setDeleteDialogOpen(true)
+  }
 
+  const handleConfirmDelete = async () => {
     try {
       const response = await tasksAPI.deleteTask(task.id)
       if (response.success) {
         toast.success('Task eliminato con successo')
-        // Trigger a refresh by calling onTaskUpdated with null or refetch
+        setDeleteDialogOpen(false)
         window.location.reload() // Simple solution for now
       }
     } catch (error) {
@@ -66,6 +80,7 @@ export function DataTableRowActions<TData>({
   }
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -89,7 +104,7 @@ export function DataTableRowActions<TData>({
         <DropdownMenuItem className="cursor-pointer">Crea copia</DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer" onClick={handleToggleFavorite}>
           <Star className={`mr-2 h-4 w-4 ${task.isFavorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-          {task.isFavorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
+          Preferiti
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
@@ -111,5 +126,23 @@ export function DataTableRowActions<TData>({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Questa azione non può essere annullata. Il task "{task.title}" verrà eliminato permanentemente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annulla</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Elimina
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   )
 }
