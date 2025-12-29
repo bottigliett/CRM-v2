@@ -297,7 +297,7 @@ model Task {
   title           String
   description     String?
   contactId       Int?         @map("client_id") // FK to Contact (cliente)
-  categoryId      Int          @map("category_id")
+  categoryId      Int?         @map("category_id")
   assignedTo      Int          @map("assigned_to")
   createdBy       Int          @map("created_by")
   priority        TaskPriority @default(P2)
@@ -317,7 +317,7 @@ model Task {
 
   // Relations
   contact      Contact?     @relation("TaskContact", fields: [contactId], references: [id], onDelete: SetNull)
-  category     TaskCategory @relation(fields: [categoryId], references: [id])
+  category     TaskCategory? @relation(fields: [categoryId], references: [id])
   assignedUser User         @relation("TaskAssigned", fields: [assignedTo], references: [id], onDelete: Cascade)
   creator      User         @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   updater      User?        @relation("TaskUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
