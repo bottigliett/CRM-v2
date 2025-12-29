@@ -54,21 +54,21 @@ class UsersAPI {
       users: User[];
     };
   }> {
-    return this.request<any>('/api/users/admins');
+    return this.request<any>('/users/admins');
   }
 
   async getCalendarPreferences(): Promise<{
     success: boolean;
     data: CalendarPreferences;
   }> {
-    return this.request<any>('/api/users/calendar-preferences');
+    return this.request<any>('/users/calendar-preferences');
   }
 
   async updateCalendarPreferences(preferences: CalendarPreferences): Promise<{
     success: boolean;
     data: CalendarPreferences;
   }> {
-    return this.request<any>('/api/users/calendar-preferences', {
+    return this.request<any>('/users/calendar-preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
     });

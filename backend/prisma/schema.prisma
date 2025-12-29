@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
 }
 
 // ===================================
@@ -74,7 +73,7 @@ enum UserRole {
 model Session {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")
-  token     String   @unique @db.VarChar(1000)
+  token     String   @unique @db.VarChar(500)
   expiresAt DateTime @map("expires_at")
   ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")

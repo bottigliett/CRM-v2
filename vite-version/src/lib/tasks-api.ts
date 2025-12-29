@@ -149,14 +149,14 @@ class TasksAPI {
     if (params.isArchived !== undefined) queryParams.append('isArchived', params.isArchived.toString());
 
     const query = queryParams.toString();
-    return this.request<any>(`/api/tasks${query ? `?${query}` : ''}`);
+    return this.request<any>(`/tasks${query ? `?${query}` : ''}`);
   }
 
   async getTaskById(id: number): Promise<{
     success: boolean;
     data: Task;
   }> {
-    return this.request<any>(`/api/tasks/${id}`);
+    return this.request<any>(`/tasks/${id}`);
   }
 
   async createTask(data: CreateTaskData): Promise<{
@@ -164,7 +164,7 @@ class TasksAPI {
     message: string;
     data: Task;
   }> {
-    return this.request<any>('/api/tasks', {
+    return this.request<any>('/tasks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -175,7 +175,7 @@ class TasksAPI {
     message: string;
     data: Task;
   }> {
-    return this.request<any>(`/api/tasks/${id}`, {
+    return this.request<any>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -185,7 +185,7 @@ class TasksAPI {
     success: boolean;
     message: string;
   }> {
-    return this.request<any>(`/api/tasks/${id}`, {
+    return this.request<any>(`/tasks/${id}`, {
       method: 'DELETE',
     });
   }
@@ -195,7 +195,7 @@ class TasksAPI {
     message: string;
     data: Task;
   }> {
-    return this.request<any>(`/api/tasks/${id}/archive`, {
+    return this.request<any>(`/tasks/${id}/archive`, {
       method: 'POST',
     });
   }
@@ -205,7 +205,7 @@ class TasksAPI {
     message: string;
     data: Task;
   }> {
-    return this.request<any>(`/api/tasks/${id}`, {
+    return this.request<any>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ isFavorite }),
     });
@@ -217,14 +217,14 @@ class TasksAPI {
     data: TaskCategory[];
   }> {
     const query = includeInactive ? '?includeInactive=true' : '';
-    return this.request<any>(`/api/tasks/categories/all${query}`);
+    return this.request<any>(`/tasks/categories/all${query}`);
   }
 
   async getTaskCategoryById(id: number): Promise<{
     success: boolean;
     data: TaskCategory;
   }> {
-    return this.request<any>(`/api/tasks/categories/${id}`);
+    return this.request<any>(`/tasks/categories/${id}`);
   }
 
   async createTaskCategory(data: CreateTaskCategoryData): Promise<{
@@ -232,7 +232,7 @@ class TasksAPI {
     message: string;
     data: TaskCategory;
   }> {
-    return this.request<any>('/api/tasks/categories', {
+    return this.request<any>('/tasks/categories', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -243,7 +243,7 @@ class TasksAPI {
     message: string;
     data: TaskCategory;
   }> {
-    return this.request<any>(`/api/tasks/categories/${id}`, {
+    return this.request<any>(`/tasks/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -253,7 +253,7 @@ class TasksAPI {
     success: boolean;
     message: string;
   }> {
-    return this.request<any>(`/api/tasks/categories/${id}`, {
+    return this.request<any>(`/tasks/categories/${id}`, {
       method: 'DELETE',
     });
   }

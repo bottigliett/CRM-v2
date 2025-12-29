@@ -171,14 +171,14 @@ class InvoicesAPI {
     if (params.includeStats) queryParams.append('includeStats', 'true');
 
     const query = queryParams.toString();
-    return this.request<any>(`/api/invoices${query ? `?${query}` : ''}`);
+    return this.request<any>(`/invoices${query ? `?${query}` : ''}`);
   }
 
   async getInvoiceById(id: number): Promise<{
     success: boolean;
     data: Invoice;
   }> {
-    return this.request<any>(`/api/invoices/${id}`);
+    return this.request<any>(`/invoices/${id}`);
   }
 
   async createInvoice(data: CreateInvoiceData): Promise<{
@@ -186,7 +186,7 @@ class InvoicesAPI {
     message: string;
     data: Invoice;
   }> {
-    return this.request<any>('/api/invoices', {
+    return this.request<any>('/invoices', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -197,7 +197,7 @@ class InvoicesAPI {
     message: string;
     data: Invoice;
   }> {
-    return this.request<any>(`/api/invoices/${id}`, {
+    return this.request<any>(`/invoices/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -207,7 +207,7 @@ class InvoicesAPI {
     success: boolean;
     message: string;
   }> {
-    return this.request<any>(`/api/invoices/${id}`, {
+    return this.request<any>(`/invoices/${id}`, {
       method: 'DELETE',
     });
   }
@@ -217,7 +217,7 @@ class InvoicesAPI {
     message: string;
     data: Invoice;
   }> {
-    return this.request<any>(`/api/invoices/${id}/duplicate`, {
+    return this.request<any>(`/invoices/${id}/duplicate`, {
       method: 'POST',
     });
   }
@@ -228,7 +228,7 @@ class InvoicesAPI {
       invoiceNumber: string;
     };
   }> {
-    return this.request<any>('/api/invoices/next-number');
+    return this.request<any>('/invoices/next-number');
   }
 
   async getInvoicePDFData(id: number): Promise<{
@@ -253,7 +253,7 @@ class InvoicesAPI {
       isVatZero: boolean;
     };
   }> {
-    return this.request<any>(`/api/invoices/${id}/pdf`);
+    return this.request<any>(`/invoices/${id}/pdf`);
   }
 
   async reserveTaxes(id: number, taxPercentage?: number): Promise<{
@@ -266,7 +266,7 @@ class InvoicesAPI {
       taxPercentage: number;
     };
   }> {
-    return this.request<any>(`/api/invoices/${id}/reserve-taxes`, {
+    return this.request<any>(`/invoices/${id}/reserve-taxes`, {
       method: 'POST',
       body: JSON.stringify({ taxPercentage }),
     });

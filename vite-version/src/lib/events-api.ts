@@ -152,14 +152,14 @@ class EventsAPI {
     if (params.search) queryParams.append('search', params.search);
 
     const query = queryParams.toString();
-    return this.request<any>(`/api/events${query ? `?${query}` : ''}`);
+    return this.request<any>(`/events${query ? `?${query}` : ''}`);
   }
 
   async getEventById(id: number): Promise<{
     success: boolean;
     data: Event;
   }> {
-    return this.request<any>(`/api/events/${id}`);
+    return this.request<any>(`/events/${id}`);
   }
 
   async createEvent(data: CreateEventData): Promise<{
@@ -167,7 +167,7 @@ class EventsAPI {
     message: string;
     data: Event;
   }> {
-    return this.request<any>('/api/events', {
+    return this.request<any>('/events', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -178,7 +178,7 @@ class EventsAPI {
     message: string;
     data: Event;
   }> {
-    return this.request<any>(`/api/events/${id}`, {
+    return this.request<any>(`/events/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -188,7 +188,7 @@ class EventsAPI {
     success: boolean;
     message: string;
   }> {
-    return this.request<any>(`/api/events/${id}`, {
+    return this.request<any>(`/events/${id}`, {
       method: 'DELETE',
     });
   }
@@ -199,14 +199,14 @@ class EventsAPI {
     data: EventCategory[];
   }> {
     const query = includeInactive ? '?includeInactive=true' : '';
-    return this.request<any>(`/api/events/categories/all${query}`);
+    return this.request<any>(`/events/categories/all${query}`);
   }
 
   async getEventCategoryById(id: number): Promise<{
     success: boolean;
     data: EventCategory;
   }> {
-    return this.request<any>(`/api/events/categories/${id}`);
+    return this.request<any>(`/events/categories/${id}`);
   }
 
   async createEventCategory(data: CreateEventCategoryData): Promise<{
@@ -214,7 +214,7 @@ class EventsAPI {
     message: string;
     data: EventCategory;
   }> {
-    return this.request<any>('/api/events/categories', {
+    return this.request<any>('/events/categories', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -225,7 +225,7 @@ class EventsAPI {
     message: string;
     data: EventCategory;
   }> {
-    return this.request<any>(`/api/events/categories/${id}`, {
+    return this.request<any>(`/events/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -235,7 +235,7 @@ class EventsAPI {
     success: boolean;
     message: string;
   }> {
-    return this.request<any>(`/api/events/categories/${id}`, {
+    return this.request<any>(`/events/categories/${id}`, {
       method: 'DELETE',
     });
   }
