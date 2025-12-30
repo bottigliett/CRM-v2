@@ -363,7 +363,27 @@ export const createEvent = async (req: Request, res: Response) => {
         },
       });
 
-      console.log(`Reminder created for event ${event.id} - scheduled at ${scheduledAt.toISOString()}`);
+      // Create notification for the assigned user
+      const reminderLabels: Record<string, string> = {
+        'MINUTES_15': '15 minuti',
+        'MINUTES_30': '30 minuti',
+        'HOUR_1': '1 ora',
+        'DAY_1': '1 giorno',
+      };
+
+      await prisma.notification.create({
+        data: {
+          userId: parseInt(assignedTo),
+          type: 'EVENT_REMINDER',
+          title: 'Promemoria Evento',
+          message: `Promemoria per "${title}" tra ${reminderLabels[reminderType]}`,
+          link: `/calendar`,
+          eventId: event.id,
+          isRead: false,
+        },
+      });
+
+      console.log(`Reminder and notification created for event ${event.id} - scheduled at ${scheduledAt.toISOString()}`);
     }
 
     res.status(201).json({
@@ -497,9 +517,13 @@ export const updateEvent = async (req: Request, res: Response) => {
     });
 
     // Handle reminder updates
-    // First, delete existing reminders for this event
+    // First, delete existing reminders and notifications for this event
     await prisma.eventReminder.deleteMany({
       where: { eventId: parseInt(id) },
+    });
+
+    await prisma.notification.deleteMany({
+      where: { eventId: parseInt(id), type: 'EVENT_REMINDER' },
     });
 
     // Create new reminder if enabled
@@ -539,9 +563,30 @@ export const updateEvent = async (req: Request, res: Response) => {
         },
       });
 
-      console.log(`Reminder updated for event ${id} - scheduled at ${scheduledAt.toISOString()}`);
+      // Create notification for the assigned user
+      const finalTitle = title || existingEvent.title;
+      const reminderLabels: Record<string, string> = {
+        'MINUTES_15': '15 minuti',
+        'MINUTES_30': '30 minuti',
+        'HOUR_1': '1 ora',
+        'DAY_1': '1 giorno',
+      };
+
+      await prisma.notification.create({
+        data: {
+          userId: finalAssignedTo,
+          type: 'EVENT_REMINDER',
+          title: 'Promemoria Evento',
+          message: `Promemoria per "${finalTitle}" tra ${reminderLabels[reminderType]}`,
+          link: `/calendar`,
+          eventId: parseInt(id),
+          isRead: false,
+        },
+      });
+
+      console.log(`Reminder and notification updated for event ${id} - scheduled at ${scheduledAt.toISOString()}`);
     } else {
-      console.log(`Reminders deleted for event ${id} - reminderEnabled: ${reminderEnabled}`);
+      console.log(`Reminders and notifications deleted for event ${id} - reminderEnabled: ${reminderEnabled}`);
     }
 
     res.json({
