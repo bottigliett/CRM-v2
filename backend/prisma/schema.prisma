@@ -51,6 +51,7 @@ model User {
   accessLogs             AccessLog[]
   assignedEvents         Event[]             @relation("AssignedEvents") // Events assigned to this user
   createdEvents          Event[]             @relation("CreatedEvents") // Events created by this user
+  eventTeamMemberships   EventTeamMember[]   @relation("EventTeamMembers") // Events where this user is a team member
   calendarPreference     CalendarPreference?
   assignedTasks          Task[]              @relation("TaskAssigned") // Tasks assigned to this user
   createdTasks           Task[]              @relation("TaskCreator") // Tasks created by this user
@@ -381,6 +382,7 @@ model Event {
   assignedUser User?              @relation("AssignedEvents", fields: [assignedTo], references: [id], onDelete: SetNull)
   createdUser  User               @relation("CreatedEvents", fields: [createdBy], references: [id], onDelete: Cascade)
   participants EventParticipant[]
+  teamMembers  EventTeamMember[]
   reminders    EventReminder[]
 
   @@index([startDateTime])
@@ -422,6 +424,22 @@ model EventParticipant {
   @@index([eventId])
   @@index([contactId])
   @@map("event_participants")
+}
+
+model EventTeamMember {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @map("event_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation("EventTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId]) // One user can only be added once per event
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_team_members")
 }
 
 // ===================================
