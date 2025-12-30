@@ -105,7 +105,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
   useEffect(() => {
     if (event) {
       // Merge assignedTo + teamMembers into participants array
-      const teamMemberIds = (event as any).teamMembers?.map((tm: any) => tm.userId) || []
+      const teamMemberIds = (event as any).teamMembers?.map((tm: any) => tm.id) || []
       const allParticipants = event.assignedTo
         ? [event.assignedTo, ...teamMemberIds.filter((id: number) => id !== event.assignedTo)]
         : teamMemberIds

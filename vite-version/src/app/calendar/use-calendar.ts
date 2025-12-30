@@ -186,6 +186,10 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
       let startDateTime: Date
       let endDateTime: Date
 
+      console.log('[DEBUG] Saving event - editingEvent:', editingEvent)
+      console.log('[DEBUG] Saving event - eventData:', eventData)
+      console.log('[DEBUG] Is update?', !!editingEvent?.id)
+
       console.log('[DEBUG] Creating event with data:', {
         eventDate: eventDate,
         selectedDate: selectedDate,
