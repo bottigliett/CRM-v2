@@ -34,12 +34,12 @@ export function LayoutTab() {
       <div className="space-y-3">
         {/* Sidebar Variant */}
         <div>
-          <Label className="text-sm font-medium">Sidebar Variant</Label>
+          <Label className="text-sm font-medium">Variante Sidebar</Label>
           {sidebarConfig.variant && (
             <p className="text-xs text-muted-foreground mt-1">
-              {sidebarConfig.variant === "sidebar" && "Default: Standard sidebar layout"}
-              {sidebarConfig.variant === "floating" && "Floating: Floating sidebar with border"}
-              {sidebarConfig.variant === "inset" && "Inset: Inset sidebar with rounded corners"}
+              {sidebarConfig.variant === "sidebar" && "Default: Layout sidebar standard"}
+              {sidebarConfig.variant === "floating" && "Fluttuante: Sidebar fluttuante con bordo"}
+              {sidebarConfig.variant === "inset" && "Incassata: Sidebar incassata con angoli arrotondati"}
             </p>
           )}
         </div>
@@ -87,12 +87,12 @@ export function LayoutTab() {
       {/* Sidebar Collapsible Mode */}
       <div className="space-y-3">
         <div>
-          <Label className="text-sm font-medium">Sidebar Collapsible Mode</Label>
+          <Label className="text-sm font-medium">Modalità Sidebar Comprimibile</Label>
           {sidebarConfig.collapsible && (
             <p className="text-xs text-muted-foreground mt-1">
-              {sidebarConfig.collapsible === "offcanvas" && "Off Canvas: Slides out of view"}
-              {sidebarConfig.collapsible === "icon" && "Icon: Collapses to icon only"}
-              {sidebarConfig.collapsible === "none" && "None: Always visible"}
+              {sidebarConfig.collapsible === "offcanvas" && "Fuori Vista: Si nasconde lateralmente"}
+              {sidebarConfig.collapsible === "icon" && "Icona: Si riduce a solo icona"}
+              {sidebarConfig.collapsible === "none" && "Nessuna: Sempre visibile"}
             </p>
           )}
         </div>
@@ -155,11 +155,11 @@ export function LayoutTab() {
       {/* Sidebar Side */}
       <div className="space-y-3">
         <div>
-          <Label className="text-sm font-medium">Sidebar Position</Label>
+          <Label className="text-sm font-medium">Posizione Sidebar</Label>
           {sidebarConfig.side && (
             <p className="text-xs text-muted-foreground mt-1">
-              {sidebarConfig.side === "left" && "Left: Sidebar positioned on the left side"}
-              {sidebarConfig.side === "right" && "Right: Sidebar positioned on the right side"}
+              {sidebarConfig.side === "left" && "Sinistra: Sidebar posizionata a sinistra"}
+              {sidebarConfig.side === "right" && "Destra: Sidebar posizionata a destra"}
             </p>
           )}
         </div>
