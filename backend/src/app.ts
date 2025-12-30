@@ -18,11 +18,12 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 // Load .env from backend root directory (not from dist/)
 const envPath = path.join(__dirname, '../.env');
 console.log('🔍 Loading .env from:', envPath);
-const result = dotenv.config({ path: envPath, debug: true });
+const result = dotenv.config({ path: envPath, override: true });
 if (result.error) {
   console.error('❌ Error loading .env:', result.error);
 } else {
   console.log('✅ .env loaded successfully with', Object.keys(result.parsed || {}).length, 'variables');
+  console.log('📧 MAIL_PASSWORD loaded:', process.env.MAIL_PASSWORD ? '✓' : '✗');
 }
 
 const app: Application = express();
