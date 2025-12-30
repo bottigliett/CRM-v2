@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import contactRoutes from './routes/contact.routes';
@@ -14,7 +15,8 @@ import notificationRoutes from './routes/notification.routes';
 import invoiceRoutes from './routes/invoice.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
-dotenv.config();
+// Load .env from backend root directory (not from dist/)
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app: Application = express();
 
