@@ -90,14 +90,41 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
       const start = startDate || startOfMonth(selectedDate)
       const end = endDate || endOfMonth(selectedDate)
 
+      console.log('[DEBUG] Loading events for date range:', {
+        start: format(start, 'yyyy-MM-dd'),
+        end: format(end, 'yyyy-MM-dd'),
+        selectedDate: format(selectedDate, 'yyyy-MM-dd')
+      })
+
       const response = await eventsAPI.getEvents({
         startDate: format(start, 'yyyy-MM-dd'),
         endDate: format(end, 'yyyy-MM-dd'),
         limit: 1000, // Get all events in the date range
       })
 
+      console.log('[DEBUG] API response:', {
+        totalEvents: response.data.events.length,
+        events: response.data.events.map(e => ({
+          id: e.id,
+          title: e.title,
+          startDateTime: e.startDateTime,
+          categoryId: e.categoryId
+        }))
+      })
+
       const convertedEvents = response.data.events.map(convertAPIEvent)
+      console.log('[DEBUG] Converted events:', {
+        count: convertedEvents.length,
+        events: convertedEvents.map(e => ({
+          id: e.id,
+          title: e.title,
+          date: e.date.toISOString(),
+          categoryId: e.categoryId
+        }))
+      })
+
       setEvents(convertedEvents)
+      console.log('[DEBUG] Events set in state, total:', convertedEvents.length)
     } catch (error) {
       console.error('Failed to load events:', error)
     } finally {
