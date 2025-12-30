@@ -259,6 +259,10 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
         console.log('[DEBUG] Event created response:', response)
       }
 
+      // Wait a bit before reloading to ensure database transaction is committed
+      console.log('[DEBUG] Waiting 500ms before reloading events...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       // Reload events
       await loadEvents()
       setShowEventForm(false)
