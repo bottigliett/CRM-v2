@@ -48,7 +48,6 @@ const taskFormSchema = z.object({
   description: z.string().optional(),
   contactId: z.number().optional(),
   categoryId: z.number({ required_error: "La categoria è obbligatoria" }),
-  assignedTo: z.number({ required_error: "Il responsabile è obbligatorio" }),
   priority: z.enum(['P1', 'P2', 'P3']),
   status: z.enum(['TODO', 'IN_PROGRESS', 'PENDING', 'COMPLETED']),
   deadline: z.date({ required_error: "La scadenza è obbligatoria" }),
@@ -126,18 +125,24 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
   // Populate form when editing
   useEffect(() => {
     if (editTask && open) {
+      // Merge assignedTo + teamMembers into a single teamMembers array
+      const teamMemberIds = (editTask as any).teamMembers?.map((tm: any) => tm.userId) || []
+      const allResponsibles = editTask.assignedTo
+        ? [editTask.assignedTo, ...teamMemberIds.filter((id: number) => id !== editTask.assignedTo)]
+        : teamMemberIds
+
       setFormData({
         title: editTask.title,
         description: editTask.description || "",
         contactId: editTask.contactId || undefined,
         categoryId: editTask.categoryId,
-        assignedTo: editTask.assignedTo,
+        assignedTo: undefined,
         priority: editTask.priority,
         status: editTask.status,
         deadline: new Date(editTask.deadline),
         estimatedHours: editTask.estimatedHours || undefined,
         visibleToClient: editTask.visibleToClient ?? true,
-        teamMembers: (editTask as any).teamMembers?.map((tm: any) => tm.userId) || [],
+        teamMembers: allResponsibles,
       })
     }
   }, [editTask, open])
@@ -148,8 +153,19 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
     try {
       setSubmitting(true)
 
+      // Check if at least one responsible is selected
+      if (formData.teamMembers.length === 0) {
+        toast.error("Seleziona almeno un responsabile")
+        setSubmitting(false)
+        return
+      }
+
       // Validate form data
       const validatedData = taskFormSchema.parse(formData)
+
+      // Use the first teamMember as the main assignedTo for backend compatibility
+      const assignedTo = formData.teamMembers[0]
+      const otherTeamMembers = formData.teamMembers.slice(1)
 
       if (editTask) {
         // Update existing task
@@ -158,13 +174,13 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
           description: validatedData.description,
           contactId: validatedData.contactId,
           categoryId: validatedData.categoryId,
-          assignedTo: validatedData.assignedTo,
+          assignedTo: assignedTo,
           priority: validatedData.priority,
           status: validatedData.status,
           deadline: validatedData.deadline.toISOString(),
           estimatedHours: validatedData.estimatedHours,
           visibleToClient: validatedData.visibleToClient,
-          teamMembers: formData.teamMembers,
+          teamMembers: otherTeamMembers,
         }
 
         const response = await tasksAPI.updateTask(editTask.id, updateData)
@@ -181,13 +197,13 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
           description: validatedData.description,
           contactId: validatedData.contactId,
           categoryId: validatedData.categoryId,
-          assignedTo: validatedData.assignedTo,
+          assignedTo: assignedTo,
           priority: validatedData.priority,
           status: validatedData.status,
           deadline: validatedData.deadline.toISOString(),
           estimatedHours: validatedData.estimatedHours,
           visibleToClient: validatedData.visibleToClient,
-          teamMembers: formData.teamMembers,
+          teamMembers: otherTeamMembers,
         }
 
         const response = await tasksAPI.createTask(taskData)
@@ -294,79 +310,44 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
             />
           </div>
 
-          {/* Categoria e Responsabile */}
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-2">
-              <Label className="flex items-center gap-2">
-                <Tag className="w-4 h-4" />
-                Categoria *
-              </Label>
-              <Select
-                value={formData.categoryId?.toString()}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: parseInt(value) }))}
-                disabled={loading}
-              >
-                <SelectTrigger className={errors.categoryId ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Seleziona categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories
-                    .filter(c => c.isActive)
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map(category => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                          {category.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {errors.categoryId && (
-                <p className="text-sm text-red-500">{errors.categoryId}</p>
-              )}
-            </div>
-
-            <div className="flex-1 space-y-2">
-              <Label className="flex items-center gap-2">
-                <UserCircle className="w-4 h-4" />
-                Responsabile *
-              </Label>
-              <Select
-                value={formData.assignedTo?.toString()}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, assignedTo: parseInt(value) }))}
-                disabled={loading}
-              >
-                <SelectTrigger className={errors.assignedTo ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Seleziona responsabile" />
-                </SelectTrigger>
-                <SelectContent>
-                  {adminUsers.map(user => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
+          {/* Categoria */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Categoria *
+            </Label>
+            <Select
+              value={formData.categoryId?.toString()}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: parseInt(value) }))}
+              disabled={loading}
+            >
+              <SelectTrigger className={errors.categoryId ? "border-red-500" : ""}>
+                <SelectValue placeholder="Seleziona categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories
+                  .filter(c => c.isActive)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(category => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
                       <div className="flex items-center gap-2">
-                        <Avatar className="w-5 h-5">
-                          <AvatarFallback className="text-[10px]">
-                            {user.firstName?.[0]}{user.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        {user.firstName} {user.lastName}
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                        {category.name}
                       </div>
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-              {errors.assignedTo && (
-                <p className="text-sm text-red-500">{errors.assignedTo}</p>
-              )}
-            </div>
+              </SelectContent>
+            </Select>
+            {errors.categoryId && (
+              <p className="text-sm text-red-500">{errors.categoryId}</p>
+            )}
           </div>
 
-          {/* Altri Responsabili */}
+          {/* Responsabili */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <UserCircle className="w-4 h-4" />
-              Altri Responsabili
+              Responsabili *
             </Label>
             <div className="space-y-2">
               {formData.teamMembers.length > 0 && (
@@ -416,7 +397,6 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
                   <div className="max-h-60 overflow-y-auto">
                     {adminUsers
                       .filter(user => {
-                        if (user.id === formData.assignedTo) return false
                         if (formData.teamMembers.includes(user.id)) return false
                         const searchLower = teamMembersSearchQuery.toLowerCase()
                         return (
@@ -460,81 +440,64 @@ export function AddTaskModal({ onAddTask, onTaskAdded, trigger, editTask, open: 
             </div>
           </div>
 
-          {/* Cliente e Ore Stimate - 70/30 */}
-          <div className="flex gap-2">
-            <div className="flex-[2] space-y-2">
-              <Label className="flex items-center gap-2">
-                <UserCircle className="w-4 h-4" />
-                Cliente
-              </Label>
-              <div className="flex gap-0.5">
-                <div className="flex-1">
-                  <Select
-                    value={formData.contactId?.toString()}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, contactId: parseInt(value) }))}
-                    disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona cliente (opzionale)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contacts
-                        .filter(contact => contact.type === 'CLIENT')
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .slice(0, 50)
-                        .map(contact => (
-                          <SelectItem key={contact.id} value={contact.id.toString()}>
-                            <div className="flex items-center gap-2">
-                              {contact.name}
-                              {contact.contactType && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({contact.contactType === 'COMPANY' ? 'Azienda' : 'Persona'})
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowClientSearch(true)}
-                  className="flex-shrink-0 cursor-pointer"
-                >
-                  <Search className="w-4 h-4" />
-                </Button>
-                {formData.contactId && (
+          {/* Cliente - Full width */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Cliente
+            </Label>
+            <div className="space-y-2">
+              {formData.contactId ? (
+                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {contacts.find(c => c.id === formData.contactId)?.name || 'Cliente selezionato'}
+                    </div>
+                    {contacts.find(c => c.id === formData.contactId)?.email && (
+                      <div className="text-sm text-muted-foreground">
+                        {contacts.find(c => c.id === formData.contactId)?.email}
+                      </div>
+                    )}
+                  </div>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={() => setFormData(prev => ({ ...prev, contactId: undefined }))}
-                    className="flex-shrink-0 cursor-pointer"
+                    className="flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </Button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowClientSearch(true)}
+                  className="w-full justify-start cursor-pointer"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Cerca nell'Anagrafica
+                </Button>
+              )}
             </div>
+          </div>
 
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="estimatedHours">Ore Stimate</Label>
-              <Input
-                id="estimatedHours"
-                type="number"
-                step="0.5"
-                min="0"
-                placeholder="Es. 8"
-                value={formData.estimatedHours || ""}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  estimatedHours: e.target.value ? parseFloat(e.target.value) : undefined
-                }))}
-              />
-            </div>
+          {/* Ore Stimate */}
+          <div className="space-y-2">
+            <Label htmlFor="estimatedHours">Ore Stimate</Label>
+            <Input
+              id="estimatedHours"
+              type="number"
+              step="0.5"
+              min="0"
+              placeholder="Es. 8"
+              value={formData.estimatedHours || ""}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                estimatedHours: e.target.value ? parseFloat(e.target.value) : undefined
+              }))}
+            />
           </div>
 
           {/* Priorità, Stato e Scadenza */}
