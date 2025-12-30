@@ -113,6 +113,20 @@ export const getEvents = async (req: Request, res: Response) => {
             },
           },
         },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startDateTime: 'asc',
@@ -194,6 +208,20 @@ export const getEventById = async (req: Request, res: Response) => {
             },
           },
         },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -239,6 +267,7 @@ export const createEvent = async (req: Request, res: Response) => {
       visibleToClient = false,
       assignedTo,
       participants = [],
+      teamMembers = [],
       reminderEnabled = false,
       reminderType = 'MINUTES_15',
       reminderEmail = false,
@@ -286,6 +315,11 @@ export const createEvent = async (req: Request, res: Response) => {
             notes: p.notes,
           })),
         },
+        teamMembers: {
+          create: teamMembers.map((userId: number) => ({
+            userId: parseInt(String(userId)),
+          })),
+        },
       },
       include: {
         category: true,
@@ -323,6 +357,20 @@ export const createEvent = async (req: Request, res: Response) => {
                 name: true,
                 email: true,
                 phone: true,
+              },
+            },
+          },
+        },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
               },
             },
           },
@@ -474,6 +522,7 @@ export const updateEvent = async (req: Request, res: Response) => {
       visibleToClient,
       assignedTo,
       participants,
+      teamMembers,
       reminderEnabled = false,
       reminderType = 'MINUTES_15',
       reminderEmail = false,
@@ -521,6 +570,18 @@ export const updateEvent = async (req: Request, res: Response) => {
       };
     }
 
+    // Handle team members update (delete old, create new)
+    if (teamMembers !== undefined) {
+      await prisma.eventTeamMember.deleteMany({
+        where: { eventId: parseInt(id) },
+      });
+      updateData.teamMembers = {
+        create: teamMembers.map((userId: number) => ({
+          userId: parseInt(String(userId)),
+        })),
+      };
+    }
+
     const event = await prisma.event.update({
       where: { id: parseInt(id) },
       data: updateData,
@@ -560,6 +621,20 @@ export const updateEvent = async (req: Request, res: Response) => {
                 name: true,
                 email: true,
                 phone: true,
+              },
+            },
+          },
+        },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
               },
             },
           },
