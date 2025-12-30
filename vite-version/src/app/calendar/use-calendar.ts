@@ -63,6 +63,12 @@ function convertAPIEvent(apiEvent: APIEvent): CalendarEvent {
     contactId: apiEvent.contactId,
     contactName: apiEvent.contact?.name,
     allDay: apiEvent.isAllDay || false,
+    teamMembers: apiEvent.teamMembers?.map(tm => ({
+      id: tm.user.id,
+      firstName: tm.user.firstName,
+      lastName: tm.user.lastName,
+      email: tm.user.email,
+    })) || [],
   }
 }
 

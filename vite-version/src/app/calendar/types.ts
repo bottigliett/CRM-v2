@@ -16,6 +16,12 @@ export interface CalendarEvent {
   contactId?: number
   contactName?: string
   allDay?: boolean
+  teamMembers?: Array<{
+    id: number
+    firstName: string
+    lastName: string
+    email: string
+  }>
 }
 
 export interface Calendar {

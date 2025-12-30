@@ -17,6 +17,7 @@ export interface Event {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  assignedTo?: number;
   category?: EventCategory;
   contact?: {
     id: number;
@@ -25,7 +26,27 @@ export interface Event {
     phone?: string;
     type?: string;
   };
+  assignedUser?: {
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
   participants?: EventParticipant[];
+  teamMembers?: Array<{
+    id: number;
+    userId: number;
+    user: {
+      id: number;
+      username: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      role: string;
+    };
+  }>;
 }
 
 export interface EventCategory {

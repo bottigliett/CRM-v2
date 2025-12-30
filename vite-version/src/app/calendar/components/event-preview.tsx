@@ -97,16 +97,27 @@ export function EventPreview({ event, open, onOpenChange, onEdit, onDelete }: Ev
             </div>
           </div>
 
-          {/* Responsabile */}
-          {event.assignedTo && (
+          {/* Responsabili */}
+          {event.teamMembers && event.teamMembers.length > 0 && (
             <>
               <Separator />
               <div className="flex items-start gap-3">
                 <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium">Responsabile</div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    ID Utente: {event.assignedTo}
+                  <div className="text-sm font-medium">
+                    {event.teamMembers.length === 1 ? 'Responsabile' : 'Responsabili'}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {event.teamMembers.map(member => (
+                      <div key={member.id} className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs">
+                            {member.firstName[0]}{member.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{member.firstName} {member.lastName}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
