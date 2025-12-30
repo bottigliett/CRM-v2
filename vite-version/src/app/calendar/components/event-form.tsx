@@ -104,6 +104,12 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
   // Update form data when event prop changes
   useEffect(() => {
     if (event) {
+      // Merge assignedTo + teamMembers into participants array
+      const teamMemberIds = (event as any).teamMembers?.map((tm: any) => tm.userId) || []
+      const allParticipants = event.assignedTo
+        ? [event.assignedTo, ...teamMemberIds.filter((id: number) => id !== event.assignedTo)]
+        : teamMemberIds
+
       setFormData({
         title: event.title || "",
         date: event.date || new Date(),
@@ -113,7 +119,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         categoryId: event.categoryId,
         assignedTo: event.assignedTo,
         contactId: event.contactId,
-        participants: (event as any).teamMembers?.map((tm: any) => tm.userId) || [],
+        participants: allParticipants,
         location: event.location || "",
         description: event.description || "",
         color: event.color || "#3b82f6",
@@ -182,15 +188,17 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
       return
     }
 
-    if (!formData.assignedTo) {
-      toast.error("Il responsabile è obbligatorio")
+    if (formData.participants.length === 0) {
+      toast.error("Seleziona almeno un responsabile")
       return
     }
 
     const selectedCategory = categories.find(c => c.id === formData.categoryId)
+    // Set the first participant as the main assignedTo for backend compatibility
     const eventData: Partial<CalendarEvent> = {
       ...formData,
       ...(event?.id && { id: event.id }),
+      assignedTo: formData.participants[0],
       color: selectedCategory?.color || formData.color
     }
     onSave(eventData)
@@ -233,10 +241,10 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className={cn("w-3 h-3 rounded-full")} style={{ backgroundColor: selectedCategory?.color || formData.color }} />
-            {event ? "Modifica Evento" : "Nuovo Evento"}
+            {event?.id ? "Modifica Evento" : "Nuovo Evento"}
           </DialogTitle>
           <DialogDescription>
-            {event ? "Modifica le informazioni dell'evento" : "Aggiungi un nuovo evento al calendario"}
+            {event?.id ? "Modifica le informazioni dell'evento" : "Aggiungi un nuovo evento al calendario"}
           </DialogDescription>
         </DialogHeader>
 
@@ -379,7 +387,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <UserCircle className="w-4 h-4" />
-                Altri Responsabili
+                Responsabili *
               </Label>
               <div className="space-y-2">
                 {formData.participants.length > 0 && (
@@ -433,7 +441,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                     <div className="max-h-60 overflow-y-auto">
                       {adminUsers
                         .filter(user => {
-                          if (user.id === formData.assignedTo) return false
                           if (formData.participants.includes(user.id)) return false
                           const searchLower = participantsSearchQuery.toLowerCase()
                           return (
@@ -720,11 +727,11 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             <Button
               onClick={handleSave}
               className="flex-1 cursor-pointer"
-              disabled={!formData.title || !formData.assignedTo}
+              disabled={!formData.title || formData.participants.length === 0}
             >
-              {event ? "Aggiorna Evento" : "Crea Evento"}
+              {event?.id ? "Aggiorna Evento" : "Crea Evento"}
             </Button>
-            {event && onDelete && (
+            {event?.id && onDelete && (
               <Button onClick={handleDelete} variant="destructive" className="cursor-pointer">
                 Elimina
               </Button>
