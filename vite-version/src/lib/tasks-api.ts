@@ -78,12 +78,14 @@ export interface CreateTaskData {
   deadline: string;
   estimatedHours?: number;
   visibleToClient?: boolean;
+  teamMembers?: number[];
 }
 
 export interface UpdateTaskData extends Partial<CreateTaskData> {
   actualHours?: number;
   completedAt?: string;
   isFavorite?: boolean;
+  teamMembers?: number[];
 }
 
 export interface CreateTaskCategoryData {

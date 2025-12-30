@@ -57,6 +57,7 @@ model User {
   createdTasks           Task[]              @relation("TaskCreator") // Tasks created by this user
   updatedTasks           Task[]              @relation("TaskUpdater") // Tasks updated by this user
   archivedTasks          Task[]              @relation("TaskArchiver") // Tasks archived by this user
+  taskTeamMemberships    TaskTeamMember[]    @relation("TaskTeamMembers") // Tasks where this user is a team member
   createdTransactions    Transaction[]       @relation("TransactionCreator") // Transactions created by this user
   notifications          Notification[]      // Notifications for this user
   notificationPreference NotificationPreference?
@@ -323,6 +324,7 @@ model Task {
   creator      User         @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   updater      User?        @relation("TaskUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
   archiver     User?        @relation("TaskArchiver", fields: [archivedBy], references: [id], onDelete: SetNull)
+  teamMembers  TaskTeamMember[]
 
   @@index([contactId])
   @@index([categoryId])
@@ -351,6 +353,22 @@ enum TaskStatus {
   IN_PROGRESS
   PENDING
   COMPLETED
+}
+
+model TaskTeamMember {
+  id        Int      @id @default(autoincrement())
+  taskId    Int      @map("task_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation("TaskTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+  @@map("task_team_members")
 }
 
 // ===================================

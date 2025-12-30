@@ -74,6 +74,20 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
               lastName: true,
             },
           },
+          teamMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  role: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [
           { status: 'asc' },
@@ -132,6 +146,20 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
             lastName: true,
           },
         },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -176,6 +204,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       deadline,
       estimatedHours,
       visibleToClient,
+      teamMembers = [],
     } = req.body;
 
     const task = await prisma.task.create({
@@ -191,6 +220,11 @@ export const createTask = async (req: AuthRequest, res: Response) => {
         deadline: new Date(deadline),
         estimatedHours: estimatedHours ? parseFloat(estimatedHours) : 0,
         visibleToClient: visibleToClient ?? true,
+        teamMembers: {
+          create: teamMembers.map((userId: number) => ({
+            userId: parseInt(String(userId)),
+          })),
+        },
       },
       include: {
         contact: {
@@ -212,6 +246,20 @@ export const createTask = async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+          },
+        },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
@@ -256,6 +304,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       visibleToClient,
       completedAt,
       isFavorite,
+      teamMembers,
     } = req.body;
 
     const updateData: any = {
@@ -282,6 +331,18 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     if (completedAt !== undefined) updateData.completedAt = completedAt ? new Date(completedAt) : null;
     if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
 
+    // Handle team members update (delete old, create new)
+    if (teamMembers !== undefined) {
+      await prisma.taskTeamMember.deleteMany({
+        where: { taskId: parseInt(id) },
+      });
+      updateData.teamMembers = {
+        create: teamMembers.map((userId: number) => ({
+          userId: parseInt(String(userId)),
+        })),
+      };
+    }
+
     const task = await prisma.task.update({
       where: { id: parseInt(id) },
       data: updateData,
@@ -305,6 +366,20 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+          },
+        },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
           },
         },
       },
