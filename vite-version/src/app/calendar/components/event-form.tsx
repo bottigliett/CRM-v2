@@ -264,7 +264,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
             />
           </div>
 
-          {/* Categoria e Responsabile */}
+          {/* Categoria e Responsabili */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
@@ -310,48 +310,6 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                     })}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <UserCircle className="w-4 h-4" />
-                Cliente
-              </Label>
-              <div className="space-y-2">
-                {formData.contactId ? (
-                  <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {contacts.find(c => c.id === formData.contactId)?.name || 'Cliente selezionato'}
-                      </div>
-                      {contacts.find(c => c.id === formData.contactId)?.email && (
-                        <div className="text-sm text-muted-foreground">
-                          {contacts.find(c => c.id === formData.contactId)?.email}
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setFormData(prev => ({ ...prev, contactId: undefined }))}
-                      className="flex-shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowClientSearch(true)}
-                    className="w-full justify-start cursor-pointer"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Cerca nell'Anagrafica
-                  </Button>
-                )}
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -452,6 +410,49 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                   </PopoverContent>
                 </Popover>
               </div>
+            </div>
+          </div>
+
+          {/* Cliente - Full width */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Cliente
+            </Label>
+            <div className="space-y-2">
+              {formData.contactId ? (
+                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {contacts.find(c => c.id === formData.contactId)?.name || 'Cliente selezionato'}
+                    </div>
+                    {contacts.find(c => c.id === formData.contactId)?.email && (
+                      <div className="text-sm text-muted-foreground">
+                        {contacts.find(c => c.id === formData.contactId)?.email}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFormData(prev => ({ ...prev, contactId: undefined }))}
+                    className="flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowClientSearch(true)}
+                  className="w-full justify-start cursor-pointer"
+                >
+                  <Search className="w-4 h-4 mr-2" />
+                  Cerca nell'Anagrafica
+                </Button>
+              )}
             </div>
           </div>
 
