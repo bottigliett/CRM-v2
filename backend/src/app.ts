@@ -16,7 +16,14 @@ import invoiceRoutes from './routes/invoice.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Load .env from backend root directory (not from dist/)
-dotenv.config({ path: path.join(__dirname, '../.env') });
+const envPath = path.join(__dirname, '../.env');
+console.log('🔍 Loading .env from:', envPath);
+const result = dotenv.config({ path: envPath, debug: true });
+if (result.error) {
+  console.error('❌ Error loading .env:', result.error);
+} else {
+  console.log('✅ .env loaded successfully with', Object.keys(result.parsed || {}).length, 'variables');
+}
 
 const app: Application = express();
 
