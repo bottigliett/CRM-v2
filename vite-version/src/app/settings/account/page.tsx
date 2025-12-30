@@ -442,11 +442,11 @@ export default function AccountSettings() {
                     <FormItem>
                       <FormLabel>Tema</FormLabel>
                       <Select
+                        key={field.value || 'theme-select'}
                         onValueChange={(value) => {
                           field.onChange(value)
                           setTheme(value as "light" | "dark" | "system")
                         }}
-                        value={field.value}
                         defaultValue={field.value}
                       >
                         <FormControl>
