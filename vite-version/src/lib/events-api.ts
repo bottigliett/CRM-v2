@@ -86,6 +86,10 @@ export interface CreateEventData {
     status?: string;
     notes?: string;
   }[];
+  teamMembers?: number[];
+  reminderEnabled?: boolean;
+  reminderType?: string;
+  reminderEmail?: boolean;
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {}

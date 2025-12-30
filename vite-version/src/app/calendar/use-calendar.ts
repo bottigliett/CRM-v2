@@ -147,7 +147,7 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
     // In a real app, this would open a new calendar form
   }, [])
 
-  const handleSaveEvent = useCallback(async (eventData: Partial<CalendarEvent> & { categoryId?: number, assignedTo?: number, contactId?: number, endDate?: Date, reminderEnabled?: boolean, reminderType?: string, reminderEmail?: boolean }) => {
+  const handleSaveEvent = useCallback(async (eventData: Partial<CalendarEvent> & { categoryId?: number, assignedTo?: number, contactId?: number, endDate?: Date, reminderEnabled?: boolean, reminderType?: string, reminderEmail?: boolean, participants?: number[] }) => {
     try {
       const eventDate = eventData.date || selectedDate
       let startDateTime: Date
@@ -191,6 +191,7 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
           reminderEnabled: eventData.reminderEnabled || false,
           reminderType: eventData.reminderType || 'MINUTES_15',
           reminderEmail: eventData.reminderEmail || false,
+          teamMembers: (eventData as any).participants || [],
         })
       } else {
         // Create new event
@@ -208,6 +209,7 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
           reminderEnabled: eventData.reminderEnabled || false,
           reminderType: eventData.reminderType || 'MINUTES_15',
           reminderEmail: eventData.reminderEmail || false,
+          teamMembers: (eventData as any).participants || [],
         })
       }
 
