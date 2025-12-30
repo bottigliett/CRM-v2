@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface Notification {
   id: number;
@@ -47,7 +47,7 @@ const getAuthHeader = () => {
 export const notificationsAPI = {
   // Get notifications
   async getNotifications(unreadOnly: boolean = false) {
-    const response = await axios.get(`${API_URL}/api/notifications`, {
+    const response = await axios.get(`${API_BASE_URL}/notifications`, {
       params: { unreadOnly },
       headers: getAuthHeader(),
     });
@@ -57,7 +57,7 @@ export const notificationsAPI = {
   // Mark notification as read
   async markAsRead(notificationId: number) {
     const response = await axios.patch(
-      `${API_URL}/api/notifications/${notificationId}/read`,
+      `${API_BASE_URL}/notifications/${notificationId}/read`,
       {},
       { headers: getAuthHeader() }
     );
@@ -67,7 +67,7 @@ export const notificationsAPI = {
   // Mark all notifications as read
   async markAllAsRead() {
     const response = await axios.patch(
-      `${API_URL}/api/notifications/read-all`,
+      `${API_BASE_URL}/notifications/read-all`,
       {},
       { headers: getAuthHeader() }
     );
@@ -77,7 +77,7 @@ export const notificationsAPI = {
   // Delete notification
   async deleteNotification(notificationId: number) {
     const response = await axios.delete(
-      `${API_URL}/api/notifications/${notificationId}`,
+      `${API_BASE_URL}/notifications/${notificationId}`,
       { headers: getAuthHeader() }
     );
     return response.data;
@@ -85,7 +85,7 @@ export const notificationsAPI = {
 
   // Get notification preferences
   async getPreferences() {
-    const response = await axios.get(`${API_URL}/api/notifications/preferences`, {
+    const response = await axios.get(`${API_BASE_URL}/notifications/preferences`, {
       headers: getAuthHeader(),
     });
     return response.data;
@@ -94,7 +94,7 @@ export const notificationsAPI = {
   // Update notification preferences
   async updatePreferences(preferences: Partial<NotificationPreference>) {
     const response = await axios.put(
-      `${API_URL}/api/notifications/preferences`,
+      `${API_BASE_URL}/notifications/preferences`,
       preferences,
       { headers: getAuthHeader() }
     );
