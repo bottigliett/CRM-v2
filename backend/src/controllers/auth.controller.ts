@@ -405,6 +405,11 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
       sidebarSide: sidebarSide !== undefined ? sidebarSide : user.sidebarSide,
     };
 
+    // Se l'email è cambiata, resetta il flag di verifica
+    if (email && email !== user.email) {
+      updateData.emailVerified = false;
+    }
+
     // Se c'è una nuova password, verifica la password corrente e aggiorna
     if (newPassword) {
       if (!currentPassword) {
