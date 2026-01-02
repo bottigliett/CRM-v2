@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../lib/prisma';
+import prisma from '../config/database';
 
 // Interface for authenticated request
 interface AuthRequest extends Request {
