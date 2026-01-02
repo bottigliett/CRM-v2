@@ -17,6 +17,10 @@ const Contacts = lazy(() => import('@/app/contacts/page'))
 const Finance = lazy(() => import('@/app/finance/page'))
 const Invoices = lazy(() => import('@/app/invoices/page'))
 
+// Projects pages
+const Projects = lazy(() => import('@/app/projects/page'))
+const ProjectDetail = lazy(() => import('@/app/projects/[id]/page'))
+
 // Auth pages
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
 const SignIn2 = lazy(() => import('@/app/auth/sign-in-2/page'))
@@ -84,6 +88,14 @@ export const routes: RouteConfig[] = [
   {
     path: "/tasks",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="tasks"><Tasks /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/projects",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="projects"><Projects /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/projects/:id",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="projects"><ProjectDetail /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/finance",
