@@ -21,6 +21,9 @@ const Invoices = lazy(() => import('@/app/invoices/page'))
 const Projects = lazy(() => import('@/app/projects/page'))
 const ProjectDetail = lazy(() => import('@/app/projects/[id]/page'))
 
+// On Duty page
+const OnDuty = lazy(() => import('@/app/on-duty/page'))
+
 // Auth pages
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
 const SignIn2 = lazy(() => import('@/app/auth/sign-in-2/page'))
@@ -104,6 +107,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/invoices",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="invoices"><Invoices /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/on-duty",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="on_duty"><OnDuty /></ModuleProtectedRoute></ProtectedRoute>
   },
 
   // Amministrazione (Users page remains SUPER_ADMIN only - no module permission)
