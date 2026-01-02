@@ -115,18 +115,43 @@ export const createColumns = (onViewTask?: (task: Task) => void, onTaskUpdated?:
     ),
     cell: ({ row }) => {
       const task = row.original
+      const teamMembers = task.teamMembers || []
+      const allUsers = task.assignedUser
+        ? [task.assignedUser, ...teamMembers.map(tm => tm.user)]
+        : teamMembers.map(tm => tm.user)
 
-      if (!task.assignedUser) return null
+      if (allUsers.length === 0) return null
 
+      if (allUsers.length === 1) {
+        const user = allUsers[0]
+        return (
+          <div className="flex items-center gap-2">
+            <Avatar className="w-6 h-6">
+              <AvatarFallback className="text-[10px]">
+                {user.firstName?.[0]}{user.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm">
+              {user.firstName} {user.lastName}
+            </span>
+          </div>
+        )
+      }
+
+      // Multiple users - show avatars stacked
       return (
         <div className="flex items-center gap-2">
-          <Avatar className="w-6 h-6">
-            <AvatarFallback className="text-[10px]">
-              {task.assignedUser.firstName?.[0]}{task.assignedUser.lastName?.[0]}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm">
-            {task.assignedUser.firstName} {task.assignedUser.lastName}
+          <div className="flex -space-x-2">
+            {allUsers.map((user, index) => (
+              <Avatar key={index} className="w-6 h-6 border-2 border-background">
+                <AvatarFallback className="text-[10px]">
+                  {user.firstName?.[0]}{user.lastName?.[0]}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+          </div>
+          <span className="text-sm text-muted-foreground">
+            {allUsers.length} responsabili
           </span>
         </div>
       )

@@ -253,19 +253,48 @@ export function KanbanBoard({ tasks, onTaskUpdate, onAddTask, onTaskDeleted, onT
                       {getPriorityLabel(task.priority)}
                     </Badge>
 
-                    {/* Assigned User */}
-                    {task.assignedUser && (
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-[10px]">
-                            {task.assignedUser.firstName?.[0]}{task.assignedUser.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-muted-foreground">
-                          {task.assignedUser.firstName} {task.assignedUser.lastName}
-                        </span>
-                      </div>
-                    )}
+                    {/* Assigned Users */}
+                    {(() => {
+                      const teamMembers = task.teamMembers || []
+                      const allUsers = task.assignedUser
+                        ? [task.assignedUser, ...teamMembers.map(tm => tm.user)]
+                        : teamMembers.map(tm => tm.user)
+
+                      if (allUsers.length === 0) return null
+
+                      if (allUsers.length === 1) {
+                        const user = allUsers[0]
+                        return (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <Avatar className="w-6 h-6">
+                              <AvatarFallback className="text-[10px]">
+                                {user.firstName?.[0]}{user.lastName?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-muted-foreground">
+                              {user.firstName} {user.lastName}
+                            </span>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <div className="flex -space-x-2">
+                            {allUsers.map((user, index) => (
+                              <Avatar key={index} className="w-6 h-6 border-2 border-background">
+                                <AvatarFallback className="text-[10px]">
+                                  {user.firstName?.[0]}{user.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {allUsers.length} resp.
+                          </span>
+                        </div>
+                      )
+                    })()}
 
                     {/* Client */}
                     {task.contact && (
@@ -383,19 +412,48 @@ export function KanbanBoard({ tasks, onTaskUpdate, onAddTask, onTaskDeleted, onT
                       {getPriorityLabel(task.priority)}
                     </Badge>
 
-                    {/* Assigned User */}
-                    {task.assignedUser && (
-                      <div className="flex items-center gap-2 pt-2 border-t">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-[10px]">
-                            {task.assignedUser.firstName?.[0]}{task.assignedUser.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-muted-foreground">
-                          {task.assignedUser.firstName} {task.assignedUser.lastName}
-                        </span>
-                      </div>
-                    )}
+                    {/* Assigned Users */}
+                    {(() => {
+                      const teamMembers = task.teamMembers || []
+                      const allUsers = task.assignedUser
+                        ? [task.assignedUser, ...teamMembers.map(tm => tm.user)]
+                        : teamMembers.map(tm => tm.user)
+
+                      if (allUsers.length === 0) return null
+
+                      if (allUsers.length === 1) {
+                        const user = allUsers[0]
+                        return (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <Avatar className="w-6 h-6">
+                              <AvatarFallback className="text-[10px]">
+                                {user.firstName?.[0]}{user.lastName?.[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-muted-foreground">
+                              {user.firstName} {user.lastName}
+                            </span>
+                          </div>
+                        )
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2 pt-2 border-t">
+                          <div className="flex -space-x-2">
+                            {allUsers.map((user, index) => (
+                              <Avatar key={index} className="w-6 h-6 border-2 border-background">
+                                <AvatarFallback className="text-[10px]">
+                                  {user.firstName?.[0]}{user.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {allUsers.length} resp.
+                          </span>
+                        </div>
+                      )
+                    })()}
 
                     {/* Client */}
                     {task.contact && (
