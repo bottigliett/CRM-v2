@@ -821,3 +821,58 @@ model NotificationPreference {
   @@index([userId])
   @@map("notification_preferences")
 }
+
+// ===================================
+// ON DUTY / WORKSPACE
+// ===================================
+
+model DailyTodo {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  text        String
+  completed   Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  order       Int      @default(0)
+  date        DateTime @default(now()) // Date this todo belongs to
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([date, completed])
+  @@map("daily_todos")
+}
+
+model WeeklyTodo {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  text        String
+  completed   Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  order       Int      @default(0)
+  weekStart   DateTime @map("week_start") // Monday of the week this todo belongs to
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([userId, weekStart])
+  @@index([weekStart, completed])
+  @@map("weekly_todos")
+}
+
+model TaskPhase {
+  id          Int      @id @default(autoincrement())
+  taskId      Int      @map("task_id")
+  userId      Int      @map("user_id")
+  text        String
+  completed   Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([taskId])
+  @@index([userId])
+  @@index([taskId, order])
+  @@map("task_phases")
+}

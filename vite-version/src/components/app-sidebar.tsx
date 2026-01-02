@@ -12,6 +12,7 @@ import {
   Settings,
   FileText,
   FolderKanban,
+  Timer,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -52,6 +53,12 @@ const allNavGroups: NavGroup[] = [
         url: "/dashboard",
         icon: LayoutDashboard,
         moduleName: "dashboard",
+      },
+      {
+        title: "On Duty",
+        url: "/on-duty",
+        icon: Timer,
+        moduleName: "on_duty",
       },
     ],
   },

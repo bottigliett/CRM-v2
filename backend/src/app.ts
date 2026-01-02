@@ -14,6 +14,7 @@ import transactionRoutes from './routes/transaction.routes';
 import paymentMethodRoutes from './routes/payment-method.routes';
 import notificationRoutes from './routes/notification.routes';
 import invoiceRoutes from './routes/invoice.routes';
+import onDutyRoutes from './routes/on-duty.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Load .env from backend root directory (not from dist/)
@@ -59,6 +60,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/payment-methods', paymentMethodRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/on-duty', onDutyRoutes);
 
 // Error handling
 app.use(notFound);
