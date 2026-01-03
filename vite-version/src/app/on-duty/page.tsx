@@ -23,11 +23,40 @@ export default function OnDutyPage() {
   // Selected Task State
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  // Load todos on mount
+  // Load todos and selected task on mount
   useEffect(() => {
     loadDailyTodos()
     loadWeeklyTodos()
+
+    // Restore selected task from localStorage
+    const savedTaskId = localStorage.getItem('onduty_selected_task_id')
+    if (savedTaskId) {
+      loadTaskById(parseInt(savedTaskId))
+    }
   }, [])
+
+  // Save selected task ID to localStorage when it changes
+  useEffect(() => {
+    if (selectedTask) {
+      localStorage.setItem('onduty_selected_task_id', selectedTask.id.toString())
+    } else {
+      localStorage.removeItem('onduty_selected_task_id')
+    }
+  }, [selectedTask])
+
+  // Load task by ID
+  const loadTaskById = async (taskId: number) => {
+    try {
+      const response = await tasksAPI.getTaskById(taskId)
+      if (response.success) {
+        setSelectedTask(response.data)
+      }
+    } catch (error) {
+      console.error("Errore nel caricamento task:", error)
+      // If task not found or error, clear from localStorage
+      localStorage.removeItem('onduty_selected_task_id')
+    }
+  }
 
   // ===================================
   // DAILY TODOS HANDLERS
