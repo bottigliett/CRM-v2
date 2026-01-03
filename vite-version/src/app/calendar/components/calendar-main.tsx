@@ -317,18 +317,27 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
             })}
 
             {/* Multi-day events as continuous bars */}
-            {week.map((day, dayIndex) => {
-              const dayEvents = getEventsForDay(day)
-              const multiDayEvents = dayEvents.filter(e => e.allDay && e.endDate && !isSameDay(e.date, e.endDate))
+            {(() => {
+              // Collect all multi-day events for this week
+              const weekMultiDayEvents = week.flatMap((day) => {
+                const dayEvents = getEventsForDay(day)
+                return dayEvents.filter(e => e.allDay && e.endDate && !isSameDay(e.date, e.endDate))
+              }).filter((event, index, self) =>
+                index === self.findIndex(e => e.id === event.id)
+              ).filter(event => {
+                // Only include events that haven't been processed yet
+                if (processedMultiDayEvents.has(event.id)) return false
+                // Only include events that start in this week or continue from previous weeks
+                const eventStart = startOfDay(event.date)
+                const weekStart = startOfDay(week[0])
+                const weekEnd = startOfDay(week[6])
+                return eventStart <= weekEnd
+              })
 
-              return multiDayEvents.map((event, eventIndex) => {
-                // Only render event on its start day to avoid duplicates
-                if (processedMultiDayEvents.has(event.id) || !isSameDay(day, event.date)) {
-                  return null
-                }
+              // Calculate grid positions for each event
+              const eventsWithPositions = weekMultiDayEvents.map(event => {
                 processedMultiDayEvents.add(event.id)
 
-                // Calculate span within this week
                 const eventStart = startOfDay(event.date)
                 const eventEnd = event.endDate ? startOfDay(event.endDate) : eventStart
 
@@ -349,29 +358,63 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                 if (startCol === 0) startCol = 1 // Starts before this week
                 if (endCol === 0 || endCol > 8) endCol = 8 // Ends after this week
 
-                const span = endCol - startCol
-
-                return (
-                  <div
-                    key={`multi-${event.id}`}
-                    className="absolute text-xs p-1 rounded-sm text-white cursor-pointer truncate z-10"
-                    style={{
-                      backgroundColor: event.color,
-                      gridColumn: `${startCol} / ${endCol}`,
-                      left: `${((startCol - 1) * 100) / 7}%`,
-                      width: `${(span * 100) / 7}%`,
-                      top: `${eventIndex * 22 + 26}px`,
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEventClick(event)
-                    }}
-                  >
-                    <span className="truncate">{event.title}</span>
-                  </div>
-                )
+                return {
+                  ...event,
+                  startCol,
+                  endCol,
+                  span: endCol - startCol
+                }
               })
-            })}
+
+              // Calculate rows for overlapping events (similar to week view logic)
+              const eventsWithRows = eventsWithPositions.map((event, index, arr) => {
+                let row = 1
+                // Check for overlaps with previous events
+                for (let i = 0; i < index; i++) {
+                  const otherEvent = arr[i]
+                  // Check if events overlap in columns
+                  const eventsOverlap =
+                    (event.startCol < otherEvent.endCol) &&
+                    (event.endCol > otherEvent.startCol)
+
+                  if (eventsOverlap) {
+                    // Find the first available row
+                    const usedRows = arr
+                      .slice(0, index)
+                      .filter(e =>
+                        (e.startCol < event.endCol) &&
+                        (e.endCol > event.startCol)
+                      )
+                      .map(e => e.row || 1)
+
+                    while (usedRows.includes(row)) {
+                      row++
+                    }
+                  }
+                }
+                return { ...event, row }
+              })
+
+              return eventsWithRows.map((event) => (
+                <div
+                  key={`multi-${event.id}`}
+                  className="absolute text-xs p-1 rounded-sm text-white cursor-pointer truncate z-10"
+                  style={{
+                    backgroundColor: event.color,
+                    gridColumn: `${event.startCol} / ${event.endCol}`,
+                    left: `${((event.startCol - 1) * 100) / 7}%`,
+                    width: `${(event.span * 100) / 7}%`,
+                    top: `${(event.row - 1) * 22 + 26}px`,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleEventClick(event)
+                  }}
+                >
+                  <span className="truncate">{event.title}</span>
+                </div>
+              ))
+            })()}
           </div>
         ))}
       </div>

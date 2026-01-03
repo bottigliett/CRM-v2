@@ -421,30 +421,17 @@ export const createEvent = async (req: Request, res: Response) => {
         },
       });
 
-      // Create notification for the assigned user
-      const reminderLabels: Record<string, string> = {
-        'MINUTES_15': '15 minuti',
-        'MINUTES_30': '30 minuti',
-        'HOUR_1': '1 ora',
-        'DAY_1': '1 giorno',
-      };
-
-      await prisma.notification.create({
-        data: {
-          userId: parseInt(assignedTo),
-          type: 'EVENT_REMINDER',
-          title: 'Promemoria Evento',
-          message: `Promemoria per "${title}" tra ${reminderLabels[reminderType]}`,
-          link: `/calendar`,
-          eventId: event.id,
-          isRead: false,
-        },
-      });
-
-      console.log(`Reminder and notification created for event ${event.id} - scheduled at ${scheduledAt.toISOString()}`);
+      // Note: Notification will be created by processDueReminders() at the scheduled time
+      console.log(`Reminder created for event ${event.id} - scheduled at ${scheduledAt.toISOString()}`);
 
       // Send email if enabled
       if (reminderEmail) {
+        const reminderLabels: Record<string, string> = {
+          'MINUTES_15': '15 minuti',
+          'MINUTES_30': '30 minuti',
+          'HOUR_1': '1 ora',
+          'DAY_1': '1 giorno',
+        };
         try {
           // Get user email and preferences
           const assignedUser = await prisma.user.findUnique({
