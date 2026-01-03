@@ -260,163 +260,176 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
         </div>
 
         {/* Calendar Body - Week by week */}
-        {weeks.map((week, weekIndex) => (
-          <div key={weekIndex} className="grid grid-cols-7 relative">
-            {week.map((day, dayIndex) => {
-              const dayEvents = getEventsForDay(day)
-              const singleDayEvents = dayEvents.filter(e => !e.allDay || !e.endDate || isSameDay(e.date, e.endDate))
-              const isCurrentMonth = isSameMonth(day, currentDate)
-              const isDayToday = isToday(day)
-              const isSelected = selectedDate && isSameDay(day, selectedDate)
+        {weeks.map((week, weekIndex) => {
+          // Collect all all-day events for this week (both single-day and multi-day)
+          const weekAllDayEvents = week.flatMap((day) => {
+            const dayEvents = getEventsForDay(day)
+            return dayEvents.filter(e => e.allDay)
+          }).filter((event, index, self) =>
+            index === self.findIndex(e => e.id === event.id)
+          ).filter(event => {
+            // Only include events that haven't been processed yet
+            if (processedMultiDayEvents.has(event.id)) return false
+            const eventStart = startOfDay(event.date)
+            const weekStart = startOfDay(week[0])
+            const weekEnd = startOfDay(week[6])
+            return eventStart <= weekEnd
+          })
 
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "min-h-[120px] border-r border-b last:border-r-0 p-2 pt-8 cursor-pointer transition-colors relative",
-                    isCurrentMonth ? "bg-background hover:bg-accent/50" : "bg-muted/30 text-muted-foreground",
-                    isSelected && "ring-2 ring-primary ring-inset",
-                    isDayToday && "bg-accent/20"
-                  )}
-                  onClick={() => onDateSelect?.(day)}
-                >
-                  <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
-                    <span className={cn(
-                      "text-sm font-medium",
-                      isDayToday && "bg-primary text-primary-foreground rounded-md w-6 h-6 flex items-center justify-center text-xs"
-                    )}>
-                      {format(day, 'd')}
-                    </span>
-                    {singleDayEvents.length > 2 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{singleDayEvents.length - 2}
-                      </span>
-                    )}
+          // Calculate grid positions for all-day events
+          const allDayEventsWithSpan = weekAllDayEvents.map(event => {
+            processedMultiDayEvents.add(event.id)
+            const eventStart = startOfDay(event.date)
+            const eventEnd = event.endDate ? startOfDay(event.endDate) : eventStart
+
+            let startCol = 0
+            let endCol = 0
+
+            week.forEach((weekDay, idx) => {
+              const dayStart = startOfDay(weekDay)
+              if (dayStart.getTime() === eventStart.getTime()) {
+                startCol = idx + 1
+              }
+              if (dayStart.getTime() === eventEnd.getTime()) {
+                endCol = idx + 2
+              }
+            })
+
+            if (startCol === 0) startCol = 1
+            if (endCol === 0 || endCol > 8) endCol = 8
+
+            return {
+              ...event,
+              startCol,
+              endCol,
+              span: endCol - startCol
+            }
+          })
+
+          // Calculate rows for overlapping all-day events
+          const allDayEventsWithRows = allDayEventsWithSpan.map((event, index, arr) => {
+            let row = 1
+            for (let i = 0; i < index; i++) {
+              const otherEvent = arr[i]
+              const eventsOverlap =
+                (event.startCol < otherEvent.endCol) &&
+                (event.endCol > otherEvent.startCol)
+
+              if (eventsOverlap) {
+                const usedRows = arr
+                  .slice(0, index)
+                  .filter(e =>
+                    (e.startCol < event.endCol) &&
+                    (e.endCol > event.startCol)
+                  )
+                  .map(e => e.row || 1)
+
+                while (usedRows.includes(row)) {
+                  row++
+                }
+              }
+            }
+            return { ...event, row }
+          })
+
+          const maxRow = allDayEventsWithRows.length > 0 ? Math.max(...allDayEventsWithRows.map(e => e.row)) : 0
+          const allDayHeight = maxRow * 26 + 8
+
+          return (
+            <div key={weekIndex}>
+              {/* All-day events section */}
+              {allDayEventsWithRows.length > 0 && (
+                <div className="relative border-b bg-muted/20" style={{ height: `${allDayHeight}px` }}>
+                  <div className="grid grid-cols-7 h-full">
+                    {week.map((day) => (
+                      <div key={`allday-${day.toISOString()}`} className="border-r last:border-r-0"></div>
+                    ))}
                   </div>
-
-                  <div className="space-y-1">
-                    {singleDayEvents.slice(0, 2).map(event => (
+                  {/* All-day events overlay */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {allDayEventsWithRows.map((event) => (
                       <div
-                        key={event.id}
-                        className="text-xs p-1 rounded-sm text-white cursor-pointer truncate"
-                        style={{ backgroundColor: event.color }}
+                        key={`allday-${event.id}`}
+                        className="absolute pointer-events-auto text-xs p-1 rounded-sm text-white cursor-pointer truncate"
+                        style={{
+                          backgroundColor: event.color,
+                          left: `${((event.startCol - 1) * 100) / 7}%`,
+                          width: `${(event.span * 100) / 7}%`,
+                          top: `${(event.row - 1) * 26 + 4}px`,
+                          height: '20px'
+                        }}
                         onClick={(e) => {
                           e.stopPropagation()
                           handleEventClick(event)
                         }}
                       >
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span className="truncate">{event.title}</span>
-                        </div>
+                        <span className="truncate">{event.title}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-              )
-            })}
+              )}
 
-            {/* Multi-day events as continuous bars */}
-            {(() => {
-              // Collect all multi-day events for this week
-              const weekMultiDayEvents = week.flatMap((day) => {
-                const dayEvents = getEventsForDay(day)
-                return dayEvents.filter(e => e.allDay && e.endDate && !isSameDay(e.date, e.endDate))
-              }).filter((event, index, self) =>
-                index === self.findIndex(e => e.id === event.id)
-              ).filter(event => {
-                // Only include events that haven't been processed yet
-                if (processedMultiDayEvents.has(event.id)) return false
-                // Only include events that start in this week or continue from previous weeks
-                const eventStart = startOfDay(event.date)
-                const weekStart = startOfDay(week[0])
-                const weekEnd = startOfDay(week[6])
-                return eventStart <= weekEnd
-              })
+              {/* Regular day cells */}
+              <div className="grid grid-cols-7 relative">
+                {week.map((day, dayIndex) => {
+                  const dayEvents = getEventsForDay(day)
+                  // Only show timed events (non-all-day events)
+                  const timedEvents = dayEvents.filter(e => !e.allDay)
+                  const isCurrentMonth = isSameMonth(day, currentDate)
+                  const isDayToday = isToday(day)
+                  const isSelected = selectedDate && isSameDay(day, selectedDate)
 
-              // Calculate grid positions for each event
-              const eventsWithPositions = weekMultiDayEvents.map(event => {
-                processedMultiDayEvents.add(event.id)
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={cn(
+                        "min-h-[100px] border-r border-b last:border-r-0 p-2 pt-8 cursor-pointer transition-colors relative",
+                        isCurrentMonth ? "bg-background hover:bg-accent/50" : "bg-muted/30 text-muted-foreground",
+                        isSelected && "ring-2 ring-primary ring-inset",
+                        isDayToday && "bg-accent/20"
+                      )}
+                      onClick={() => onDateSelect?.(day)}
+                    >
+                      <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
+                        <span className={cn(
+                          "text-sm font-medium",
+                          isDayToday && "bg-primary text-primary-foreground rounded-md w-6 h-6 flex items-center justify-center text-xs"
+                        )}>
+                          {format(day, 'd')}
+                        </span>
+                        {timedEvents.length > 2 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{timedEvents.length - 2}
+                          </span>
+                        )}
+                      </div>
 
-                const eventStart = startOfDay(event.date)
-                const eventEnd = event.endDate ? startOfDay(event.endDate) : eventStart
-
-                let startCol = 0
-                let endCol = 0
-
-                week.forEach((weekDay, idx) => {
-                  const dayStart = startOfDay(weekDay)
-                  if (dayStart.getTime() === eventStart.getTime()) {
-                    startCol = idx + 1
-                  }
-                  if (dayStart.getTime() === eventEnd.getTime()) {
-                    endCol = idx + 2 // +2 to include the end day
-                  }
-                })
-
-                // If event extends beyond this week
-                if (startCol === 0) startCol = 1 // Starts before this week
-                if (endCol === 0 || endCol > 8) endCol = 8 // Ends after this week
-
-                return {
-                  ...event,
-                  startCol,
-                  endCol,
-                  span: endCol - startCol
-                }
-              })
-
-              // Calculate rows for overlapping events (similar to week view logic)
-              const eventsWithRows = eventsWithPositions.map((event, index, arr) => {
-                let row = 1
-                // Check for overlaps with previous events
-                for (let i = 0; i < index; i++) {
-                  const otherEvent = arr[i]
-                  // Check if events overlap in columns
-                  const eventsOverlap =
-                    (event.startCol < otherEvent.endCol) &&
-                    (event.endCol > otherEvent.startCol)
-
-                  if (eventsOverlap) {
-                    // Find the first available row
-                    const usedRows = arr
-                      .slice(0, index)
-                      .filter(e =>
-                        (e.startCol < event.endCol) &&
-                        (e.endCol > event.startCol)
-                      )
-                      .map(e => e.row || 1)
-
-                    while (usedRows.includes(row)) {
-                      row++
-                    }
-                  }
-                }
-                return { ...event, row }
-              })
-
-              return eventsWithRows.map((event) => (
-                <div
-                  key={`multi-${event.id}`}
-                  className="absolute text-xs p-1 rounded-sm text-white cursor-pointer truncate z-10"
-                  style={{
-                    backgroundColor: event.color,
-                    gridColumn: `${event.startCol} / ${event.endCol}`,
-                    left: `${((event.startCol - 1) * 100) / 7}%`,
-                    width: `${(event.span * 100) / 7}%`,
-                    top: `${(event.row - 1) * 22 + 26}px`,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleEventClick(event)
-                  }}
-                >
-                  <span className="truncate">{event.title}</span>
-                </div>
-              ))
-            })()}
-          </div>
-        ))}
+                      <div className="space-y-1">
+                        {timedEvents.slice(0, 2).map(event => (
+                          <div
+                            key={event.id}
+                            className="text-xs p-1 rounded-sm text-white cursor-pointer truncate"
+                            style={{ backgroundColor: event.color }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEventClick(event)
+                            }}
+                          >
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span className="truncate">{event.title}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     )
   }
