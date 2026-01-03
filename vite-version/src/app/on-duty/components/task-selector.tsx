@@ -165,12 +165,12 @@ export function TaskSelector({ selectedTask, onTaskSelect, onTaskStatusChange }:
                 Seleziona un task...
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[90vw] w-full max-h-[90vh] overflow-hidden">
+            <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle className="text-2xl">Seleziona un task</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 flex flex-col h-full">
-                <div className="relative">
+              <div className="flex flex-col gap-4 flex-1 min-h-0">
+                <div className="relative flex-shrink-0">
                   <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                   <Input
                     placeholder="Cerca task per titolo, cliente, categoria..."
@@ -189,7 +189,7 @@ export function TaskSelector({ selectedTask, onTaskSelect, onTaskStatusChange }:
                     </Button>
                   )}
                 </div>
-                <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-2 min-h-0">
                   {loading ? (
                     <div className="py-12 text-center text-muted-foreground">
                       <div className="text-lg">Caricamento task...</div>
