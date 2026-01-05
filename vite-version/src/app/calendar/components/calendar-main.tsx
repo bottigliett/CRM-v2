@@ -511,7 +511,9 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
 
     // Calculate rows for overlapping all-day events
     const allDayEventsWithRows = allDayEventsWithSpan.map((event, index, arr) => {
-      // Find all events that overlap with this one (same day or multi-day overlap)
+      let gridRow = 1
+
+      // Find all events that overlap with this one
       const overlappingEvents = arr
         .slice(0, index)
         .filter(e =>
@@ -519,18 +521,17 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           (event.gridColumnStart < e.gridColumnEnd)
         )
 
-      if (overlappingEvents.length === 0) {
-        return { ...event, gridRow: 1 }
+      if (overlappingEvents.length > 0) {
+        // Get all used rows from overlapping events
+        const usedRows = overlappingEvents.map(e => e.gridRow)
+
+        // Find the first available row
+        while (usedRows.includes(gridRow)) {
+          gridRow++
+        }
       }
 
-      // Find the first available row
-      const usedRows = overlappingEvents.map(e => e.gridRow)
-      let row = 1
-      while (usedRows.includes(row)) {
-        row++
-      }
-
-      return { ...event, gridRow: row }
+      return { ...event, gridRow }
     })
 
     return (
