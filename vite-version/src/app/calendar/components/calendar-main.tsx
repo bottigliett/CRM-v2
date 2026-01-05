@@ -306,31 +306,43 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
             }
           })
 
-          // Calculate rows for overlapping all-day events
-          const allDayEventsWithRows = allDayEventsWithSpan.map((event, index, arr) => {
-            let row = 1
-            for (let i = 0; i < index; i++) {
-              const otherEvent = arr[i]
-              const eventsOverlap =
-                (event.startCol < otherEvent.endCol) &&
-                (event.endCol > otherEvent.startCol)
+          // Calculate rows for overlapping all-day events using the same algorithm as MIO-CRM-ATTUALE
+          const monthEventRows: typeof allDayEventsWithSpan[][] = []
 
-              if (eventsOverlap) {
-                const usedRows = arr
-                  .slice(0, index)
-                  .filter(e =>
-                    (e.startCol < event.endCol) &&
-                    (e.endCol > event.startCol)
-                  )
-                  .map(e => e.row || 1)
+          for (const event of allDayEventsWithSpan) {
+            let placed = false
 
-                while (usedRows.includes(row)) {
-                  row++
+            // Try to place event in existing rows
+            for (const row of monthEventRows) {
+              let canPlace = true
+
+              // Check if event overlaps with any event in this row
+              for (const placedEvent of row) {
+                // Check for overlap
+                if (event.startCol < placedEvent.endCol &&
+                    event.endCol > placedEvent.startCol) {
+                  canPlace = false
+                  break
                 }
               }
+
+              if (canPlace) {
+                row.push(event)
+                placed = true
+                break
+              }
             }
-            return { ...event, row }
-          })
+
+            // If not placed, create new row
+            if (!placed) {
+              monthEventRows.push([event])
+            }
+          }
+
+          // Assign row numbers to events
+          const allDayEventsWithRows = monthEventRows.flatMap((row, rowIndex) =>
+            row.map(event => ({ ...event, row: rowIndex + 1 }))
+          )
 
           const maxRow = allDayEventsWithRows.length > 0 ? Math.max(...allDayEventsWithRows.map(e => e.row)) : 0
           const allDayHeight = maxRow * 26 + 8
@@ -339,7 +351,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
             <div key={weekIndex}>
               {/* All-day events section */}
               {allDayEventsWithRows.length > 0 && (
-                <div className="relative border-b bg-muted/20 z-10" style={{ height: `${allDayHeight}px` }}>
+                <div className="relative border-b bg-muted/20" style={{ height: `${allDayHeight}px` }}>
                   <div className="grid grid-cols-7 h-full pointer-events-none">
                     {week.map((day) => (
                       <div key={`allday-${day.toISOString()}`} className="border-r last:border-r-0"></div>
@@ -350,7 +362,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                     {allDayEventsWithRows.map((event) => (
                       <div
                         key={`allday-${event.id}`}
-                        className="absolute pointer-events-auto text-xs p-1 rounded-sm text-white cursor-pointer truncate z-10"
+                        className="absolute pointer-events-auto text-xs p-1 rounded-sm text-white cursor-pointer truncate"
                         style={{
                           backgroundColor: event.color,
                           left: `${((event.startCol - 1) * 100) / 7}%`,
