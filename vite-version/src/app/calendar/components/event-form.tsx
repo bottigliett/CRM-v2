@@ -275,6 +275,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
               <Label className="flex items-center gap-2">
                 <Tag className="w-4 h-4" />
                 Categoria
+                <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.categoryId?.toString()}

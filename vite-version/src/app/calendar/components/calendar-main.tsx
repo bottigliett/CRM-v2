@@ -345,7 +345,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           )
 
           const maxRow = allDayEventsWithRows.length > 0 ? Math.max(...allDayEventsWithRows.map(e => e.row)) : 0
-          const allDayHeight = maxRow * 26 + 8
+          const allDayHeight = maxRow * 22 + 8
 
           return (
             <div key={weekIndex}>
@@ -367,7 +367,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                           backgroundColor: event.color,
                           left: `${((event.startCol - 1) * 100) / 7}%`,
                           width: `${(event.span * 100) / 7}%`,
-                          top: `${(event.row - 1) * 26 + 4}px`,
+                          top: `${(event.row - 1) * 22 + 4}px`,
                           height: '20px'
                         }}
                         onClick={(e) => {
@@ -589,7 +589,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           {/* All-day events section */}
           <div
             className="relative border-b bg-muted/20"
-            style={{ minHeight: `${Math.max(60, allDayEventsWithRows.length > 0 ? Math.max(...allDayEventsWithRows.map(e => e.gridRow)) * 32 + 8 : 60)}px` }}
+            style={{ minHeight: `${Math.max(60, allDayEventsWithRows.length > 0 ? Math.max(...allDayEventsWithRows.map(e => e.gridRow)) * 28 + 8 : 60)}px` }}
           >
             <div className="grid h-full" style={{ gridTemplateColumns: `80px repeat(${filteredDays.length}, 1fr)` }}>
               <div className="border-r p-2 text-xs text-muted-foreground">Tutto il giorno</div>
@@ -614,7 +614,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                       backgroundColor: event.color,
                       left: `calc(${timeColumnWidth}px + (100% - ${timeColumnWidth}px) * ${dayStartIndex} / ${daysCount})`,
                       width: `calc((100% - ${timeColumnWidth}px) * ${daySpan} / ${daysCount} - 8px)`,
-                      top: `${(event.gridRow - 1) * 32 + 4}px`,
+                      top: `${(event.gridRow - 1) * 28 + 4}px`,
                       height: '24px'
                     }}
                     onClick={() => handleEventClick(event)}
