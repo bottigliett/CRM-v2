@@ -339,8 +339,8 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
             <div key={weekIndex}>
               {/* All-day events section */}
               {allDayEventsWithRows.length > 0 && (
-                <div className="relative border-b bg-muted/20" style={{ height: `${allDayHeight}px` }}>
-                  <div className="grid grid-cols-7 h-full">
+                <div className="relative border-b bg-muted/20 z-10" style={{ height: `${allDayHeight}px` }}>
+                  <div className="grid grid-cols-7 h-full pointer-events-none">
                     {week.map((day) => (
                       <div key={`allday-${day.toISOString()}`} className="border-r last:border-r-0"></div>
                     ))}
@@ -350,7 +350,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                     {allDayEventsWithRows.map((event) => (
                       <div
                         key={`allday-${event.id}`}
-                        className="absolute pointer-events-auto text-xs p-1 rounded-sm text-white cursor-pointer truncate"
+                        className="absolute pointer-events-auto text-xs p-1 rounded-sm text-white cursor-pointer truncate z-10"
                         style={{
                           backgroundColor: event.color,
                           left: `${((event.startCol - 1) * 100) / 7}%`,
@@ -371,7 +371,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
               )}
 
               {/* Regular day cells */}
-              <div className="grid grid-cols-7 relative">
+              <div className="grid grid-cols-7 relative z-0">
                 {week.map((day, dayIndex) => {
                   const dayEvents = getEventsForDay(day)
                   // Only show timed events (non-all-day events)
@@ -384,7 +384,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                     <div
                       key={day.toISOString()}
                       className={cn(
-                        "min-h-[100px] border-r border-b last:border-r-0 p-2 pt-8 cursor-pointer transition-colors relative",
+                        "min-h-[100px] border-r border-b last:border-r-0 p-2 pt-8 cursor-pointer transition-colors relative z-0",
                         isCurrentMonth ? "bg-background hover:bg-accent/50" : "bg-muted/30 text-muted-foreground",
                         isSelected && "ring-2 ring-primary ring-inset",
                         isDayToday && "bg-accent/20"
@@ -585,11 +585,11 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                 return (
                   <div
                     key={event.id}
-                    className="absolute pointer-events-auto px-2 py-1 m-1 rounded text-xs font-medium text-white cursor-pointer hover:opacity-90 truncate"
+                    className="absolute pointer-events-auto px-2 py-1 mx-1 rounded text-xs font-medium text-white cursor-pointer hover:opacity-90 truncate"
                     style={{
                       backgroundColor: event.color,
-                      left: `calc(${timeColumnWidth}px + ${(dayStartIndex / daysCount) * 100}% - ${(dayStartIndex / daysCount) * timeColumnWidth}px)`,
-                      width: `calc(${(daySpan / daysCount) * 100}% - ${(daySpan / daysCount) * timeColumnWidth}px)`,
+                      left: `calc(${timeColumnWidth}px + (100% - ${timeColumnWidth}px) * ${dayStartIndex} / ${daysCount})`,
+                      width: `calc((100% - ${timeColumnWidth}px) * ${daySpan} / ${daysCount} - 8px)`,
                       top: `${(event.gridRow - 1) * 32 + 4}px`,
                       height: '24px'
                     }}
