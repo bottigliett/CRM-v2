@@ -1,12 +1,12 @@
-// Prisma Schema for SQLite (development) / MySQL (production)
+// Prisma Schema for MySQL (production)
 
 generator client {
   provider = "prisma-client-js"
-  engineType = "library"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ===================================
