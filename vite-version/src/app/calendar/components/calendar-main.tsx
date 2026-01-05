@@ -509,30 +509,43 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
       }
     })
 
-    // Calculate rows for overlapping all-day events
-    const allDayEventsWithRows = allDayEventsWithSpan.map((event, index, arr) => {
-      let gridRow = 1
+    // Calculate rows for overlapping all-day events using the same algorithm as MIO-CRM-ATTUALE
+    const eventRows: typeof allDayEventsWithSpan[][] = []
 
-      // Find all events that overlap with this one
-      const overlappingEvents = arr
-        .slice(0, index)
-        .filter(e =>
-          (e.gridColumnStart < event.gridColumnEnd) &&
-          (event.gridColumnStart < e.gridColumnEnd)
-        )
+    for (const event of allDayEventsWithSpan) {
+      let placed = false
 
-      if (overlappingEvents.length > 0) {
-        // Get all used rows from overlapping events
-        const usedRows = overlappingEvents.map(e => e.gridRow)
+      // Try to place event in existing rows
+      for (const row of eventRows) {
+        let canPlace = true
 
-        // Find the first available row
-        while (usedRows.includes(gridRow)) {
-          gridRow++
+        // Check if event overlaps with any event in this row
+        for (const placedEvent of row) {
+          // Check for overlap
+          if (event.gridColumnStart < placedEvent.gridColumnEnd &&
+              event.gridColumnEnd > placedEvent.gridColumnStart) {
+            canPlace = false
+            break
+          }
+        }
+
+        if (canPlace) {
+          row.push(event)
+          placed = true
+          break
         }
       }
 
-      return { ...event, gridRow }
-    })
+      // If not placed, create new row
+      if (!placed) {
+        eventRows.push([event])
+      }
+    }
+
+    // Assign row numbers to events
+    const allDayEventsWithRows = eventRows.flatMap((row, rowIndex) =>
+      row.map(event => ({ ...event, gridRow: rowIndex + 1 }))
+    )
 
     return (
       <div className="flex-1 overflow-auto">
