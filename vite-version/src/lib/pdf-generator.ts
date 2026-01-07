@@ -160,6 +160,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-size: 12px;
             text-transform: uppercase;
             line-height: 1.4;
+            letter-spacing: 0.01em;
         }
 
         .meta-info {
@@ -174,6 +175,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             text-transform: uppercase;
             font-weight: 500;
             margin: 0;
+            letter-spacing: 0.02em;
         }
 
         .invoice-number {
@@ -181,6 +183,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             text-transform: uppercase;
             font-weight: 500;
             margin: 0;
+            letter-spacing: 0.02em;
         }
 
         .invoice-date {
@@ -189,6 +192,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-weight: 500;
             margin-bottom: 0.5em;
             text-align-last: justify;
+            letter-spacing: 0.02em;
         }
 
         .client-section {
@@ -202,6 +206,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-weight: 400;
             text-transform: uppercase;
             line-height: 1.4;
+            letter-spacing: 0.01em;
         }
 
         h3{
@@ -222,6 +227,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-weight: 500;
             text-transform: uppercase;
             margin-bottom: 1em;
+            letter-spacing: 0.01em;
         }
 
         .divider {
@@ -242,6 +248,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-weight: 400;
             text-transform: uppercase;
             padding: 0.5em 0;
+            letter-spacing: 0.01em;
         }
 
         .service-description {
@@ -275,6 +282,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-size: 24px;
             font-weight: 500;
             text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
 
         .totals-values {
@@ -282,6 +290,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-size: 24px;
             font-weight: 500;
             text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
 
         .total-invoice{
@@ -296,7 +305,9 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-size: 11px;
             font-weight: 400;
             text-transform: uppercase;
-            line-height: 1.4;
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+            word-spacing: 0.1em;
         }
 
         .payment-section {
@@ -343,7 +354,9 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             font-size: 11px;
             font-weight: 400;
             text-transform: uppercase;
-            line-height: 1.4;
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+            word-spacing: 0.1em;
             margin: 0.3em 0;
         }
     </style>
@@ -370,12 +383,12 @@ function getInvoiceHTML(data: InvoicePDFData): string {
                 </div>
                 <div class="company-info">
                     <div class="company-column">
-                        <p>MISMO | STUDIO GRAFICO & CREATIVO<br>DI STEFANO COSTATO E DAVIDE MARANGONI</p>
-                        <p>VIA DELL'ARTIGIANATO 23<br>37135 VERONA - IT</p>
+                        <p>MISMO&nbsp;|&nbsp;STUDIO&nbsp;GRAFICO&nbsp;&&nbsp;CREATIVO<br>DI&nbsp;STEFANO&nbsp;COSTATO&nbsp;E&nbsp;DAVIDE&nbsp;MARANGONI</p>
+                        <p>VIA&nbsp;DELL'ARTIGIANATO&nbsp;23<br>37135&nbsp;VERONA&nbsp;-&nbsp;IT</p>
                     </div>
                     <div class="company-column">
-                        <p>HI@MISMO.STUDIO<br>(+39) 375 620 9885</p>
-                        <p>PI (S) IT04904900232<br>PI (D) IT05052740239</p>
+                        <p>HI@MISMO.STUDIO<br>(+39)&nbsp;375&nbsp;620&nbsp;9885</p>
+                        <p>PI&nbsp;(S)&nbsp;IT04904900232<br>PI&nbsp;(D)&nbsp;IT05052740239</p>
                     </div>
                 </div>
             </div>
@@ -400,7 +413,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
                     ` : ''}
                     ${data.clientPIva ? `
                     <div class="client-column">
-                        <h3>P.IVA ${data.clientPIva}</h3>
+                        <h3>P.IVA&nbsp;${data.clientPIva}</h3>
                     </div>
                     ` : ''}
                 </div>
@@ -408,7 +421,7 @@ function getInvoiceHTML(data: InvoicePDFData): string {
 
             <!--OGGETTO-->
             <div class="object-section">
-                <div class="invoice-object">Oggetto: ${data.subject}</div>
+                <div class="invoice-object">Oggetto:&nbsp;${data.subject}</div>
                 <div class="divider"></div>
             </div>
 
@@ -418,17 +431,17 @@ function getInvoiceHTML(data: InvoicePDFData): string {
                     data.services.map(service => `
                         <div class="services-header">
                             <div class="service-description">${service.description}</div>
-                            <div class="service-quantity">${service.quantity}</div>
-                            <div class="service-price">${service.unitPrice} EUR</div>
-                            <div class="service-vat">IVA 0%</div>
+                            <div class="service-quantity">${service.quantity}x</div>
+                            <div class="service-price">${service.unitPrice ? service.unitPrice + '&nbsp;EUR' : ''}</div>
+                            <div class="service-vat">IVA&nbsp;0%</div>
                         </div>
                     `).join('')
                 : `
                     <div class="services-header">
                         <div class="service-description">${data.description}</div>
-                        <div class="service-quantity">${data.quantity}</div>
-                        <div class="service-price">${data.unitPrice} EUR</div>
-                        <div class="service-vat">IVA ${data.vatPercentage}%</div>
+                        <div class="service-quantity">${data.quantity}x</div>
+                        <div class="service-price">${data.unitPrice ? data.unitPrice + '&nbsp;EUR' : ''}</div>
+                        <div class="service-vat">IVA&nbsp;${data.vatPercentage}%</div>
                     </div>
                 `}
                 <div class="divider"></div>
@@ -439,38 +452,38 @@ function getInvoiceHTML(data: InvoicePDFData): string {
                 <div class="totals-labels">
                     <div>Subtotale</div>
                     <div>IVA</div>
-                    <div class="total-invoice">Totale da pagare</div>
+                    <div class="total-invoice">Totale&nbsp;da&nbsp;pagare</div>
                 </div>
                 <div class="totals-values">
-                    <div>${data.subtotal} EUR</div>
-                    <div>${data.vatAmount} EUR</div>
-                    <div class="total-invoice">${data.total} EUR</div>
+                    <div>${data.subtotal}&nbsp;EUR</div>
+                    <div>${data.vatAmount}&nbsp;EUR</div>
+                    <div class="total-invoice">${data.total}&nbsp;EUR</div>
                 </div>
             </div>
 
             <!--INFORMAZIONI PAGAMENTO-->
             <div class="divider"></div>
             <div class="payment-section">
-                <h3 class="payment-title">Informazioni sul pagamento</h3>
+                <h3 class="payment-title">Informazioni&nbsp;sul&nbsp;pagamento</h3>
                 <div class="payment-info">
-                    <span class="payment-label">[Scadenze]</span><span class="payment-value date">${data.dueDate}:</span>&nbsp;<span class="payment-value subtotal">${data.total} EUR</span><br>
-                    <span class="payment-label">[Banca]</span><span class="payment-value">REVOLUT BANK UAB</span><br>
-                    <span class="payment-label">[IBAN]</span><span class="payment-value">LT95 3250 0482 6617 5203</span><br>
-                    <span class="payment-label">[Beneficiario]</span><span class="payment-value">STEFANO COSTATO E DAVIDE MARANGONI</span><br>
+                    <span class="payment-label">[Scadenze]</span><span class="payment-value date">${data.dueDate}:</span>&nbsp;<span class="payment-value subtotal">${data.total}&nbsp;EUR</span><br>
+                    <span class="payment-label">[Banca]</span><span class="payment-value">REVOLUT&nbsp;BANK&nbsp;UAB</span><br>
+                    <span class="payment-label">[IBAN]</span><span class="payment-value">LT95&nbsp;3250&nbsp;0482&nbsp;6617&nbsp;5203</span><br>
+                    <span class="payment-label">[Beneficiario]</span><span class="payment-value">STEFANO&nbsp;COSTATO&nbsp;E&nbsp;DAVIDE&nbsp;MARANGONI</span><br>
                     <span class="payment-label">[BIC/Swift]</span><span class="payment-value">REVOLT21</span><br>
-                    <span class="payment-label">[TAX ID]</span><span class="payment-value">JI3TXCE</span>
+                    <span class="payment-label">[TAX&nbsp;ID]</span><span class="payment-value">JI3TXCE</span>
                 </div>
             </div>
 
             <!--DISCLAIMER-->
             <div class="footer-disclaimer">
-                <h4>Note importanti</h4>
+                <h4>Note&nbsp;importanti</h4>
                 ${data.fiscalNotes ? `
-                <p>${data.fiscalNotes}</p>
+                <p>${data.fiscalNotes.replace(/\s+/g, '&nbsp;')}</p>
                 ` : `
-                <p>QUESTO DOCUMENTO NON COSTITUISCE FATTURA A FINI FISCALI, CHE SARÀ EMESSA AL MOMENTO DEL PAGAMENTO.</p>
+                <p>QUESTO&nbsp;DOCUMENTO&nbsp;NON&nbsp;COSTITUISCE&nbsp;FATTURA&nbsp;A&nbsp;FINI&nbsp;FISCALI,&nbsp;CHE&nbsp;SARÀ&nbsp;EMESSA&nbsp;AL&nbsp;MOMENTO&nbsp;DEL&nbsp;PAGAMENTO.</p>
                 ${data.isVatZero ? `
-                <p>IVA 0% - OPERAZIONE NON SOGGETTA A IVA AI SENSI DELL'ART. 1, COMMI 54-89, LEGGE N. 190/2014 E SUCC. MODIFICHE/INTEGRAZIONI.</p>
+                <p>IVA&nbsp;0%&nbsp;-&nbsp;OPERAZIONE&nbsp;NON&nbsp;SOGGETTA&nbsp;A&nbsp;IVA&nbsp;AI&nbsp;SENSI&nbsp;DELL'ART.&nbsp;1,&nbsp;COMMI&nbsp;54-89,&nbsp;LEGGE&nbsp;N.&nbsp;190/2014&nbsp;E&nbsp;SUCC.&nbsp;MODIFICHE/INTEGRAZIONI.</p>
                 ` : ''}
                 `}
             </div>
