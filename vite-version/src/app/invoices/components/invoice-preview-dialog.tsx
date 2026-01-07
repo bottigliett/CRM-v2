@@ -136,27 +136,27 @@ function getInvoicePreviewHTML(data: any): string {
           </svg>
         </div>
         <div style="display: flex; gap: 2em;">
-          <div style="font-size: 12px; text-transform: uppercase; line-height: 1.4;">
-            <p>MISMO | STUDIO GRAFICO & CREATIVO<br>DI STEFANO COSTATO E DAVIDE MARANGONI</p>
-            <p>VIA DELL'ARTIGIANATO 23<br>37135 VERONA - IT</p>
+          <div style="font-size: 12px; text-transform: uppercase; line-height: 1.4; letter-spacing: 0.01em;">
+            <p>MISMO&nbsp;|&nbsp;STUDIO&nbsp;GRAFICO&nbsp;&&nbsp;CREATIVO<br>DI&nbsp;STEFANO&nbsp;COSTATO&nbsp;E&nbsp;DAVIDE&nbsp;MARANGONI</p>
+            <p>VIA&nbsp;DELL'ARTIGIANATO&nbsp;23<br>37135&nbsp;VERONA&nbsp;-&nbsp;IT</p>
           </div>
-          <div style="font-size: 12px; text-transform: uppercase; line-height: 1.4;">
-            <p>HI@MISMO.STUDIO<br>(+39) 375 620 9885</p>
-            <p>PI (S) IT04904900232<br>PI (D) IT05052740239</p>
+          <div style="font-size: 12px; text-transform: uppercase; line-height: 1.4; letter-spacing: 0.01em;">
+            <p>HI@MISMO.STUDIO<br>(+39)&nbsp;375&nbsp;620&nbsp;9885</p>
+            <p>PI&nbsp;(S)&nbsp;IT04904900232<br>PI&nbsp;(D)&nbsp;IT05052740239</p>
           </div>
         </div>
       </div>
 
       <!--META INFO-->
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: -1em;">
-        <h1 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin: 0;">Fattura</h1>
-        <h2 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin: 0;">${data.invoiceNumber}</h2>
+        <h1 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin: 0; letter-spacing: 0.02em;">Fattura</h1>
+        <h2 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin: 0; letter-spacing: 0.02em;">${data.invoiceNumber}</h2>
       </div>
-      <h2 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin-bottom: 0.5em; text-align-last: justify;">${data.invoiceDate}</h2>
+      <h2 style="font-size: 48px; text-transform: uppercase; font-weight: 500; margin-bottom: 0.5em; text-align-last: justify; letter-spacing: 0.02em;">${data.invoiceDate}</h2>
 
       <!--DESTINATARIO-->
       <div style="margin-bottom: 2em;">
-        <div style="display: flex; gap: 2em; font-size: 14px; font-weight: 400; text-transform: uppercase; line-height: 1.4;">
+        <div style="display: flex; gap: 2em; font-size: 14px; font-weight: 400; text-transform: uppercase; line-height: 1.4; letter-spacing: 0.01em;">
           <div style="flex: 1;">
             <h3 style="font-size: 12px; font-weight: 500;">${data.clientName}</h3>
           </div>
@@ -167,7 +167,7 @@ function getInvoicePreviewHTML(data: any): string {
           ` : ''}
           ${data.clientPIva ? `
           <div style="flex: 1;">
-            <h3 style="font-size: 12px; font-weight: 500;">P.IVA ${data.clientPIva}</h3>
+            <h3 style="font-size: 12px; font-weight: 500;">P.IVA&nbsp;${data.clientPIva}</h3>
           </div>
           ` : ''}
         </div>
@@ -175,7 +175,7 @@ function getInvoicePreviewHTML(data: any): string {
 
       <!--OGGETTO-->
       <div style="margin-bottom: 0.75em;">
-        <div style="font-size: 16px; font-weight: 500; text-transform: uppercase; margin-bottom: 1em;">Oggetto: ${data.subject}</div>
+        <div style="font-size: 16px; font-weight: 500; text-transform: uppercase; margin-bottom: 1em; letter-spacing: 0.01em;">Oggetto:&nbsp;${data.subject}</div>
         <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; margin: 0.5em 0;"></div>
       </div>
 
@@ -183,19 +183,19 @@ function getInvoicePreviewHTML(data: any): string {
       <div style="width: 100%; margin-bottom: 1em;">
         ${data.services && data.services.length > 0 ?
           data.services.map((service: any) => `
-            <div style="display: flex; align-items: center; font-size: 14px; font-weight: 400; text-transform: uppercase; padding: 0.5em 0;">
+            <div style="display: flex; align-items: center; font-size: 14px; font-weight: 400; text-transform: uppercase; padding: 0.5em 0; letter-spacing: 0.01em;">
               <div style="flex: 6;">${service.description}</div>
-              <div style="flex: 1; text-align: center;">${service.quantity}</div>
-              <div style="flex: 2; text-align: right;">${service.unitPrice ? service.unitPrice + ' EUR' : ''}</div>
-              <div style="flex: 1.5; text-align: right;">IVA 0%</div>
+              <div style="flex: 1; text-align: center;">${service.quantity}x</div>
+              <div style="flex: 2; text-align: right;">${service.unitPrice ? service.unitPrice + '&nbsp;EUR' : ''}</div>
+              <div style="flex: 1.5; text-align: right;">IVA&nbsp;0%</div>
             </div>
           `).join('')
         : `
-          <div style="display: flex; align-items: center; font-size: 14px; font-weight: 400; text-transform: uppercase; padding: 0.5em 0;">
+          <div style="display: flex; align-items: center; font-size: 14px; font-weight: 400; text-transform: uppercase; padding: 0.5em 0; letter-spacing: 0.01em;">
             <div style="flex: 6;">${data.description}</div>
-            <div style="flex: 1; text-align: center;">${data.quantity}</div>
-            <div style="flex: 2; text-align: right;">${data.unitPrice ? data.unitPrice + ' EUR' : ''}</div>
-            <div style="flex: 1.5; text-align: right;">IVA ${data.vatPercentage}%</div>
+            <div style="flex: 1; text-align: center;">${data.quantity}x</div>
+            <div style="flex: 2; text-align: right;">${data.unitPrice ? data.unitPrice + '&nbsp;EUR' : ''}</div>
+            <div style="flex: 1.5; text-align: right;">IVA&nbsp;${data.vatPercentage}%</div>
           </div>
         `}
         <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; margin: 0.5em 0;"></div>
@@ -203,41 +203,41 @@ function getInvoicePreviewHTML(data: any): string {
 
       <!--TOTALI-->
       <div style="display: grid; grid-template-columns: 1fr auto; width: 100%; margin-top: 20px;">
-        <div style="text-align: left; font-size: 24px; font-weight: 500; text-transform: uppercase;">
+        <div style="text-align: left; font-size: 24px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em;">
           <div>Subtotale</div>
           <div>IVA</div>
-          <div style="padding-top: 1.5em;">Totale da pagare</div>
+          <div style="padding-top: 1.5em;">Totale&nbsp;da&nbsp;pagare</div>
         </div>
-        <div style="text-align: right; font-size: 24px; font-weight: 500; text-transform: uppercase;">
-          <div>${data.subtotal} EUR</div>
-          <div>${data.vatAmount} EUR</div>
-          <div style="padding-top: 1.5em;">${data.total} EUR</div>
+        <div style="text-align: right; font-size: 24px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em;">
+          <div>${data.subtotal}&nbsp;EUR</div>
+          <div>${data.vatAmount}&nbsp;EUR</div>
+          <div style="padding-top: 1.5em;">${data.total}&nbsp;EUR</div>
         </div>
       </div>
 
       <!--INFORMAZIONI PAGAMENTO-->
       <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; margin: 0.5em 0;"></div>
       <div style="margin-bottom: 3em;">
-        <h3 style="font-size: 36px; font-weight: 500; text-transform: uppercase; margin-bottom: 0.15em;">Informazioni sul pagamento</h3>
+        <h3 style="font-size: 36px; font-weight: 500; text-transform: uppercase; margin-bottom: 0.15em;">Informazioni&nbsp;sul&nbsp;pagamento</h3>
         <div>
-          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Scadenze]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">${data.dueDate}:</span>&nbsp;<span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">${data.total} EUR</span><br>
-          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Banca]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">REVOLUT BANK UAB</span><br>
-          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[IBAN]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">LT95 3250 0482 6617 5203</span><br>
-          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Beneficiario]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">STEFANO COSTATO E DAVIDE MARANGONI</span><br>
+          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Scadenze]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">${data.dueDate}:</span>&nbsp;<span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">${data.total}&nbsp;EUR</span><br>
+          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Banca]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">REVOLUT&nbsp;BANK&nbsp;UAB</span><br>
+          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[IBAN]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">LT95&nbsp;3250&nbsp;0482&nbsp;6617&nbsp;5203</span><br>
+          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[Beneficiario]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">STEFANO&nbsp;COSTATO&nbsp;E&nbsp;DAVIDE&nbsp;MARANGONI</span><br>
           <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[BIC/Swift]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">REVOLT21</span><br>
-          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[TAX ID]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">JI3TXCE</span>
+          <span style="font-size: 14px; font-weight: 500; text-transform: uppercase; width: 120px; display: inline-block;">[TAX&nbsp;ID]</span><span style="font-size: 14px; font-weight: 400; text-transform: uppercase;">JI3TXCE</span>
         </div>
       </div>
 
       <!--DISCLAIMER-->
       <div style="position: absolute; bottom: 2em; left: 2em; right: 2em;">
-        <h4 style="font-size: 12px; font-weight: 500; text-transform: uppercase;">Note importanti</h4>
+        <h4 style="font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em;">Note&nbsp;importanti</h4>
         ${data.fiscalNotes ? `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.4;">${data.fiscalNotes}</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">${data.fiscalNotes.replace(/\s+/g, '&nbsp;')}</p>
         ` : `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.4;">QUESTO DOCUMENTO NON COSTITUISCE FATTURA A FINI FISCALI, CHE SARÀ EMESSA AL MOMENTO DEL PAGAMENTO.</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">QUESTO&nbsp;DOCUMENTO&nbsp;NON&nbsp;COSTITUISCE&nbsp;FATTURA&nbsp;A&nbsp;FINI&nbsp;FISCALI,&nbsp;CHE&nbsp;SARÀ&nbsp;EMESSA&nbsp;AL&nbsp;MOMENTO&nbsp;DEL&nbsp;PAGAMENTO.</p>
         ${data.isVatZero ? `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.4;">IVA 0% - OPERAZIONE NON SOGGETTA A IVA AI SENSI DELL'ART. 1, COMMI 54-89, LEGGE N. 190/2014 E SUCC. MODIFICHE/INTEGRAZIONI.</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">IVA&nbsp;0%&nbsp;-&nbsp;OPERAZIONE&nbsp;NON&nbsp;SOGGETTA&nbsp;A&nbsp;IVA&nbsp;AI&nbsp;SENSI&nbsp;DELL'ART.&nbsp;1,&nbsp;COMMI&nbsp;54-89,&nbsp;LEGGE&nbsp;N.&nbsp;190/2014&nbsp;E&nbsp;SUCC.&nbsp;MODIFICHE/INTEGRAZIONI.</p>
         ` : ''}
         `}
       </div>
