@@ -447,10 +447,9 @@ export function InvoiceDialog({ open, onOpenChange, onSuccess, onInvoicePaid, in
                               type="number"
                               step="0.01"
                               min="0"
-                              placeholder="100.00"
+                              placeholder="0.00"
                               value={service.unitPrice || ''}
                               onChange={(e) => updateService(service.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                              required
                             />
                           </div>
                           <div className="col-span-1">
