@@ -233,11 +233,11 @@ function getInvoicePreviewHTML(data: any): string {
       <div style="position: absolute; bottom: 2em; left: 2em; right: 2em;">
         <h4 style="font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.02em;">Note&nbsp;importanti</h4>
         ${data.fiscalNotes ? `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">${data.fiscalNotes.replace(/\s+/g, '&nbsp;')}</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em; word-wrap: break-word; overflow-wrap: break-word;">${data.fiscalNotes}</p>
         ` : `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">QUESTO&nbsp;DOCUMENTO&nbsp;NON&nbsp;COSTITUISCE&nbsp;FATTURA&nbsp;A&nbsp;FINI&nbsp;FISCALI,&nbsp;CHE&nbsp;SARÀ&nbsp;EMESSA&nbsp;AL&nbsp;MOMENTO&nbsp;DEL&nbsp;PAGAMENTO.</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em; word-wrap: break-word; overflow-wrap: break-word;">QUESTO DOCUMENTO NON COSTITUISCE FATTURA A FINI FISCALI, CHE SARÀ EMESSA AL MOMENTO DEL PAGAMENTO.</p>
         ${data.isVatZero ? `
-        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em;">IVA&nbsp;0%&nbsp;-&nbsp;OPERAZIONE&nbsp;NON&nbsp;SOGGETTA&nbsp;A&nbsp;IVA&nbsp;AI&nbsp;SENSI&nbsp;DELL'ART.&nbsp;1,&nbsp;COMMI&nbsp;54-89,&nbsp;LEGGE&nbsp;N.&nbsp;190/2014&nbsp;E&nbsp;SUCC.&nbsp;MODIFICHE/INTEGRAZIONI.</p>
+        <p style="font-size: 11px; font-weight: 400; text-transform: uppercase; line-height: 1.6; letter-spacing: 0.01em; word-spacing: 0.1em; word-wrap: break-word; overflow-wrap: break-word;">IVA 0% - OPERAZIONE NON SOGGETTA A IVA AI SENSI DELL'ART. 1, COMMI 54-89, LEGGE N. 190/2014 E SUCC. MODIFICHE/INTEGRAZIONI.</p>
         ` : ''}
         `}
       </div>
