@@ -82,10 +82,10 @@ export default function FinancePage() {
   // Check if data should be protected
   const shouldProtectData = isProtectionEnabled && !isUnlocked
 
-  // Filtri - default anno corrente
+  // Filtri - default anno 2026
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
-  const [selectedYear, setSelectedYear] = useState(currentYear.toString())
+  const [selectedYear, setSelectedYear] = useState('2026')
   const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString())
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year' | 'all'>('year')
 
@@ -339,8 +339,8 @@ export default function FinancePage() {
     }
   }
 
-  // Genera lista anni
-  const years = Array.from({ length: currentYear - 2019 + 2 }, (_, i) => 2020 + i)
+  // Genera lista anni (solo 2025 e 2026)
+  const years = [2025, 2026]
   const months = [
     { value: '1', label: 'Gennaio' },
     { value: '2', label: 'Febbraio' },

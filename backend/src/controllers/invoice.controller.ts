@@ -8,6 +8,7 @@ export const getInvoices = async (req: Request, res: Response) => {
     const {
       status = 'all',
       period = 'all',
+      year, // Specific year filter (e.g., "2026", "2025")
       search = '',
       unpaidOnly = 'false',
       currentYear = 'true',
@@ -32,6 +33,8 @@ export const getInvoices = async (req: Request, res: Response) => {
 
     // Period filter
     const now = new Date();
+    const filterYear = year ? parseInt(year as string) : now.getFullYear();
+
     if (period === 'this-month' || period === 'current_month') {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -41,8 +44,10 @@ export const getInvoices = async (req: Request, res: Response) => {
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
       where.issueDate = { gte: startOfLastMonth, lte: endOfLastMonth };
     } else if (period === 'this-year' || period === 'current_year') {
-      const startOfYear = new Date(now.getFullYear(), 0, 1);
-      where.issueDate = { gte: startOfYear };
+      // Use specific year if provided, otherwise current year
+      const startOfYear = new Date(filterYear, 0, 1);
+      const endOfYear = new Date(filterYear, 11, 31, 23, 59, 59);
+      where.issueDate = { gte: startOfYear, lte: endOfYear };
     } else if (period === 'last-year') {
       const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
       const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31);
@@ -61,7 +66,12 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 
     // Current year filter (checkbox) - only if period is 'all'
-    if (currentYear === 'true' && period === 'all') {
+    // If year is explicitly provided, use that; otherwise use current year
+    if (period === 'all' && year) {
+      const startOfYear = new Date(filterYear, 0, 1);
+      const endOfYear = new Date(filterYear, 11, 31, 23, 59, 59);
+      where.issueDate = { gte: startOfYear, lte: endOfYear };
+    } else if (currentYear === 'true' && period === 'all') {
       const startOfYear = new Date(now.getFullYear(), 0, 1);
       where.issueDate = { gte: startOfYear };
     }
@@ -124,8 +134,15 @@ export const getInvoices = async (req: Request, res: Response) => {
     // Calculate statistics if requested
     let statistics = null;
     if (includeStats === 'true') {
+      // Use specific year if provided, otherwise current year for stats
+      const statsYear = year ? filterYear : now.getFullYear();
       const allInvoices = await prisma.invoice.findMany({
-        where: currentYear === 'true' ? { issueDate: { gte: new Date(now.getFullYear(), 0, 1) } } : {},
+        where: currentYear === 'true' || year ? {
+          issueDate: {
+            gte: new Date(statsYear, 0, 1),
+            lte: new Date(statsYear, 11, 31, 23, 59, 59)
+          }
+        } : {},
       });
 
       const totalIssued = allInvoices

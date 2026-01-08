@@ -77,7 +77,8 @@ export default function InvoicesPage() {
   // Filtri
   const currentYear = new Date().getFullYear()
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'draft' | 'issued' | 'paid' | 'cancelled' | 'overdue'>('all')
-  const [selectedPeriod, setSelectedPeriod] = useState<'all' | 'this-month' | 'this-quarter' | 'this-year' | 'last-month' | 'last-quarter' | 'last-year'>('all')
+  const [selectedPeriod, setSelectedPeriod] = useState<'all' | 'this-month' | 'this-quarter' | 'this-year' | 'last-month' | 'last-quarter' | 'last-year'>('this-year')
+  const [selectedYear, setSelectedYear] = useState('2026')
   const [searchTerm, setSearchTerm] = useState('')
 
   const [stats, setStats] = useState({
@@ -111,6 +112,7 @@ export default function InvoicesPage() {
             limit: pagination.limit,
             status: selectedStatus,
             period: selectedPeriod,
+            year: (selectedPeriod === 'this-year' || selectedPeriod === 'all') ? selectedYear : undefined,
             search: searchTerm || undefined,
             includeStats: true,
             currentYear: selectedPeriod === 'all' ? false : undefined,
@@ -147,7 +149,7 @@ export default function InvoicesPage() {
     }, searchTerm ? 500 : 0) // 500ms delay for search, instant for other filters
 
     return () => clearTimeout(timeoutId)
-  }, [pagination.page, pagination.limit, selectedStatus, selectedPeriod, searchTerm, refreshTrigger])
+  }, [pagination.page, pagination.limit, selectedStatus, selectedPeriod, selectedYear, searchTerm, refreshTrigger])
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))
@@ -281,12 +283,23 @@ export default function InvoicesPage() {
                   <SelectItem value="all">Tutto il periodo</SelectItem>
                   <SelectItem value="this-month">Questo mese</SelectItem>
                   <SelectItem value="this-quarter">Questo trimestre</SelectItem>
-                  <SelectItem value="this-year">Quest'anno</SelectItem>
+                  <SelectItem value="this-year">Anno</SelectItem>
                   <SelectItem value="last-month">Mese scorso</SelectItem>
                   <SelectItem value="last-quarter">Trimestre scorso</SelectItem>
-                  <SelectItem value="last-year">Anno scorso</SelectItem>
                 </SelectContent>
               </Select>
+
+              {(selectedPeriod === 'this-year' || selectedPeriod === 'all') && (
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2026">2026</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
 
               <Input
                 placeholder="Cerca cliente o numero..."

@@ -82,6 +82,7 @@ export interface GetInvoicesParams {
   limit?: number;
   status?: 'all' | 'draft' | 'issued' | 'paid' | 'cancelled' | 'overdue';
   period?: 'all' | 'this-month' | 'this-quarter' | 'this-year' | 'last-month' | 'last-quarter' | 'last-year';
+  year?: string; // Specific year filter (e.g., "2026", "2025")
   search?: string;
   unpaidOnly?: boolean;
   currentYear?: boolean;
