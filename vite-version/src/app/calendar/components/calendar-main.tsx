@@ -491,7 +491,33 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
       })
 
       allDayEventsMap.set(day.toISOString(), allDayEvents)
-      dayEventsMap.set(day.toISOString(), timedEvents)
+
+      // Calculate overlap positions for timed events (same algorithm as MIO-CRM-ATTUALE)
+      const timedEventsWithPositions = timedEvents.map(event => {
+        // Find all events that overlap with this one temporally
+        const overlappingEvents = timedEvents.filter(otherEvent => {
+          return otherEvent.startMinutes < event.endMinutes &&
+                 otherEvent.endMinutes > event.startMinutes
+        })
+
+        const totalOverlap = overlappingEvents.length
+
+        // Find position of this event in the overlapping group
+        const position = overlappingEvents.findIndex(e => e.id === event.id)
+
+        // Calculate width and left position
+        const widthPercent = totalOverlap > 1 ? 100 / totalOverlap : 100
+        const leftPercent = totalOverlap > 1 ? position * widthPercent : 0
+
+        return {
+          ...event,
+          widthPercent: widthPercent - 2, // Subtract 2% for spacing
+          leftPercent,
+          hasOverlap: totalOverlap > 1
+        }
+      })
+
+      dayEventsMap.set(day.toISOString(), timedEventsWithPositions)
     })
 
     // Calculate grid positions for all-day events
@@ -690,15 +716,19 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                       </>
                     )}
 
-                    {/* Events positioned absolutely */}
+                    {/* Events positioned absolutely with overlap handling */}
                     {dayEvents.map((event, index) => (
                       <div
                         key={event.id}
-                        className="absolute left-0 right-0 mx-1 px-2 py-1 rounded text-white cursor-pointer hover:opacity-90 overflow-hidden group/event"
+                        className="absolute px-2 py-1 rounded text-white cursor-pointer hover:opacity-90 overflow-hidden group/event"
                         style={{
                           backgroundColor: event.color,
                           top: `${event.top}px`,
                           height: `${Math.max(event.height, 20)}px`,
+                          width: `${event.widthPercent}%`,
+                          left: `${event.leftPercent}%`,
+                          marginLeft: event.hasOverlap ? '0' : '4px',
+                          marginRight: event.hasOverlap ? '0' : '4px',
                           zIndex: 10 + index
                         }}
                         onMouseEnter={(e) => {
@@ -749,7 +779,7 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
     const pixelsPerMinute = 1.5
 
     // Get all events with calculated positions (filter out all-day events)
-    const dayEvents = getEventsForDay(currentDate)
+    const timedEvents = getEventsForDay(currentDate)
       .filter(event => !event.allDay)
       .map(event => {
         const [hours, minutes] = event.time.split(':').map(Number)
@@ -764,6 +794,31 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           height: durationMinutes * pixelsPerMinute
         }
       })
+
+    // Calculate overlap positions for timed events (same algorithm as MIO-CRM-ATTUALE)
+    const dayEvents = timedEvents.map(event => {
+      // Find all events that overlap with this one temporally
+      const overlappingEvents = timedEvents.filter(otherEvent => {
+        return otherEvent.startMinutes < event.endMinutes &&
+               otherEvent.endMinutes > event.startMinutes
+      })
+
+      const totalOverlap = overlappingEvents.length
+
+      // Find position of this event in the overlapping group
+      const position = overlappingEvents.findIndex(e => e.id === event.id)
+
+      // Calculate width and left position
+      const widthPercent = totalOverlap > 1 ? 100 / totalOverlap : 100
+      const leftPercent = totalOverlap > 1 ? position * widthPercent : 0
+
+      return {
+        ...event,
+        widthPercent: widthPercent - 2, // Subtract 2% for spacing
+        leftPercent,
+        hasOverlap: totalOverlap > 1
+      }
+    })
 
     return (
       <div className="flex-1 overflow-auto">
@@ -835,15 +890,19 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                   </>
                 )}
 
-                {/* Events positioned absolutely */}
+                {/* Events positioned absolutely with overlap handling */}
                 {dayEvents.map((event, index) => (
                   <div
                     key={event.id}
-                    className="absolute left-0 right-0 mx-2 px-3 py-2 rounded-md cursor-pointer hover:shadow-lg hover:opacity-90 transition-all overflow-hidden"
+                    className="absolute px-3 py-2 rounded-md cursor-pointer hover:shadow-lg hover:opacity-90 transition-all overflow-hidden"
                     style={{
                       backgroundColor: event.color,
                       top: `${event.top}px`,
                       height: `${Math.max(event.height, 30)}px`,
+                      width: `${event.widthPercent}%`,
+                      left: `${event.leftPercent}%`,
+                      marginLeft: event.hasOverlap ? '0' : '8px',
+                      marginRight: event.hasOverlap ? '0' : '8px',
                       zIndex: 10 + index
                     }}
                     onMouseEnter={(e) => {
