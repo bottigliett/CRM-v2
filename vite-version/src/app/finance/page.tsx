@@ -804,16 +804,21 @@ export default function FinancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-32">Tipo / Importo</TableHead>
+                      <TableHead className="w-28">Data</TableHead>
+                      <TableHead className="w-32">Importo</TableHead>
                       <TableHead>Descrizione</TableHead>
                       <TableHead>Categoria</TableHead>
-                      <TableHead>Data</TableHead>
+                      <TableHead>Metodo</TableHead>
+                      <TableHead>Fornitore</TableHead>
                       <TableHead className="w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {transactions.map((transaction) => (
                       <TableRow key={transaction.id}>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {format(new Date(transaction.date), 'dd MMM yyyy', { locale: it })}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {transaction.type === "INCOME" ? (
@@ -827,7 +832,7 @@ export default function FinancePage() {
                           </div>
                         </TableCell>
                         <TableCell className="font-medium">
-                          {transaction.description || 'Nessuna descrizione'}
+                          {transaction.description || '-'}
                         </TableCell>
                         <TableCell>
                           {transaction.category ? (
@@ -838,8 +843,11 @@ export default function FinancePage() {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          {format(new Date(transaction.date), 'dd MMM yyyy', { locale: it })}
+                        <TableCell className="text-sm">
+                          {transaction.paymentMethod?.name || '-'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {transaction.vendor || '-'}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -929,16 +937,21 @@ export default function FinancePage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-32">Tipo / Importo</TableHead>
+                  <TableHead className="w-28">Data</TableHead>
+                  <TableHead className="w-32">Importo</TableHead>
                   <TableHead>Descrizione</TableHead>
                   <TableHead>Categoria</TableHead>
-                  <TableHead>Data</TableHead>
+                  <TableHead>Metodo</TableHead>
+                  <TableHead>Fornitore</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {allTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(new Date(transaction.date), 'dd MMM yyyy', { locale: it })}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {transaction.type === "INCOME" ? (
@@ -952,7 +965,7 @@ export default function FinancePage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {transaction.description || 'Nessuna descrizione'}
+                      {transaction.description || '-'}
                     </TableCell>
                     <TableCell>
                       {transaction.category ? (
@@ -963,8 +976,11 @@ export default function FinancePage() {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm whitespace-nowrap">
-                      {format(new Date(transaction.date), 'dd MMM yyyy', { locale: it })}
+                    <TableCell className="text-sm">
+                      {transaction.paymentMethod?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {transaction.vendor || '-'}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
