@@ -182,6 +182,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       paymentMethodId,
       contactId,
       description,
+      vendor,
       invoiceId,
     } = req.body;
 
@@ -223,6 +224,7 @@ export const createTransaction = async (req: Request, res: Response) => {
         paymentMethodId: paymentMethodId ? parseInt(paymentMethodId) : null,
         contactId: contactId ? parseInt(contactId) : null,
         description,
+        vendor: vendor || null,
         invoiceId: invoiceId ? parseInt(invoiceId) : null,
         createdBy: userId,
       },
@@ -277,6 +279,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       paymentMethodId,
       contactId,
       description,
+      vendor,
       invoiceId,
     } = req.body;
 
@@ -317,6 +320,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         ...(paymentMethodId !== undefined && { paymentMethodId: paymentMethodId ? parseInt(paymentMethodId) : null }),
         ...(contactId !== undefined && { contactId: contactId ? parseInt(contactId) : null }),
         ...(description !== undefined && { description }),
+        ...(vendor !== undefined && { vendor }),
         ...(invoiceId !== undefined && { invoiceId: invoiceId ? parseInt(invoiceId) : null }),
       },
       include: {

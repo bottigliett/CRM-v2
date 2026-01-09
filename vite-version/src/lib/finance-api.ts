@@ -29,6 +29,7 @@ export interface Transaction {
   amount: number;
   date: string;
   description: string | null;
+  vendor: string | null;
   categoryId: number | null;
   paymentMethodId: number | null;
   contactId: number | null;
@@ -146,6 +147,7 @@ export interface CreateTransactionData {
   amount: number;
   date: string;
   description?: string;
+  vendor?: string;
   categoryId?: number;
   paymentMethodId?: number;
   contactId?: number;
@@ -157,6 +159,7 @@ export interface UpdateTransactionData {
   amount?: number;
   date?: string;
   description?: string;
+  vendor?: string;
   categoryId?: number;
   paymentMethodId?: number;
   contactId?: number;

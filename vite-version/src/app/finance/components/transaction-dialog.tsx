@@ -47,6 +47,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, defaultType =
     amount: 0,
     date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
+    vendor: '',
     categoryId: undefined,
     paymentMethodId: undefined,
   })
@@ -59,6 +60,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, defaultType =
         amount: 0,
         date: format(new Date(), 'yyyy-MM-dd'),
         description: '',
+        vendor: '',
         categoryId: undefined,
         paymentMethodId: undefined,
       })
@@ -111,6 +113,7 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, defaultType =
           amount: 0,
           date: format(new Date(), 'yyyy-MM-dd'),
           description: '',
+          vendor: '',
           categoryId: undefined,
           paymentMethodId: undefined,
         })
@@ -235,6 +238,23 @@ export function TransactionDialog({ open, onOpenChange, onSuccess, defaultType =
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Vendor - Only for EXPENSE */}
+              {formData.type === 'EXPENSE' && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="vendor" className="text-right">
+                    Fornitore
+                  </Label>
+                  <Input
+                    id="vendor"
+                    type="text"
+                    className="col-span-3"
+                    placeholder="Nome del fornitore"
+                    value={formData.vendor || ''}
+                    onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+                  />
+                </div>
+              )}
 
               {/* Description */}
               <div className="grid grid-cols-4 items-center gap-4">

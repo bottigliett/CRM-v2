@@ -509,6 +509,7 @@ model Transaction {
   paymentMethodId Int?            @map("payment_method_id")
   contactId       Int?            @map("contact_id")
   description     String?
+  vendor          String?         // Fornitore (per le uscite)
   invoiceId       Int?            @map("invoice_id")
   createdBy       Int             @map("created_by")
   createdAt       DateTime        @default(now()) @map("created_at")
