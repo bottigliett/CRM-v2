@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { sendEventReminderEmail } from '../services/email.service';
+import { createNotification } from './notification.controller';
 
 /**
  * GET /api/events
@@ -427,6 +428,25 @@ export const createEvent = async (req: Request, res: Response) => {
       console.log(`Reminder created for event ${event.id} - scheduled at ${scheduledAt.toISOString()}`);
     }
 
+    // Create EVENT_ASSIGNED notifications for team members
+    if (teamMembers && teamMembers.length > 0) {
+      for (const teamMemberId of teamMembers) {
+        try {
+          await createNotification(
+            parseInt(String(teamMemberId)),
+            'EVENT_ASSIGNED',
+            `Nuovo evento: ${title}`,
+            `Sei stato aggiunto all'evento "${title}"`,
+            '/calendar',
+            event.id
+          );
+          console.log(`EVENT_ASSIGNED notification created for user ${teamMemberId}`);
+        } catch (error) {
+          console.error(`Failed to create notification for user ${teamMemberId}:`, error);
+        }
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Evento creato con successo',
@@ -513,7 +533,15 @@ export const updateEvent = async (req: Request, res: Response) => {
     }
 
     // Handle team members update (delete old, create new)
+    let oldTeamMemberIds: number[] = [];
     if (teamMembers !== undefined) {
+      // Get old team members before deleting
+      const oldTeamMembers = await prisma.eventTeamMember.findMany({
+        where: { eventId: parseInt(id) },
+        select: { userId: true },
+      });
+      oldTeamMemberIds = oldTeamMembers.map(tm => tm.userId);
+
       await prisma.eventTeamMember.deleteMany({
         where: { eventId: parseInt(id) },
       });
@@ -635,6 +663,29 @@ export const updateEvent = async (req: Request, res: Response) => {
       console.log(`Reminder updated for event ${id} - scheduled at ${scheduledAt.toISOString()}`);
     } else {
       console.log(`Reminders deleted for event ${id} - reminderEnabled: ${reminderEnabled}`);
+    }
+
+    // Create EVENT_ASSIGNED notifications for NEW team members
+    if (teamMembers !== undefined) {
+      const newTeamMemberIds = teamMembers.filter((userId: number) =>
+        !oldTeamMemberIds.includes(parseInt(String(userId)))
+      );
+
+      for (const teamMemberId of newTeamMemberIds) {
+        try {
+          await createNotification(
+            parseInt(String(teamMemberId)),
+            'EVENT_ASSIGNED',
+            `Aggiunto a evento: ${title || existingEvent.title}`,
+            `Sei stato aggiunto all'evento "${title || existingEvent.title}"`,
+            '/calendar',
+            parseInt(id)
+          );
+          console.log(`EVENT_ASSIGNED notification created for new user ${teamMemberId}`);
+        } catch (error) {
+          console.error(`Failed to create notification for user ${teamMemberId}:`, error);
+        }
+      }
     }
 
     res.json({
