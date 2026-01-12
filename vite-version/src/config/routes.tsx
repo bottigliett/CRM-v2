@@ -38,6 +38,12 @@ const SignIn3 = lazy(() => import('@/app/auth/sign-in-3/page'))
 const ClientActivation = lazy(() => import('@/app/client/activate/page'))
 const ClientLogin = lazy(() => import('@/app/client/login/page'))
 const ClientDashboard = lazy(() => import('@/app/client/dashboard/page'))
+const ClientQuotes = lazy(() => import('@/app/client/quotes/page'))
+const ClientInvoices = lazy(() => import('@/app/client/invoices/page'))
+const ClientTickets = lazy(() => import('@/app/client/tickets/page'))
+const ClientDocuments = lazy(() => import('@/app/client/documents/page'))
+const ClientTasks = lazy(() => import('@/app/client/tasks/page'))
+const ClientCalendar = lazy(() => import('@/app/client/calendar/page'))
 const SignUp = lazy(() => import('@/app/auth/sign-up/page'))
 const SignUp2 = lazy(() => import('@/app/auth/sign-up-2/page'))
 const SignUp3 = lazy(() => import('@/app/auth/sign-up-3/page'))
@@ -197,6 +203,30 @@ export const routes: RouteConfig[] = [
   {
     path: "/client/dashboard",
     element: <ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/quotes",
+    element: <ClientProtectedRoute><ClientQuotes /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/invoices",
+    element: <ClientProtectedRoute><ClientInvoices /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/tickets",
+    element: <ClientProtectedRoute><ClientTickets /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/documents",
+    element: <ClientProtectedRoute><ClientDocuments /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/tasks",
+    element: <ClientProtectedRoute><ClientTasks /></ClientProtectedRoute>
+  },
+  {
+    path: "/client/calendar",
+    element: <ClientProtectedRoute><ClientCalendar /></ClientProtectedRoute>
   },
 
   // Error Pages
