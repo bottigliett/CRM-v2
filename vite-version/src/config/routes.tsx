@@ -16,6 +16,7 @@ const Users = lazy(() => import('@/app/users/page'))
 const LeadBoard = lazy(() => import('@/app/lead-board/page'))
 const Contacts = lazy(() => import('@/app/contacts/page'))
 const Clients = lazy(() => import('@/app/clients/page'))
+const ClientDetail = lazy(() => import('@/app/clients/[id]/page'))
 const Quotes = lazy(() => import('@/app/quotes/page'))
 const QuoteCreate = lazy(() => import('@/app/quotes/create/page'))
 const Finance = lazy(() => import('@/app/finance/page'))
@@ -98,6 +99,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/clients",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="clients"><Clients /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/clients/:id",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="clients"><ClientDetail /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/quotes",
