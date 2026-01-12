@@ -13,6 +13,9 @@ import {
   FileText,
   FolderKanban,
   Timer,
+  UserCheck,
+  DollarSign,
+  MessageSquare,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -76,6 +79,24 @@ const allNavGroups: NavGroup[] = [
         url: "/contacts",
         icon: Contact,
         moduleName: "contacts",
+      },
+      {
+        title: "Clienti",
+        url: "/clients",
+        icon: UserCheck,
+        moduleName: "clients",
+      },
+      {
+        title: "Preventivi",
+        url: "/quotes",
+        icon: DollarSign,
+        moduleName: "quotes",
+      },
+      {
+        title: "Ticket",
+        url: "/tickets",
+        icon: MessageSquare,
+        moduleName: "tickets",
       },
     ],
   },

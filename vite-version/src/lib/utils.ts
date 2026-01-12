@@ -25,3 +25,15 @@ export function getAppUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`
   return basename + cleanPath
 }
+
+/**
+ * Format a number as currency in EUR
+ * @param amount - The amount to format
+ * @returns Formatted currency string (e.g., "1.234,56 €")
+ */
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount)
+}

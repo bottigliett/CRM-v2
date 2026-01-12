@@ -15,8 +15,11 @@ const Users = lazy(() => import('@/app/users/page'))
 const LeadBoard = lazy(() => import('@/app/lead-board/page'))
 const Contacts = lazy(() => import('@/app/contacts/page'))
 const Clients = lazy(() => import('@/app/clients/page'))
+const Quotes = lazy(() => import('@/app/quotes/page'))
+const QuoteCreate = lazy(() => import('@/app/quotes/create/page'))
 const Finance = lazy(() => import('@/app/finance/page'))
 const Invoices = lazy(() => import('@/app/invoices/page'))
+const Tickets = lazy(() => import('@/app/tickets/page'))
 
 // Projects pages
 const Projects = lazy(() => import('@/app/projects/page'))
@@ -29,6 +32,10 @@ const OnDuty = lazy(() => import('@/app/on-duty/page'))
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
 const SignIn2 = lazy(() => import('@/app/auth/sign-in-2/page'))
 const SignIn3 = lazy(() => import('@/app/auth/sign-in-3/page'))
+
+// Client pages
+const ClientActivation = lazy(() => import('@/app/client/activate/page'))
+const ClientLogin = lazy(() => import('@/app/client/login/page'))
 const SignUp = lazy(() => import('@/app/auth/sign-up/page'))
 const SignUp2 = lazy(() => import('@/app/auth/sign-up-2/page'))
 const SignUp3 = lazy(() => import('@/app/auth/sign-up-3/page'))
@@ -83,6 +90,14 @@ export const routes: RouteConfig[] = [
     path: "/clients",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="clients"><Clients /></ModuleProtectedRoute></ProtectedRoute>
   },
+  {
+    path: "/quotes",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="quotes"><Quotes /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/quotes/create",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="quotes"><QuoteCreate /></ModuleProtectedRoute></ProtectedRoute>
+  },
 
   // Gestione Routes
   {
@@ -112,6 +127,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/invoices",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="invoices"><Invoices /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/tickets",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="tickets"><Tickets /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/on-duty",
@@ -160,6 +179,16 @@ export const routes: RouteConfig[] = [
   {
     path: "/auth/forgot-password-3",
     element: <AuthRoute><ForgotPassword3 /></AuthRoute>
+  },
+
+  // Client Routes (Public)
+  {
+    path: "/client/activate",
+    element: <ClientActivation />
+  },
+  {
+    path: "/client/login",
+    element: <ClientLogin />
   },
 
   // Error Pages
