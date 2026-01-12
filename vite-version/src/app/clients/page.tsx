@@ -144,7 +144,7 @@ export default function ClientsPage() {
   const loadContacts = async () => {
     try {
       const response = await contactsAPI.getAll({ limit: 1000 })
-      setContacts(response.data)
+      setContacts(response.data.contacts)
     } catch (error) {
       console.error('Errore nel caricamento contatti:', error)
     }
