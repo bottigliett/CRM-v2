@@ -142,6 +142,11 @@ class ContactsAPI {
     return response.json();
   }
 
+  // Alias for consistency with other APIs
+  async getAll(params: GetContactsParams = {}): Promise<ContactsResponse> {
+    return this.getContacts(params);
+  }
+
   async getContactById(id: number): Promise<ContactResponse> {
     const response = await fetch(`${API_BASE_URL}/contacts/${id}`, {
       headers: this.getAuthHeader(),

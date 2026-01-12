@@ -128,55 +128,64 @@ export const ticketsAPI = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
 
     const response = await api.get(`/tickets?${queryParams.toString()}`);
-    return response.data;
+
+    // Transform backend response to match frontend interface
+    const tickets = response.data;
+    const total = tickets.length;
+    const limit = params?.limit || total;
+
+    return {
+      success: response.success,
+      data: tickets,
+      pagination: {
+        total,
+        page: params?.page || 1,
+        limit,
+        pages: Math.ceil(total / limit),
+      },
+    };
   },
 
   /**
    * Get single ticket by ID
    */
   async getById(id: number): Promise<TicketResponse> {
-    const response = await api.get(`/tickets/${id}`);
-    return response.data;
+    return await api.get(`/tickets/${id}`);
   },
 
   /**
    * Create new ticket
    */
   async create(data: CreateTicketData): Promise<TicketResponse> {
-    const response = await api.post('/tickets', data);
-    return response.data;
+    return await api.post('/tickets', data);
   },
 
   /**
    * Update ticket
    */
   async update(id: number, data: UpdateTicketData): Promise<TicketResponse> {
-    const response = await api.put(`/tickets/${id}`, data);
-    return response.data;
+    return await api.put(`/tickets/${id}`, data);
   },
 
   /**
    * Delete ticket
    */
   async delete(id: number): Promise<{ success: boolean; message: string }> {
-    const response = await api.delete(`/tickets/${id}`);
-    return response.data;
+    return await api.delete(`/tickets/${id}`);
   },
 
   /**
    * Add message to ticket
    */
   async addMessage(ticketId: number, data: CreateTicketMessageData): Promise<TicketMessageResponse> {
-    const response = await api.post(`/tickets/${ticketId}/messages`, data);
-    return response.data;
+    return await api.post(`/tickets/${ticketId}/messages`, data);
   },
 
   /**
    * Log time spent on ticket
    */
   async logTime(ticketId: number, minutes: number): Promise<TicketResponse> {
-    const response = await api.post(`/tickets/${ticketId}/log-time`, { minutes });
-    return response.data;
+    return await api.post(`/tickets/${ticketId}/log-time`, { minutes });
   },
 
   /**
