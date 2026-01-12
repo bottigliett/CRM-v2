@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -196,6 +196,9 @@ model Contact {
   transactions      Transaction[]        // Transactions linked to this contact
   invoices          Invoice[]            // Invoices for this contact
   projects          Project[]            @relation("ProjectContact") // Projects for this contact
+  clientAccess      ClientAccess?        // Client access credentials (if client)
+  quotes            Quote[]              // Quotes for this contact
+  tickets           Ticket[]             // Support tickets for this contact
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -580,7 +583,7 @@ model Invoice {
 
   // Invoice details
   subject         String         @map("subject") // Oggetto
-  description     String?        @db.Text // Descrizione dettagliata (JSON array of services)
+  description     String?         // Descrizione dettagliata (JSON array of services)
 
   // Link to quote (optional)
   quoteId         Int?           @map("quote_id") // FK to Quote if invoice was generated from quote
@@ -614,6 +617,9 @@ model Invoice {
   // PDF generation
   pdfPath         String?        @map("pdf_path") // Path al PDF generato
   pdfGeneratedAt  DateTime?      @map("pdf_generated_at") // Quando è stato generato il PDF
+
+  // Client visibility
+  visibleToClient Boolean        @default(true) @map("visible_to_client") // Se visibile al cliente nel portale
 
   // Metadata
   createdBy       Int            @map("created_by")
@@ -822,6 +828,341 @@ model NotificationPreference {
 
   @@index([userId])
   @@map("notification_preferences")
+}
+
+// ===================================
+// CLIENT ACCESS & QUOTES
+// ===================================
+
+model ClientAccess {
+  id                 Int       @id @default(autoincrement())
+  contactId          Int       @unique @map("contact_id") // FK to Contact
+  accessType         ClientAccessType @default(QUOTE_ONLY) @map("access_type") // QUOTE_ONLY or FULL_CLIENT
+
+  // Authentication
+  username           String    @unique
+  passwordHash       String?   @map("password_hash") // NULL fino ad attivazione
+  activationToken    String?   @unique @map("activation_token")
+  activationExpires  DateTime? @map("activation_expires")
+  emailVerified      Boolean   @default(false) @map("email_verified")
+  isActive           Boolean   @default(true) @map("is_active")
+
+  // Project details (for FULL_CLIENT access)
+  projectName        String?   @map("project_name")
+  projectDescription String?    @map("project_description")
+  projectBudget      Float?    @map("project_budget")
+  projectStartDate   DateTime? @map("project_start_date")
+  projectEndDate     DateTime? @map("project_end_date")
+  monthlyFee         Float?    @default(0) @map("monthly_fee")
+
+  // Support hours management
+  supportHoursIncluded Float   @default(0) @map("support_hours_included") // 0 = unlimited
+  supportHoursUsed     Float   @default(0) @map("support_hours_used")
+
+  // Document folders (Google Drive links)
+  driveFolderLink    String?   @map("drive_folder_link")
+  documentsFolder    String?   @map("documents_folder")
+  assetsFolder       String?   @map("assets_folder")
+  invoiceFolder      String?   @map("invoice_folder")
+
+  // Bespoke details (JSON)
+  bespokeDetails     String?    @map("bespoke_details") // JSON string
+
+  // Linked quote for QUOTE_ONLY access
+  linkedQuoteId      Int?      @map("linked_quote_id") // FK to Quote for quote-only access
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  lastLogin          DateTime? @map("last_login")
+
+  // Relations
+  contact            Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  linkedQuote        Quote?    @relation("LinkedQuote", fields: [linkedQuoteId], references: [id], onDelete: SetNull)
+  notifications      ClientNotification[]
+  tickets            Ticket[]
+  ticketMessages     TicketMessage[]
+  activityLogs       ClientActivityLog[]
+
+  @@index([contactId])
+  @@index([username])
+  @@index([activationToken])
+  @@index([accessType])
+  @@index([linkedQuoteId])
+  @@map("client_access")
+}
+
+enum ClientAccessType {
+  QUOTE_ONLY    // Access limitato: visualizza solo preventivo specifico
+  FULL_CLIENT   // Access completo: dashboard, ticket, fatture, documenti
+}
+
+model Quote {
+  id                   Int         @id @default(autoincrement())
+  quoteNumber          String      @unique @map("quote_number") // Q2026-0042
+  contactId            Int         @map("contact_id") // FK to Contact
+  title                String
+  description          String?     
+
+  // Financial details
+  subtotal             Float       // Somma quote_items
+  discountAmount       Float       @default(0) @map("discount_amount") // Sconto base
+  taxRate              Float       @default(22) @map("tax_rate") // IVA %
+  total                Float       // Totale finale con IVA
+
+  // Payment discounts (based on payment option)
+  oneTimeDiscount      Float       @default(0) @map("one_time_discount") // Sconto % per pagamento unico
+  payment2Discount     Float       @default(0) @map("payment_2_discount") // Sconto % per 2 rate
+  payment3Discount     Float       @default(0) @map("payment_3_discount") // Sconto % per 3 rate
+  payment4Discount     Float       @default(0) @map("payment_4_discount") // Sconto % per 4 rate
+
+  // Quote status
+  status               QuoteStatus @default(DRAFT)
+  validUntil           DateTime    @map("valid_until") // Scadenza validità
+  acceptedDate         DateTime?   @map("accepted_date")
+  rejectedDate         DateTime?   @map("rejected_date")
+
+  // Client selections (filled when client accepts quote)
+  selectedPackageId    Int?        @map("selected_package_id") // FK to QuotePackage
+  selectedPaymentOption String?    @map("selected_payment_option") // one_time, payment_2, payment_3, payment_4
+
+  createdBy            Int         @map("created_by")
+  createdAt            DateTime    @default(now()) @map("created_at")
+  updatedAt            DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  contact              Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  items                QuoteItem[]
+  packages             QuotePackage[]
+  linkedClientAccess   ClientAccess[] @relation("LinkedQuote") // Client access records linked to this quote
+
+  @@index([contactId])
+  @@index([quoteNumber])
+  @@index([status])
+  @@index([createdBy])
+  @@map("quotes")
+}
+
+enum QuoteStatus {
+  DRAFT      // Bozza
+  SENT       // Inviato al cliente
+  VIEWED     // Visualizzato dal cliente
+  ACCEPTED   // Accettato
+  REJECTED   // Rifiutato
+  EXPIRED    // Scaduto
+}
+
+model QuoteItem {
+  id          Int      @id @default(autoincrement())
+  quoteId     Int      @map("quote_id")
+  packageId   Int?     @map("package_id") // FK to QuotePackage (if part of package)
+  itemName    String   @map("item_name")
+  description String?  
+  quantity    Float    @default(1)
+  unitPrice   Float    @map("unit_price")
+  total       Float    // quantity * unitPrice
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  package     QuotePackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([packageId])
+  @@index([quoteId, order])
+  @@map("quote_items")
+}
+
+model QuotePackage {
+  id          Int         @id @default(autoincrement())
+  quoteId     Int         @map("quote_id")
+  name        String      // "Pacchetto Base", "Pacchetto Pro", "Pacchetto Premium"
+  description String?     
+  price       Float       // Prezzo totale del pacchetto
+  isRecommended Boolean   @default(false) @map("is_recommended")
+  order       Int         @default(0)
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  quote       Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  items       QuoteItem[] // Items that belong to this package
+
+  @@index([quoteId])
+  @@index([quoteId, order])
+  @@map("quote_packages")
+}
+
+// ===================================
+// CLIENT NOTIFICATIONS
+// ===================================
+
+model ClientNotification {
+  id              Int      @id @default(autoincrement())
+  clientAccessId  Int      @map("client_access_id")
+  type            ClientNotificationType
+  title           String
+  message         String   
+  link            String?  // URL to navigate when clicking
+  relatedId       Int?     @map("related_id") // ID of related resource (quote, ticket, invoice)
+  relatedType     String?  @map("related_type") // Type of related resource (quote, ticket, invoice)
+  isRead          Boolean  @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  clientAccess    ClientAccess @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccessId])
+  @@index([clientAccessId, isRead])
+  @@index([createdAt])
+  @@map("client_notifications")
+}
+
+enum ClientNotificationType {
+  QUOTE_NEW         // Nuovo preventivo ricevuto
+  QUOTE_ACCEPTED    // Preventivo accettato confermato
+  TICKET_REPLY      // Risposta admin a ticket
+  TICKET_CLOSED     // Ticket chiuso
+  INVOICE_NEW       // Nuova fattura disponibile
+  TASK_ASSIGNED     // Task assegnato al cliente
+  EVENT_SCHEDULED   // Nuovo appuntamento
+  SYSTEM            // Notifiche sistema
+}
+
+// ===================================
+// TICKET SYSTEM
+// ===================================
+
+model Ticket {
+  id                 Int          @id @default(autoincrement())
+  ticketNumber       String       @unique @map("ticket_number") // T2026-0042
+  clientAccessId     Int          @map("client_access_id")
+  contactId          Int          @map("contact_id")
+
+  // Ticket details
+  supportType        SupportType  @map("support_type")
+  subject            String
+  description        String       
+  priority           TicketPriority @default(NORMAL)
+  status             TicketStatus @default(OPEN)
+
+  // Assignment
+  assignedTo         Int?         @map("assigned_to") // FK to User (admin)
+
+  // Time tracking
+  timeSpentMinutes   Int          @default(0) @map("time_spent_minutes")
+
+  // Closure
+  closingNotes       String?       @map("closing_notes")
+  closedAt           DateTime?    @map("closed_at")
+
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  clientAccess       ClientAccess @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+  contact            Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages           TicketMessage[]
+  activityLogs       TicketActivityLog[]
+
+  @@index([clientAccessId])
+  @@index([contactId])
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@map("tickets")
+}
+
+enum SupportType {
+  TECHNICAL      // Supporto tecnico
+  DESIGN         // Modifica design
+  CONTENT        // Gestione contenuti
+  BILLING        // Fatturazione
+  OTHER          // Altro
+}
+
+enum TicketPriority {
+  LOW       // Bassa
+  NORMAL    // Normale
+  HIGH      // Alta
+  URGENT    // Urgente
+}
+
+enum TicketStatus {
+  OPEN              // Aperto
+  IN_PROGRESS       // In lavorazione
+  WAITING_CLIENT    // In attesa cliente
+  RESOLVED          // Risolto
+  CLOSED            // Chiuso
+}
+
+model TicketMessage {
+  id              Int      @id @default(autoincrement())
+  ticketId        Int      @map("ticket_id")
+  userId          Int?     @map("user_id") // NULL if from client
+  clientAccessId  Int?     @map("client_access_id") // NULL if from admin
+  message         String   
+  isInternal      Boolean  @default(false) @map("is_internal") // Note interne (solo admin)
+  clientReadAt    DateTime? @map("client_read_at")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  clientAccess    ClientAccess? @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([clientAccessId])
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
+}
+
+model TicketActivityLog {
+  id         Int      @id @default(autoincrement())
+  ticketId   Int      @map("ticket_id")
+  userId     Int?     @map("user_id") // Admin user
+  clientAccessId Int? @map("client_access_id") // Client user
+  action     String   // "ticket_created", "status_changed", "assigned", "message_added", "time_logged", "closed"
+  oldValue   String?  @map("old_value")
+  newValue   String?  @map("new_value")
+  details    String?  
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([clientAccessId])
+  @@index([createdAt])
+  @@map("ticket_activity_logs")
+}
+
+model ClientActivityLog {
+  id             Int      @id @default(autoincrement())
+  clientAccessId Int      @map("client_access_id")
+  action         String   // "login", "password_changed", "quote_viewed", "quote_accepted", etc.
+  details        String?  
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  clientAccess   ClientAccess @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+
+  @@index([clientAccessId])
+  @@index([createdAt])
+  @@map("client_activity_logs")
 }
 
 // ===================================
