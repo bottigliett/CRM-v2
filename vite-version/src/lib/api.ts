@@ -302,6 +302,76 @@ class ApiService {
 
     return data.data.modules;
   }
+
+  // Generic HTTP methods for API calls
+  async get(endpoint: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP Error ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async post(endpoint: string, data?: any): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP Error ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async put(endpoint: string, data?: any): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP Error ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async delete(endpoint: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeader(),
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `HTTP Error ${response.status}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiService();
