@@ -15,6 +15,7 @@ import { clientAuthAPI } from '@/lib/client-auth-api'
 import { toast } from 'sonner'
 import { User, Lock, Loader2, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Logo } from '@/components/logo'
 
 export default function ClientLoginPage() {
   const navigate = useNavigate()
@@ -57,13 +58,24 @@ export default function ClientLoginPage() {
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4'>
       <Card className='w-full max-w-md'>
-        <CardHeader className='space-y-1'>
-          <CardTitle className='text-2xl font-bold text-center'>
-            Area Cliente
-          </CardTitle>
-          <CardDescription className='text-center'>
-            Accedi al tuo portale riservato
-          </CardDescription>
+        <CardHeader className='space-y-4'>
+          <a
+            href='/'
+            className='flex items-center gap-2 justify-center text-lg font-bold'
+          >
+            <div className='flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground'>
+              <Logo size={24} />
+            </div>
+            Mismo Studio
+          </a>
+          <div className='space-y-1'>
+            <CardTitle className='text-2xl font-bold text-center'>
+              Area Cliente
+            </CardTitle>
+            <CardDescription className='text-center'>
+              Accedi al tuo portale riservato
+            </CardDescription>
+          </div>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className='space-y-4'>

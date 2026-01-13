@@ -22,6 +22,7 @@ import {
   Key,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Logo } from '@/components/logo'
 
 type Step = 1 | 2 | 3 | 4 | 'success'
 
@@ -673,15 +674,26 @@ export default function ClientActivationPage() {
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4'>
       <Card className='w-full max-w-md'>
-        <CardHeader className='space-y-1'>
-          <CardTitle className='text-2xl font-bold text-center'>
-            {isManualFlow ? 'Attivazione Account' : 'Attivazione Account'}
-          </CardTitle>
-          <CardDescription className='text-center'>
-            {isManualFlow
-              ? 'Attiva il tuo account con username e codice'
-              : 'Segui i passaggi per attivare il tuo accesso'}
-          </CardDescription>
+        <CardHeader className='space-y-4'>
+          <a
+            href='/'
+            className='flex items-center gap-2 justify-center text-lg font-bold'
+          >
+            <div className='flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground'>
+              <Logo size={24} />
+            </div>
+            Mismo Studio
+          </a>
+          <div className='space-y-1'>
+            <CardTitle className='text-2xl font-bold text-center'>
+              {isManualFlow ? 'Attivazione Account' : 'Attivazione Account'}
+            </CardTitle>
+            <CardDescription className='text-center'>
+              {isManualFlow
+                ? 'Attiva il tuo account con username e codice'
+                : 'Segui i passaggi per attivare il tuo accesso'}
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {loading && currentStep === 1 && !isManualFlow ? (

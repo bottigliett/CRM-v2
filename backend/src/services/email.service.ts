@@ -634,6 +634,135 @@ Questa è una email automatica, si prega di non rispondere a questo messaggio.
   };
 }
 
+function getClientActivationCodeTemplate(
+  clientName: string,
+  verificationCode: string
+): EmailTemplate {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #1a1a1a;
+          margin: 0;
+          padding: 0;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background: white;
+          border: 1px solid #e0e0e0;
+        }
+        .header {
+          background: #000000;
+          color: white;
+          padding: 30px;
+          border-bottom: 3px solid #333333;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+          letter-spacing: -0.5px;
+        }
+        .content {
+          padding: 40px 30px;
+          background: white;
+        }
+        .content p {
+          margin: 0 0 16px 0;
+          color: #333333;
+        }
+        .code-box {
+          background: #fafafa;
+          padding: 30px;
+          margin: 24px 0;
+          border: 1px solid #e0e0e0;
+          border-left: 4px solid #000000;
+          text-align: center;
+        }
+        .code {
+          font-size: 32px;
+          font-weight: 700;
+          letter-spacing: 8px;
+          color: #000000;
+          font-family: 'Courier New', monospace;
+          margin: 16px 0;
+        }
+        .footer {
+          text-align: center;
+          padding: 24px 30px;
+          background: #fafafa;
+          border-top: 1px solid #e0e0e0;
+          color: #666666;
+          font-size: 13px;
+        }
+        .footer p {
+          margin: 4px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Codice di Verifica</h1>
+        </div>
+        <div class="content">
+          <p>Gentile ${clientName},</p>
+          <p>Ecco il tuo codice di verifica per attivare il tuo account cliente:</p>
+
+          <div class="code-box">
+            <p style="margin: 0; color: #666; font-size: 14px;">Il tuo codice è:</p>
+            <div class="code">${verificationCode}</div>
+            <p style="margin: 0; color: #666; font-size: 13px;">Inserisci questo codice nella pagina di attivazione</p>
+          </div>
+
+          <p>Il codice è valido per 15 minuti.</p>
+          <p>Se non hai richiesto questo codice, ignora questa email.</p>
+
+          <p>Cordiali saluti,<br>Il team di Studio Mismo</p>
+        </div>
+        <div class="footer">
+          <p><strong>Studio Mismo CRM</strong></p>
+          <p>Questa è una email automatica, si prega di non rispondere a questo messaggio.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Codice di Verifica
+
+Gentile ${clientName},
+
+Ecco il tuo codice di verifica per attivare il tuo account cliente:
+
+${verificationCode}
+
+Il codice è valido per 15 minuti.
+Se non hai richiesto questo codice, ignora questa email.
+
+Cordiali saluti,
+Il team di Studio Mismo
+
+--
+Studio Mismo CRM
+Questa è una email automatica, si prega di non rispondere a questo messaggio.
+  `.trim();
+
+  return {
+    subject: 'Codice di Verifica - Studio Mismo',
+    html,
+    text,
+  };
+}
+
 function getTaskOverdueTemplate(
   taskTitle: string,
   taskDueDate: Date,
@@ -860,6 +989,15 @@ export async function sendTaskOverdueEmail(
   taskLink?: string
 ): Promise<boolean> {
   const template = getTaskOverdueTemplate(taskTitle, taskDueDate, taskLink);
+  return sendEmail(to, template.subject, template.html, template.text);
+}
+
+export async function sendClientActivationCodeEmail(
+  to: string,
+  clientName: string,
+  verificationCode: string
+): Promise<boolean> {
+  const template = getClientActivationCodeTemplate(clientName, verificationCode);
   return sendEmail(to, template.subject, template.html, template.text);
 }
 

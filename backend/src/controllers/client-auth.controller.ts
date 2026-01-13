@@ -154,13 +154,24 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
       },
     });
 
-    // TODO: Invia email con codice
-    console.log(`📧 Codice verifica per ${email}: ${code}`);
+    // Invia email con codice
+    const emailService = await import('../services/email.service');
+    const emailSent = await emailService.sendClientActivationCodeEmail(
+      email,
+      clientAccess.contact.name,
+      code
+    );
+
+    if (!emailSent) {
+      console.warn(`⚠️ Impossibile inviare email a ${email}, ma il codice è stato generato`);
+    } else {
+      console.log(`✅ Email di verifica inviata a ${email}`);
+    }
 
     res.json({
       success: true,
       message: 'Codice di verifica inviato via email',
-      // REMOVE IN PRODUCTION
+      // REMOVE IN PRODUCTION - Show code in development for testing
       debug: process.env.NODE_ENV === 'development' ? { code } : undefined,
     });
   } catch (error: any) {
@@ -361,6 +372,287 @@ export const completeActivation = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error completing activation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nel completamento dell\'attivazione',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/client/auth/verify-username
+ * Manual Flow Step 1: Verifica username esiste e non è attivato
+ */
+export const verifyUsername = async (req: Request, res: Response) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username obbligatorio',
+      });
+    }
+
+    // Trova client access con questo username
+    const clientAccess = await prisma.clientAccess.findUnique({
+      where: { username: username.toLowerCase() },
+      include: {
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!clientAccess) {
+      return res.status(404).json({
+        success: false,
+        message: 'Username non trovato',
+      });
+    }
+
+    // Verifica se già attivato
+    if (clientAccess.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account già attivato. Effettua il login.',
+      });
+    }
+
+    // Verifica se ha activation token
+    if (!clientAccess.activationToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account non configurato per l\'attivazione',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        clientAccess: {
+          id: clientAccess.id,
+          username: clientAccess.username,
+          accessType: clientAccess.accessType,
+          emailVerified: clientAccess.emailVerified,
+          isActive: clientAccess.isActive,
+          contactId: clientAccess.contactId,
+          contact: clientAccess.contact,
+        },
+        email: clientAccess.contact.email || '',
+      },
+    });
+  } catch (error: any) {
+    console.error('Error verifying username:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nella verifica dell\'username',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/client/auth/verify-activation-code
+ * Manual Flow Step 2: Verifica codice di attivazione
+ */
+export const verifyActivationCode = async (req: Request, res: Response) => {
+  try {
+    const { username, activationCode } = req.body;
+
+    if (!username || !activationCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username e codice di attivazione sono obbligatori',
+      });
+    }
+
+    // Trova client access
+    const clientAccess = await prisma.clientAccess.findUnique({
+      where: { username: username.toLowerCase() },
+    });
+
+    if (!clientAccess) {
+      return res.status(404).json({
+        success: false,
+        message: 'Username non trovato',
+      });
+    }
+
+    // Verifica codice di attivazione
+    if (clientAccess.activationToken !== activationCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Codice di attivazione non valido',
+      });
+    }
+
+    // Verifica scadenza
+    if (clientAccess.activationExpires && clientAccess.activationExpires < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Codice di attivazione scaduto',
+      });
+    }
+
+    // Verifica se già attivato
+    if (clientAccess.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account già attivato',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Codice di attivazione verificato',
+    });
+  } catch (error: any) {
+    console.error('Error verifying activation code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nella verifica del codice',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/client/auth/complete-manual-activation
+ * Manual Flow Step 3: Completa attivazione con password
+ */
+export const completeManualActivation = async (req: Request, res: Response) => {
+  try {
+    const { username, activationCode, password } = req.body;
+
+    // Validations
+    if (!username || !activationCode || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tutti i campi sono obbligatori',
+      });
+    }
+
+    // Password strength check
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La password deve essere di almeno 8 caratteri',
+      });
+    }
+
+    // Trova client access
+    const clientAccess = await prisma.clientAccess.findUnique({
+      where: { username: username.toLowerCase() },
+      include: {
+        contact: true,
+        linkedQuote: true,
+      },
+    });
+
+    if (!clientAccess) {
+      return res.status(404).json({
+        success: false,
+        message: 'Username non trovato',
+      });
+    }
+
+    // Verifica codice di attivazione
+    if (clientAccess.activationToken !== activationCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Codice di attivazione non valido',
+      });
+    }
+
+    // Verifica scadenza
+    if (clientAccess.activationExpires && clientAccess.activationExpires < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Codice di attivazione scaduto',
+      });
+    }
+
+    // Verifica se già attivato
+    if (clientAccess.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account già attivato',
+      });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Attiva account
+    const activated = await prisma.clientAccess.update({
+      where: { id: clientAccess.id },
+      data: {
+        passwordHash,
+        emailVerified: true,
+        activationToken: null, // Rimuovi token usato
+        activationExpires: null,
+      },
+      include: {
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        linkedQuote: {
+          select: {
+            id: true,
+            quoteNumber: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    // Log attivazione
+    await prisma.clientActivityLog.create({
+      data: {
+        clientAccessId: activated.id,
+        action: 'account_activated_manual',
+        details: 'Account attivato manualmente con codice',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    // Genera JWT per login automatico
+    const jwtPayload: ClientJwtPayload = {
+      clientAccessId: activated.id,
+      contactId: activated.contactId,
+      username: activated.username,
+      accessType: activated.accessType,
+    };
+
+    const authToken = generateClientToken(jwtPayload);
+
+    res.json({
+      success: true,
+      message: 'Account attivato con successo',
+      data: {
+        token: authToken,
+        clientAccess: {
+          id: activated.id,
+          username: activated.username,
+          accessType: activated.accessType,
+          contact: activated.contact,
+          linkedQuote: activated.linkedQuote,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Error completing manual activation:', error);
     res.status(500).json({
       success: false,
       message: 'Errore nel completamento dell\'attivazione',

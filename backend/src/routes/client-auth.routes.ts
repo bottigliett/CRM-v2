@@ -4,6 +4,9 @@ import {
   sendVerificationCode,
   verifyCode,
   completeActivation,
+  verifyUsername,
+  verifyActivationCode,
+  completeManualActivation,
   clientLogin,
   getClientMe,
   changePassword,
@@ -16,6 +19,7 @@ const router = express.Router();
  * PUBLIC ROUTES - Attivazione e Login
  */
 
+// TOKEN FLOW - Attivazione con email
 // Step 1: Verifica token attivazione
 router.post('/verify-token', verifyActivationToken);
 
@@ -27,6 +31,16 @@ router.post('/verify-code', verifyCode);
 
 // Step 3: Completa attivazione con password
 router.post('/complete-activation', completeActivation);
+
+// MANUAL FLOW - Attivazione manuale con username e codice
+// Step 1: Verifica username esiste
+router.post('/verify-username', verifyUsername);
+
+// Step 2: Verifica codice di attivazione
+router.post('/verify-activation-code', verifyActivationCode);
+
+// Step 3: Completa attivazione manuale
+router.post('/complete-manual-activation', completeManualActivation);
 
 // Login cliente
 router.post('/login', clientLogin);
