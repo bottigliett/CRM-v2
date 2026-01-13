@@ -4,6 +4,7 @@ import { hashPassword, comparePassword } from '../utils/password';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/email.service';
 
 export const register = async (req: Request, res: Response) => {
@@ -106,7 +107,14 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * UNIFIED LOGIN - Admin e Client
+ * Controlla prima User table (admin), poi ClientAccess table (client)
+ * Restituisce JWT con type: 'ADMIN' o type: 'CLIENT'
+ */
 export const login = async (req: Request, res: Response) => {
+  const requestStartTime = Date.now();
+
   try {
     const { username, password } = req.body;
 
@@ -118,9 +126,18 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Trova utente
+    // Normalizza username
+    const normalizedUsername = username.toLowerCase().trim();
+
+    // Log IP e User Agent per sicurezza
+    const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // ============================================
+    // STEP 1: Controlla tabella USER (ADMIN)
+    // ============================================
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { username: normalizedUsername },
       include: {
         permissions: {
           select: {
@@ -132,90 +149,282 @@ export const login = async (req: Request, res: Response) => {
       },
     });
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Credenziali non valide',
+    if (user) {
+      // Verifica password ADMIN
+      const isPasswordValid = await comparePassword(password, user.password);
+
+      if (!isPasswordValid) {
+        // Log accesso ADMIN fallito
+        await prisma.accessLog.create({
+          data: {
+            userId: user.id,
+            username: user.username,
+            action: 'LOGIN',
+            status: 'FAILED',
+            details: `Failed admin login attempt from ${ipAddress}`,
+          },
+        });
+
+        // Delay costante per prevenire timing attacks
+        const elapsedTime = Date.now() - requestStartTime;
+        const minResponseTime = 1000; // 1 secondo minimo
+        if (elapsedTime < minResponseTime) {
+          await new Promise(resolve => setTimeout(resolve, minResponseTime - elapsedTime));
+        }
+
+        return res.status(401).json({
+          success: false,
+          message: 'Credenziali non valide',
+        });
+      }
+
+      // Verifica se utente ADMIN è attivo
+      if (!user.isActive) {
+        await prisma.accessLog.create({
+          data: {
+            userId: user.id,
+            username: user.username,
+            action: 'LOGIN',
+            status: 'FAILED',
+            details: 'Account disabilitato',
+          },
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Account disabilitato',
+        });
+      }
+
+      // Genera token ADMIN con type
+      const token = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        type: 'ADMIN', // IMPORTANTE: distingui tipo utente
+      } as any);
+
+      // Crea sessione ADMIN
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await prisma.session.create({
+        data: {
+          userId: user.id,
+          token,
+          expiresAt,
+        },
       });
-    }
 
-    // Verifica password
-    const isPasswordValid = await comparePassword(password, user.password);
+      // Aggiorna ultimo login ADMIN
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+      });
 
-    if (!isPasswordValid) {
-      // Log accesso fallito
+      // Log accesso ADMIN riuscito
       await prisma.accessLog.create({
         data: {
           userId: user.id,
           username: user.username,
           action: 'LOGIN',
-          status: 'FAILED',
-          details: 'Password non valida',
+          status: 'SUCCESS',
+          details: `Admin login from ${ipAddress}`,
         },
       });
 
-      return res.status(401).json({
-        success: false,
-        message: 'Credenziali non valide',
+      console.log(`✅ Admin login successful: ${user.username} from ${ipAddress}`);
+
+      // Risposta ADMIN senza password
+      const { password: _, ...userWithoutPassword } = user;
+
+      return res.json({
+        success: true,
+        message: 'Login effettuato con successo',
+        type: 'ADMIN',
+        data: {
+          user: userWithoutPassword,
+          token,
+        },
       });
     }
 
-    // Verifica se utente è attivo
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Account disabilitato',
+    // ============================================
+    // STEP 2: Controlla tabella CLIENT_ACCESS (CLIENT)
+    // ============================================
+    const client = await prisma.clientAccess.findUnique({
+      where: { username: normalizedUsername },
+      include: {
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        linkedQuote: {
+          select: {
+            id: true,
+            quoteNumber: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    if (client) {
+      // Verifica se cliente ha passwordHash
+      if (!client.passwordHash) {
+        await prisma.clientActivityLog.create({
+          data: {
+            clientAccessId: client.id,
+            action: 'login_failed',
+            details: 'Account non attivato',
+            ipAddress,
+            userAgent,
+          },
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Account non attivato. Completa prima l\'attivazione.',
+        });
+      }
+
+      // Verifica password CLIENT
+      const isPasswordValid = await comparePassword(password, client.passwordHash);
+
+      if (!isPasswordValid) {
+        // Log accesso CLIENT fallito
+        await prisma.clientActivityLog.create({
+          data: {
+            clientAccessId: client.id,
+            action: 'login_failed',
+            details: `Failed client login attempt from ${ipAddress}`,
+            ipAddress,
+            userAgent,
+          },
+        });
+
+        // Delay costante per prevenire timing attacks
+        const elapsedTime = Date.now() - requestStartTime;
+        const minResponseTime = 1000; // 1 secondo minimo
+        if (elapsedTime < minResponseTime) {
+          await new Promise(resolve => setTimeout(resolve, minResponseTime - elapsedTime));
+        }
+
+        return res.status(401).json({
+          success: false,
+          message: 'Credenziali non valide',
+        });
+      }
+
+      // Verifica se cliente è attivo
+      if (!client.isActive) {
+        await prisma.clientActivityLog.create({
+          data: {
+            clientAccessId: client.id,
+            action: 'login_failed',
+            details: 'Account disabilitato',
+            ipAddress,
+            userAgent,
+          },
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Account disabilitato',
+        });
+      }
+
+      // Verifica se email è verificata
+      if (!client.emailVerified) {
+        await prisma.clientActivityLog.create({
+          data: {
+            clientAccessId: client.id,
+            action: 'login_failed',
+            details: 'Email non verificata',
+            ipAddress,
+            userAgent,
+          },
+        });
+
+        return res.status(403).json({
+          success: false,
+          message: 'Email non verificata. Completa l\'attivazione.',
+        });
+      }
+
+      // Genera token CLIENT con type
+      const clientToken = jwt.sign(
+        {
+          clientAccessId: client.id,
+          contactId: client.contactId,
+          username: client.username,
+          accessType: client.accessType,
+          type: 'CLIENT', // IMPORTANTE: distingui tipo utente
+        },
+        process.env.JWT_SECRET || 'fallback-secret-key',
+        { expiresIn: '7d' }
+      );
+
+      // Aggiorna ultimo login CLIENT
+      await prisma.clientAccess.update({
+        where: { id: client.id },
+        data: { lastLogin: new Date() },
+      });
+
+      // Log accesso CLIENT riuscito
+      await prisma.clientActivityLog.create({
+        data: {
+          clientAccessId: client.id,
+          action: 'login_success',
+          details: `Client login from ${ipAddress}`,
+          ipAddress,
+          userAgent,
+        },
+      });
+
+      console.log(`✅ Client login successful: ${client.username} from ${ipAddress}`);
+
+      return res.json({
+        success: true,
+        message: 'Login effettuato con successo',
+        type: 'CLIENT',
+        data: {
+          token: clientToken,
+          clientAccess: {
+            id: client.id,
+            username: client.username,
+            accessType: client.accessType,
+            contact: client.contact,
+            linkedQuote: client.linkedQuote,
+          },
+        },
       });
     }
 
-    // Genera token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
+    // ============================================
+    // STEP 3: Nessun utente trovato
+    // ============================================
+
+    // Log tentativo fallito generico
+    console.warn(`⚠️ Failed login attempt for username: ${normalizedUsername} from ${ipAddress}`);
+
+    // Delay costante per prevenire timing attacks e enumerazione username
+    const elapsedTime = Date.now() - requestStartTime;
+    const minResponseTime = 1000; // 1 secondo minimo
+    if (elapsedTime < minResponseTime) {
+      await new Promise(resolve => setTimeout(resolve, minResponseTime - elapsedTime));
+    }
+
+    return res.status(401).json({
+      success: false,
+      message: 'Credenziali non valide',
     });
 
-    // Crea sessione
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-      },
-    });
-
-    // Aggiorna ultimo login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() },
-    });
-
-    // Log accesso riuscito
-    await prisma.accessLog.create({
-      data: {
-        userId: user.id,
-        username: user.username,
-        action: 'LOGIN',
-        status: 'SUCCESS',
-      },
-    });
-
-    // Risposta senza password
-    const { password: _, ...userWithoutPassword } = user;
-
-    res.json({
-      success: true,
-      message: 'Login effettuato con successo',
-      data: {
-        user: userWithoutPassword,
-        token,
-      },
-    });
   } catch (error) {
-    console.error('Errore durante il login:', error);
+    console.error('❌ Errore durante il login:', error);
     res.status(500).json({
       success: false,
       message: 'Errore durante il login',
