@@ -64,7 +64,7 @@ class ApiService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<AuthResponse & { type?: 'ADMIN' | 'CLIENT' }> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
@@ -73,17 +73,41 @@ class ApiService {
       body: JSON.stringify(credentials),
     });
 
-    const data: ApiResponse<AuthResponse> = await response.json();
+    const data: any = await response.json();
 
     if (!data.success || !data.data) {
       throw new Error(data.message || 'Login failed');
     }
 
-    // Salva token
-    localStorage.setItem('auth_token', data.data.token);
-    localStorage.setItem('user', JSON.stringify(data.data.user));
+    const userType = data.type; // 'ADMIN' or 'CLIENT'
 
-    return data.data;
+    // ADMIN login
+    if (userType === 'ADMIN') {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+      localStorage.setItem('user_type', 'ADMIN');
+
+      return {
+        ...data.data,
+        type: 'ADMIN'
+      };
+    }
+
+    // CLIENT login - redirect to client portal
+    if (userType === 'CLIENT') {
+      // Store CLIENT token separately to prevent access to admin area
+      localStorage.setItem('client_auth_token', data.data.token);
+      localStorage.setItem('client_user', JSON.stringify(data.data.clientAccess));
+      localStorage.setItem('user_type', 'CLIENT');
+
+      // Redirect to client area immediately
+      window.location.href = '/client/dashboard';
+
+      // Throw to prevent admin dashboard access
+      throw new Error('REDIRECT_TO_CLIENT');
+    }
+
+    throw new Error('Tipo di utente non riconosciuto');
   }
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
