@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Dialog,
   DialogContent,
@@ -10,18 +11,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { clientAccessAPI, type CreateClientAccessData } from "@/lib/client-access-api"
-import { contactsAPI, type Contact } from "@/lib/contacts-api"
-import { quotesAPI, type Quote } from "@/lib/quotes-api"
+import { clientAccessAPI } from "@/lib/client-access-api"
+import { type Contact } from "@/lib/contacts-api"
+import { ContactSelectDialog } from "@/components/contact-select-dialog"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, User, X } from "lucide-react"
 
 interface CreateClientDialogProps {
   open: boolean
@@ -30,58 +24,67 @@ interface CreateClientDialogProps {
 }
 
 export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClientDialogProps) {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [quotes, setQuotes] = useState<Quote[]>([])
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+  const [contactSelectOpen, setContactSelectOpen] = useState(false)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [username, setUsername] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState<CreateClientAccessData>({
-    contactId: 0,
-    accessType: 'QUOTE_ONLY',
-    linkedQuoteId: null,
-  })
 
+  // Generate username when contact is selected
   useEffect(() => {
-    if (open) {
-      loadData()
+    if (selectedContact) {
+      // Generate username from contact name (lowercase, no spaces, no special chars)
+      const generatedUsername = selectedContact.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove accents
+        .replace(/[^a-z0-9]/g, "") // Remove special chars and spaces
+        .substring(0, 20) // Limit length
+
+      setUsername(generatedUsername)
+    }
+  }, [selectedContact])
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedContact(null)
+      setUsername("")
     }
   }, [open])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      const [contactsRes, quotesRes] = await Promise.all([
-        contactsAPI.getAll({ limit: 1000 }),
-        quotesAPI.getAll({ limit: 1000 }),
-      ])
-      setContacts(contactsRes.data.contacts || [])
-      setQuotes(quotesRes.data || [])
-    } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Errore nel caricamento dei dati')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.contactId) {
+    if (!selectedContact) {
       toast.error('Seleziona un contatto')
+      return
+    }
+
+    if (!username.trim()) {
+      toast.error('Inserisci uno username')
+      return
+    }
+
+    // Validate username (only lowercase letters and numbers)
+    if (!/^[a-z0-9]+$/.test(username)) {
+      toast.error('Lo username può contenere solo lettere minuscole e numeri')
       return
     }
 
     try {
       setSubmitting(true)
-      await clientAccessAPI.create(formData)
+      const response = await clientAccessAPI.create({
+        contactId: selectedContact.id,
+        accessType: 'QUOTE_ONLY', // Start with QUOTE_ONLY by default
+      })
+
       toast.success('Cliente creato con successo')
       onSuccess()
-      // Reset form
-      setFormData({
-        contactId: 0,
-        accessType: 'QUOTE_ONLY',
-        linkedQuoteId: null,
-      })
+      onOpenChange(false)
+
+      // Navigate to client detail page
+      navigate(`/clients/${response.data.id}`)
     } catch (error: any) {
       console.error('Error creating client:', error)
       toast.error(error.message || 'Errore nella creazione del cliente')
@@ -90,130 +93,122 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
     }
   }
 
-  const selectedContact = contacts.find(c => c.id === formData.contactId)
-  const availableQuotes = quotes.filter(q =>
-    q.contactId === formData.contactId &&
-    (q.status === 'SENT' || q.status === 'VIEWED' || q.status === 'DRAFT')
-  )
+  const handleRemoveContact = () => {
+    setSelectedContact(null)
+    setUsername("")
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Crea Nuovo Accesso Cliente</DialogTitle>
-            <DialogDescription>
-              Crea un nuovo accesso per permettere al cliente di visualizzare preventivi o gestire il progetto
-            </DialogDescription>
-          </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Crea Nuovo Cliente</DialogTitle>
+              <DialogDescription>
+                Seleziona un contatto e imposta lo username per creare l'accesso cliente
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="contact">Contatto *</Label>
-                  <Select
-                    value={formData.contactId?.toString() || ""}
-                    onValueChange={(value) => setFormData({ ...formData, contactId: parseInt(value), linkedQuoteId: null })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un contatto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contacts.map((contact) => (
-                        <SelectItem key={contact.id} value={contact.id.toString()}>
-                          {contact.name} {contact.email && `(${contact.email})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedContact && !selectedContact.email && (
-                    <p className="text-sm text-yellow-600">
-                      Attenzione: questo contatto non ha un'email configurata
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="accessType">Tipo di Accesso *</Label>
-                  <Select
-                    value={formData.accessType}
-                    onValueChange={(value: 'QUOTE_ONLY' | 'FULL_CLIENT') =>
-                      setFormData({ ...formData, accessType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="QUOTE_ONLY">Solo Preventivo</SelectItem>
-                      <SelectItem value="FULL_CLIENT">Cliente Completo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {formData.accessType === 'QUOTE_ONLY'
-                      ? 'Il cliente potrà visualizzare e accettare solo il preventivo assegnato'
-                      : 'Il cliente avrà accesso completo a documenti, task, agenda e ticket'}
-                  </p>
-                </div>
-
-                {formData.accessType === 'QUOTE_ONLY' && formData.contactId > 0 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="quote">Preventivo da Collegare</Label>
-                    <Select
-                      value={formData.linkedQuoteId?.toString() || "none"}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          linkedQuoteId: value === "none" ? null : parseInt(value)
-                        })
-                      }
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Contatto *</Label>
+                {selectedContact ? (
+                  <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{selectedContact.name}</p>
+                        <p className="text-xs text-muted-foreground">{selectedContact.email || 'Nessuna email'}</p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveContact}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona un preventivo (opzionale)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nessun preventivo</SelectItem>
-                        {availableQuotes.map((quote) => (
-                          <SelectItem key={quote.id} value={quote.id.toString()}>
-                            {quote.quoteNumber} - {quote.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {availableQuotes.length === 0 && formData.contactId > 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        Nessun preventivo disponibile per questo contatto.
-                        Puoi collegarne uno successivamente.
-                      </p>
-                    )}
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setContactSelectOpen(true)}
+                    className="w-full justify-start"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Seleziona Contatto
+                  </Button>
                 )}
-              </>
-            )}
-          </div>
+                {selectedContact && !selectedContact.email && (
+                  <p className="text-sm text-yellow-600 flex items-center gap-2">
+                    <span className="font-medium">⚠️</span>
+                    Questo contatto non ha un'email configurata
+                  </p>
+                )}
+              </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annulla
-            </Button>
-            <Button type="submit" disabled={submitting || loading || !formData.contactId}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creazione...
-                </>
-              ) : (
-                'Crea Cliente'
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username *</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  placeholder="username"
+                  disabled={!selectedContact}
+                  maxLength={20}
+                  pattern="[a-z0-9]+"
+                  title="Solo lettere minuscole e numeri"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Solo lettere minuscole e numeri, senza spazi o caratteri speciali
+                </p>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-blue-500/5 border-blue-500/20">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Prossimo passo:</strong> Dopo la creazione, potrai gestire preventivi e
+                  attivare la dashboard completa dalla scheda del cliente.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={submitting}
+              >
+                Annulla
+              </Button>
+              <Button type="submit" disabled={submitting || !selectedContact || !username.trim()}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creazione...
+                  </>
+                ) : (
+                  'Crea Cliente'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ContactSelectDialog
+        open={contactSelectOpen}
+        onOpenChange={setContactSelectOpen}
+        onSelect={setSelectedContact}
+        filterType="CLIENT"
+        title="Seleziona Cliente"
+        description="Cerca e seleziona un cliente dalla lista contatti"
+      />
+    </>
   )
 }

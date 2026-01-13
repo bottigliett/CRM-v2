@@ -12,15 +12,17 @@ import {
   Settings,
   Mail,
   Key,
-  Copy,
+  Eye,
+  EyeOff,
   CheckCircle2,
   XCircle,
   Loader2,
-  ArrowUpCircle,
+  LayoutDashboard,
   FolderOpen,
   Calendar,
   Euro,
   Clock,
+  Plus,
 } from "lucide-react"
 import { clientAccessAPI, type ClientAccess } from "@/lib/client-access-api"
 import { quotesAPI, type Quote } from "@/lib/quotes-api"
@@ -56,6 +58,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showActivationCode, setShowActivationCode] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
 
   useEffect(() => {
@@ -96,12 +99,8 @@ export default function ClientDetailPage() {
     }
   }
 
-  const handleCopyActivationLink = () => {
-    if (!client?.activationToken) return
-
-    const link = clientAccessAPI.getActivationLink(client.activationToken)
-    navigator.clipboard.writeText(link)
-    toast.success('Link copiato negli appunti')
+  const handleToggleActivationCode = () => {
+    setShowActivationCode(!showActivationCode)
   }
 
   const handleToggleActive = async () => {
@@ -115,6 +114,28 @@ export default function ClientDetailPage() {
     } catch (error: any) {
       console.error('Error updating client:', error)
       toast.error(error.message || "Errore nell'aggiornamento")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleActivateDashboard = async () => {
+    if (!client) return
+
+    try {
+      setSaving(true)
+      await clientAccessAPI.update(client.id, {
+        accessType: 'FULL_CLIENT',
+        monthlyFee: 0,
+        supportHoursIncluded: 0,
+        supportHoursUsed: 0,
+      })
+      toast.success('Dashboard attivata con successo')
+      loadClientData()
+      setActiveTab('dashboard')
+    } catch (error: any) {
+      console.error('Error activating dashboard:', error)
+      toast.error(error.message || "Errore nell'attivazione della dashboard")
     } finally {
       setSaving(false)
     }
@@ -189,7 +210,7 @@ export default function ClientDetailPage() {
     >
       <div className="px-4 lg:px-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">
               <User className="h-4 w-4 mr-2" />
               Panoramica
@@ -197,6 +218,10 @@ export default function ClientDetailPage() {
             <TabsTrigger value="quote">
               <FileText className="h-4 w-4 mr-2" />
               Preventivo
+            </TabsTrigger>
+            <TabsTrigger value="dashboard">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
@@ -264,18 +289,36 @@ export default function ClientDetailPage() {
 
                 {/* Activation Actions */}
                 {!client.emailVerified && client.activationToken && (
-                  <div className="pt-4 space-y-2">
+                  <div className="pt-4 space-y-3 border-t">
                     <Label>Azioni Attivazione</Label>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={handleResendActivation}>
                         <Mail className="h-4 w-4 mr-2" />
                         Reinvia Email
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleCopyActivationLink}>
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copia Link
+                      <Button variant="outline" size="sm" onClick={handleToggleActivationCode}>
+                        {showActivationCode ? (
+                          <>
+                            <EyeOff className="h-4 w-4 mr-2" />
+                            Nascondi Codice
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Scopri Codice
+                          </>
+                        )}
                       </Button>
                     </div>
+                    {showActivationCode && (
+                      <div className="p-3 rounded-lg border bg-muted/50">
+                        <Label className="text-xs text-muted-foreground">Codice di Attivazione</Label>
+                        <p className="font-mono text-lg font-semibold mt-1">{client.activationToken}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Il cliente può inserire questo codice su studiomismo.com
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -289,58 +332,188 @@ export default function ClientDetailPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Project Info (FULL_CLIENT only) */}
-            {client.accessType === 'FULL_CLIENT' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informazioni Progetto</CardTitle>
-                  <CardDescription>Dettagli del progetto cliente</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label className="text-muted-foreground">Nome Progetto</Label>
-                      <p className="font-medium">{client.projectName || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Budget</Label>
-                      <p className="font-medium">
-                        {client.projectBudget ? `€${client.projectBudget.toLocaleString()}` : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Canone Mensile</Label>
-                      <p className="font-medium">€{client.monthlyFee}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Ore Supporto</Label>
-                      <p className="font-medium">
-                        {client.supportHoursUsed}h / {client.supportHoursIncluded}h
-                      </p>
-                    </div>
+          {/* Quote Tab */}
+          <TabsContent value="quote" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Preventivi</CardTitle>
+                    <CardDescription>
+                      Tutti i preventivi associati a questo cliente
+                    </CardDescription>
                   </div>
+                  <Button onClick={() => navigate(`/quotes/create?contactId=${client.contactId}`)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuovo Preventivo
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {availableQuotes.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Nessun Preventivo</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Inizia creando il primo preventivo per questo cliente
+                    </p>
+                    <Button onClick={() => navigate(`/quotes/create?contactId=${client.contactId}`)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crea Preventivo
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {availableQuotes.map((quote) => (
+                      <div
+                        key={quote.id}
+                        className="p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                              <p className="font-semibold">{quote.quoteNumber}</p>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  quote.status === 'ACCEPTED'
+                                    ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                    : quote.status === 'REJECTED'
+                                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                    : quote.status === 'SENT'
+                                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                    : 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+                                }
+                              >
+                                {quote.status}
+                              </Badge>
+                              {client.linkedQuoteId === quote.id && (
+                                <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+                                  Visibile al cliente
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{quote.title}</p>
+                          </div>
+                        </div>
 
-                  {client.projectDescription && (
-                    <div>
-                      <Label className="text-muted-foreground">Descrizione</Label>
-                      <p className="text-sm mt-1">{client.projectDescription}</p>
+                        <div className="grid gap-3 md:grid-cols-3 mb-4">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Totale</Label>
+                            <p className="font-semibold text-lg">€{quote.total.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Valido fino al</Label>
+                            <p className="font-medium text-sm">
+                              {format(new Date(quote.validUntil), 'dd MMM yyyy', { locale: it })}
+                            </p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Creato il</Label>
+                            <p className="font-medium text-sm">
+                              {format(new Date(quote.createdAt), 'dd MMM yyyy', { locale: it })}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/quotes`)}
+                          >
+                            <FileText className="h-3 w-3 mr-2" />
+                            Dettagli
+                          </Button>
+                          {client.linkedQuoteId === quote.id ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleLinkQuote(null)}
+                              disabled={saving}
+                            >
+                              Nascondi al Cliente
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleLinkQuote(quote.id)}
+                              disabled={saving}
+                            >
+                              Mostra al Cliente
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            {client.accessType === 'FULL_CLIENT' ? (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informazioni Progetto</CardTitle>
+                    <CardDescription>Gestisci i dettagli del progetto cliente</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label className="text-muted-foreground">Nome Progetto</Label>
+                        <p className="font-medium">{client.projectName || '-'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Budget</Label>
+                        <p className="font-medium">
+                          {client.projectBudget ? `€${client.projectBudget.toLocaleString()}` : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Canone Mensile</Label>
+                        <p className="font-medium">€{client.monthlyFee}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Ore Supporto</Label>
+                        <p className="font-medium">
+                          {client.supportHoursUsed}h / {client.supportHoursIncluded}h
+                        </p>
+                      </div>
                     </div>
-                  )}
 
-                  {(client.driveFolderLink || client.documentsFolder || client.assetsFolder || client.invoiceFolder) && (
-                    <div className="pt-4 border-t space-y-2">
-                      <Label>Cartelle Drive</Label>
-                      <div className="grid gap-2 md:grid-cols-2">
+                    {client.projectDescription && (
+                      <div className="pt-4 border-t">
+                        <Label className="text-muted-foreground">Descrizione</Label>
+                        <p className="text-sm mt-1">{client.projectDescription}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cartelle Drive</CardTitle>
+                    <CardDescription>Link alle cartelle del progetto</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {(client.driveFolderLink || client.documentsFolder || client.assetsFolder || client.invoiceFolder) ? (
+                      <div className="grid gap-3 md:grid-cols-2">
                         {client.driveFolderLink && (
                           <a
                             href={client.driveFolderLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
-                            <FolderOpen className="h-4 w-4" />
-                            Cartella Principale
+                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Cartella Principale</span>
                           </a>
                         )}
                         {client.documentsFolder && (
@@ -348,10 +521,10 @@ export default function ClientDetailPage() {
                             href={client.documentsFolder}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
-                            <FolderOpen className="h-4 w-4" />
-                            Documenti
+                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Documenti</span>
                           </a>
                         )}
                         {client.assetsFolder && (
@@ -359,10 +532,10 @@ export default function ClientDetailPage() {
                             href={client.assetsFolder}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
-                            <FolderOpen className="h-4 w-4" />
-                            Assets
+                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Assets</span>
                           </a>
                         )}
                         {client.invoiceFolder && (
@@ -370,117 +543,60 @@ export default function ClientDetailPage() {
                             href={client.invoiceFolder}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                            className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
-                            <FolderOpen className="h-4 w-4" />
-                            Fatture
+                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Fatture</span>
                           </a>
                         )}
                       </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        Nessuna cartella configurata
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dashboard Non Attiva</CardTitle>
+                  <CardDescription>
+                    Attiva la dashboard completa per gestire progetti, documenti e task
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center py-8">
+                    <LayoutDashboard className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Passa alla Dashboard Completa</h3>
+                    <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                      La dashboard completa include gestione documenti, task, calendario,
+                      cartelle Drive e molto altro. Attivala per dare al cliente accesso a tutte le funzionalità.
+                    </p>
+                    <div className="p-4 rounded-lg border bg-blue-500/5 border-blue-500/20 mb-6 max-w-md mx-auto">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Nota:</strong> La dashboard può coesistere con i preventivi.
+                        Attivandola non perderai i preventivi esistenti.
+                      </p>
                     </div>
-                  )}
+                    <Button size="lg" onClick={handleActivateDashboard} disabled={saving}>
+                      {saving ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Attivazione...
+                        </>
+                      ) : (
+                        <>
+                          <LayoutDashboard className="h-5 w-5 mr-2" />
+                          Passa Dashboard
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-
-          {/* Quote Tab */}
-          <TabsContent value="quote" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Preventivo Associato</CardTitle>
-                <CardDescription>
-                  Gestisci il preventivo collegato a questo cliente
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {client.linkedQuote ? (
-                  <>
-                    <div className="space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-medium">{client.linkedQuote.quoteNumber}</p>
-                          <p className="text-sm text-muted-foreground">{client.linkedQuote.title}</p>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={
-                            client.linkedQuote.status === 'ACCEPTED'
-                              ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                              : client.linkedQuote.status === 'REJECTED'
-                              ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                              : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                          }
-                        >
-                          {client.linkedQuote.status}
-                        </Badge>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div>
-                          <Label className="text-muted-foreground">Totale</Label>
-                          <p className="font-medium text-lg">€{client.linkedQuote.total.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Valido fino al</Label>
-                          <p className="font-medium">
-                            {format(new Date(client.linkedQuote.validUntil), 'dd MMMM yyyy', { locale: it })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-4">
-                        <Button variant="outline" onClick={() => navigate(`/quotes`)}>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Vedi Preventivo
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleLinkQuote(null)}
-                          disabled={saving}
-                        >
-                          Scollega Preventivo
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Nessun Preventivo Collegato</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Collega un preventivo esistente o creane uno nuovo
-                    </p>
-
-                    {availableQuotes.length > 0 && (
-                      <div className="max-w-md mx-auto space-y-4">
-                        <div className="space-y-2">
-                          <Label>Seleziona Preventivo</Label>
-                          <Select onValueChange={(value) => handleLinkQuote(parseInt(value))}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Scegli un preventivo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableQuotes.map((quote) => (
-                                <SelectItem key={quote.id} value={quote.id.toString()}>
-                                  {quote.quoteNumber} - {quote.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <p className="text-sm text-muted-foreground">oppure</p>
-                      </div>
-                    )}
-
-                    <Button onClick={() => navigate(`/quotes/create?contactId=${client.contactId}`)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Crea Nuovo Preventivo
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* Settings Tab */}
@@ -507,21 +623,6 @@ export default function ClientDetailPage() {
                       {client.isActive ? 'Disattiva' : 'Attiva'}
                     </Button>
                   </div>
-
-                  {client.accessType === 'QUOTE_ONLY' && (
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Upgrade a Cliente Completo</p>
-                        <p className="text-sm text-muted-foreground">
-                          Abilita accesso completo a documenti, task e calendario
-                        </p>
-                      </div>
-                      <Button variant="outline">
-                        <ArrowUpCircle className="h-4 w-4 mr-2" />
-                        Upgrade
-                      </Button>
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-between p-4 border border-destructive rounded-lg">
                     <div>

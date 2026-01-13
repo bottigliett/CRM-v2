@@ -14,7 +14,6 @@ import {
   FolderKanban,
   Timer,
   UserCheck,
-  DollarSign,
   MessageSquare,
 } from "lucide-react"
 import { Link } from "react-router-dom"
@@ -85,12 +84,6 @@ const allNavGroups: NavGroup[] = [
         url: "/clients",
         icon: UserCheck,
         moduleName: "clients",
-      },
-      {
-        title: "Preventivi",
-        url: "/quotes",
-        icon: DollarSign,
-        moduleName: "quotes",
       },
       {
         title: "Ticket",
