@@ -8,6 +8,7 @@ export interface Contact {
 
 export interface QuoteItem {
   id?: number;
+  itemName: string;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -16,6 +17,7 @@ export interface QuoteItem {
 }
 
 export interface QuotePackageItem {
+  itemName: string;
   description: string;
   quantity: number;
   unitPrice: number;

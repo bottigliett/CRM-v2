@@ -67,7 +67,7 @@ class ClientAuthAPI {
    * Step 1: Verify activation token
    */
   async verifyToken(token: string): Promise<VerifyTokenResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/verify-token`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/verify-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ class ClientAuthAPI {
    * Step 2: Send verification code to email
    */
   async sendVerificationCode(token: string, email: string): Promise<SendVerificationCodeResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/send-verification-code`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/send-verification-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ class ClientAuthAPI {
    * Step 2.5: Verify email code
    */
   async verifyCode(token: string, code: string): Promise<VerifyCodeResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/verify-code`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/verify-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ class ClientAuthAPI {
    * Manual Flow Step 1: Verify username exists and is not activated
    */
   async verifyUsername(username: string): Promise<VerifyTokenResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/verify-username`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/verify-username`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ class ClientAuthAPI {
    * Manual Flow Step 2: Verify activation code
    */
   async verifyActivationCode(username: string, activationCode: string): Promise<VerifyCodeResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/verify-activation-code`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/verify-activation-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -171,7 +171,7 @@ class ClientAuthAPI {
     activationCode: string,
     password: string
   ): Promise<CompleteActivationResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/complete-manual-activation`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/complete-manual-activation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ class ClientAuthAPI {
     username: string,
     password: string
   ): Promise<CompleteActivationResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/complete-activation`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/complete-activation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ class ClientAuthAPI {
    * Client login
    */
   async login(username: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/client/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ class ClientAuthAPI {
       throw new Error('Non autenticato');
     }
 
-    const response = await fetch(`${API_BASE_URL}/client/auth/me`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -271,7 +271,7 @@ class ClientAuthAPI {
       throw new Error('Non autenticato');
     }
 
-    const response = await fetch(`${API_BASE_URL}/client/auth/change-password`, {
+    const response = await fetch(`${API_BASE_URL}/client-auth/change-password`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

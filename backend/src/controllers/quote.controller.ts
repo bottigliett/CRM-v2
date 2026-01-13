@@ -183,7 +183,7 @@ export const createQuote = async (req: Request, res: Response) => {
       items = [],
       packages = [],
       discountAmount = 0,
-      taxRate = 22,
+      taxRate = 0,
       oneTimeDiscount = 0,
       payment2Discount = 0,
       payment3Discount = 0,
