@@ -6,6 +6,11 @@ export interface Contact {
   email: string | null;
 }
 
+export interface QuoteObjective {
+  title: string;
+  description: string;
+}
+
 export interface QuoteItem {
   id?: number;
   itemName: string;
@@ -30,7 +35,7 @@ export interface QuotePackage {
   name: string;
   description: string | null;
   basePrice: number;
-  features: string;
+  features: string[];  // Array of feature strings
   recommended: boolean;
   items: QuotePackageItem[];
 }
@@ -41,6 +46,7 @@ export interface Quote {
   contactId: number;
   title: string;
   description: string | null;
+  objectives: QuoteObjective[] | null;  // Array of project objectives
   subtotal: number;
   discountAmount: number;
   taxRate: number;
@@ -65,6 +71,7 @@ export interface CreateQuoteData {
   contactId: number;
   title: string;
   description?: string;
+  objectives?: QuoteObjective[];  // Array of project objectives
   validUntil: string;
   discountAmount?: number;
   taxRate?: number;
@@ -76,10 +83,11 @@ export interface CreateQuoteData {
   packages?: Array<{
     name: string;
     description?: string;
-    basePrice: number;
-    features: string;
-    recommended: boolean;
-    items: QuotePackageItem[];
+    price: number;  // Changed from basePrice to price (matching backend)
+    features: string[];  // Array of feature strings
+    isRecommended: boolean;  // Changed from recommended to isRecommended (matching backend)
+    order?: number;
+    items?: QuotePackageItem[];
   }>;
 }
 
