@@ -77,7 +77,7 @@ export default function CreateQuotePage() {
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     items: [],
     discountAmount: 0,
-    taxRate: 22,
+    taxRate: 0,
     oneTimeDiscount: 5,
     payment2Discount: 3,
     payment3Discount: 2,
@@ -86,6 +86,7 @@ export default function CreateQuotePage() {
 
   // Item being edited
   const [editingItem, setEditingItem] = useState<QuoteItem>({
+    itemName: '',
     description: '',
     quantity: 1,
     unitPrice: 0,
@@ -121,8 +122,8 @@ export default function CreateQuotePage() {
 
   // Add item to quote
   const addItem = () => {
-    if (!editingItem.description || editingItem.unitPrice <= 0) {
-      toast.error('Inserisci descrizione e prezzo')
+    if (!editingItem.itemName || !editingItem.description || editingItem.unitPrice <= 0) {
+      toast.error('Inserisci nome, descrizione e prezzo')
       return
     }
 
@@ -135,6 +136,7 @@ export default function CreateQuotePage() {
     })
 
     setEditingItem({
+      itemName: '',
       description: '',
       quantity: 1,
       unitPrice: 0,
@@ -153,8 +155,10 @@ export default function CreateQuotePage() {
   // Use pricing from guide
   const usePricing = (category: string, item: string, price: number) => {
     const selectedContact = contacts.find(c => c.id === formData.contactId)
+    const itemLabel = pricingGuide?.[category as keyof PricingGuide]?.[item]?.label || item
     setEditingItem({
-      description: `${pricingGuide?.[category as keyof PricingGuide]?.[item]?.label || item}${selectedContact ? ` - ${selectedContact.name}` : ''}`,
+      itemName: itemLabel,
+      description: `${itemLabel}${selectedContact ? ` - ${selectedContact.name}` : ''}`,
       quantity: 1,
       unitPrice: price,
       total: price,
@@ -402,14 +406,27 @@ export default function CreateQuotePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="itemDesc">Descrizione *</Label>
+                    <Label htmlFor="itemName">Nome Voce *</Label>
                     <Input
+                      id="itemName"
+                      value={editingItem.itemName}
+                      onChange={(e) =>
+                        setEditingItem({ ...editingItem, itemName: e.target.value })
+                      }
+                      placeholder="es. Sviluppo Sito Web"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="itemDesc">Descrizione *</Label>
+                    <Textarea
                       id="itemDesc"
                       value={editingItem.description}
                       onChange={(e) =>
                         setEditingItem({ ...editingItem, description: e.target.value })
                       }
-                      placeholder="es. Sviluppo Homepage"
+                      placeholder="es. Sviluppo completo della homepage con sezioni hero, servizi e contatti"
+                      rows={3}
                     />
                   </div>
 
@@ -471,6 +488,7 @@ export default function CreateQuotePage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Nome</TableHead>
                           <TableHead>Descrizione</TableHead>
                           <TableHead className="text-right">Q.tà</TableHead>
                           <TableHead className="text-right">Prezzo</TableHead>
@@ -481,7 +499,8 @@ export default function CreateQuotePage() {
                       <TableBody>
                         {formData.items.map((item, index) => (
                           <TableRow key={index}>
-                            <TableCell>{item.description}</TableCell>
+                            <TableCell className="font-medium">{item.itemName}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.description}</TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
                             <TableCell className="text-right">{item.unitPrice.toFixed(2)}€</TableCell>
                             <TableCell className="text-right font-medium">
@@ -675,6 +694,7 @@ export default function CreateQuotePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Nome</TableHead>
                       <TableHead>Descrizione</TableHead>
                       <TableHead className="text-right">Q.tà</TableHead>
                       <TableHead className="text-right">Prezzo</TableHead>
@@ -684,7 +704,8 @@ export default function CreateQuotePage() {
                   <TableBody>
                     {formData.items.map((item, index) => (
                       <TableRow key={index}>
-                        <TableCell>{item.description}</TableCell>
+                        <TableCell className="font-medium">{item.itemName}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{item.description}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
                         <TableCell className="text-right">{item.unitPrice.toFixed(2)}€</TableCell>
                         <TableCell className="text-right">{item.total.toFixed(2)}€</TableCell>
