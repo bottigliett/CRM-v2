@@ -1001,96 +1001,235 @@ export default function CreateQuotePage() {
 
         {/* Step 6: Summary */}
         {currentStep === 6 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Riepilogo Preventivo</CardTitle>
-              <CardDescription>
-                Verifica tutti i dati prima di creare il preventivo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Client Info */}
-              <div>
-                <h3 className="font-semibold mb-2">Cliente</h3>
-                <p className="text-muted-foreground">
-                  {contacts.find((c) => c.id === formData.contactId)?.name}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Quote Info */}
-              <div>
-                <h3 className="font-semibold mb-2">Informazioni Preventivo</h3>
-                <dl className="space-y-1">
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Titolo:</dt>
-                    <dd className="font-medium">{formData.title}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Valido fino al:</dt>
-                    <dd className="font-medium">
-                      {new Date(formData.validUntil).toLocaleDateString('it-IT')}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              <Separator />
-
-              {/* Items */}
-              <div>
-                <h3 className="font-semibold mb-2">Voci ({formData.items.length})</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Descrizione</TableHead>
-                      <TableHead className="text-right">Q.tà</TableHead>
-                      <TableHead className="text-right">Prezzo</TableHead>
-                      <TableHead className="text-right">Totale</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {formData.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.itemName}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{item.description}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{item.unitPrice.toFixed(2)}€</TableCell>
-                        <TableCell className="text-right">{item.total.toFixed(2)}€</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <Separator />
-
-              {/* Totals */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-lg">
-                  <span>Subtotale:</span>
-                  <span className="font-medium">{totals.subtotal.toFixed(2)}€</span>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Riepilogo Preventivo</CardTitle>
+                <CardDescription>
+                  Verifica tutti i dati prima di creare il preventivo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Client Info */}
+                <div>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Cliente
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {contacts.find((c) => c.id === formData.contactId)?.name}
+                  </p>
                 </div>
-                {formData.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Sconto:</span>
-                    <span>-{formData.discountAmount.toFixed(2)}€</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>IVA ({formData.taxRate}%):</span>
-                  <span>+{totals.taxAmount.toFixed(2)}€</span>
-                </div>
+
                 <Separator />
-                <div className="flex justify-between text-2xl font-bold">
-                  <span>TOTALE:</span>
-                  <span className="text-primary">{totals.total.toFixed(2)}€</span>
+
+                {/* Quote Info */}
+                <div>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Informazioni Preventivo
+                  </h3>
+                  <dl className="space-y-2">
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Titolo:</dt>
+                      <dd className="font-medium">{formData.title}</dd>
+                    </div>
+                    {formData.description && (
+                      <div>
+                        <dt className="text-muted-foreground mb-1">Descrizione:</dt>
+                        <dd className="text-sm p-3 bg-muted rounded-md">{formData.description}</dd>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Valido fino al:
+                      </dt>
+                      <dd className="font-medium">
+                        {new Date(formData.validUntil).toLocaleDateString('it-IT')}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                {/* Objectives */}
+                {formData.objectives.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-semibold mb-3">Obiettivi del Progetto</h3>
+                      <div className="space-y-3">
+                        {formData.objectives.map((objective, index) => (
+                          <div key={index} className="p-4 border rounded-lg bg-muted/50">
+                            <h4 className="font-medium mb-1">{objective.title}</h4>
+                            <p className="text-sm text-muted-foreground">{objective.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Packages */}
+                {formData.packages.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-semibold mb-3">Pacchetti Proposti</h3>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        {formData.packages.map((pkg, index) => (
+                          <Card
+                            key={index}
+                            className={pkg.isRecommended ? 'border-primary shadow-md' : ''}
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between">
+                                <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                                {pkg.isRecommended && (
+                                  <Badge className="bg-primary">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    Consigliato
+                                  </Badge>
+                                )}
+                              </div>
+                              <CardDescription className="text-sm">
+                                {pkg.description}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="text-3xl font-bold text-primary">
+                                {pkg.price.toFixed(2)}€
+                              </div>
+                              {pkg.features.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                                    CARATTERISTICHE INCLUSE:
+                                  </p>
+                                  <ul className="space-y-2">
+                                    {pkg.features.map((feature, fIndex) => (
+                                      <li key={fIndex} className="flex items-start gap-2 text-sm">
+                                        <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Items */}
+                {formData.items.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-semibold mb-3">
+                        Voci di Preventivo ({formData.items.length})
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Descrizione</TableHead>
+                            <TableHead className="text-right">Q.tà</TableHead>
+                            <TableHead className="text-right">Prezzo</TableHead>
+                            <TableHead className="text-right">Totale</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {formData.items.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{item.itemName}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {item.description}
+                              </TableCell>
+                              <TableCell className="text-right">{item.quantity}</TableCell>
+                              <TableCell className="text-right">{item.unitPrice.toFixed(2)}€</TableCell>
+                              <TableCell className="text-right">{item.total.toFixed(2)}€</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+
+                {/* Payment Options */}
+                <div>
+                  <h3 className="font-semibold mb-3">Sconti Modalità di Pagamento</h3>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Pagamento Unico</span>
+                        <Badge variant="secondary">{formData.oneTimeDiscount}% sconto</Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">2 Rate</span>
+                        <Badge variant="secondary">{formData.payment2Discount}% sconto</Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">3 Rate</span>
+                        <Badge variant="secondary">{formData.payment3Discount}% sconto</Badge>
+                      </div>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">4 Rate</span>
+                        <Badge variant="secondary">{formData.payment4Discount}% sconto</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Totals */}
+                <div className="bg-muted/50 p-6 rounded-lg">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    Riepilogo Economico
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-lg">
+                      <span>Subtotale:</span>
+                      <span className="font-medium">{totals.subtotal.toFixed(2)}€</span>
+                    </div>
+                    {formData.discountAmount > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Sconto Base:</span>
+                        <span className="text-destructive">-{formData.discountAmount.toFixed(2)}€</span>
+                      </div>
+                    )}
+                    {formData.taxRate > 0 && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>IVA ({formData.taxRate}%):</span>
+                        <span>+{totals.taxAmount.toFixed(2)}€</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between text-2xl font-bold">
+                      <span>TOTALE:</span>
+                      <span className="text-primary flex items-center gap-1">
+                        <Euro className="h-6 w-6" />
+                        {totals.total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Navigation Buttons */}
