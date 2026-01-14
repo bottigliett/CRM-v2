@@ -127,7 +127,8 @@ class ClientAuthAPI {
    * Manual Flow Step 1: Verify username exists and is not activated
    */
   async verifyUsername(username: string): Promise<VerifyTokenResponse> {
-    const response = await fetch(`${API_BASE_URL}/client-auth/verify-username`, {
+    // Use /api/public endpoint (workaround for 401 issue)
+    const response = await fetch(`${API_BASE_URL}/public/verify-username`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +148,8 @@ class ClientAuthAPI {
    * Manual Flow Step 2: Verify activation code
    */
   async verifyActivationCode(username: string, activationCode: string): Promise<VerifyCodeResponse> {
-    const response = await fetch(`${API_BASE_URL}/client-auth/verify-activation-code`, {
+    // Use /api/public endpoint (workaround for 401 issue)
+    const response = await fetch(`${API_BASE_URL}/public/verify-activation-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -171,7 +173,8 @@ class ClientAuthAPI {
     activationCode: string,
     password: string
   ): Promise<CompleteActivationResponse> {
-    const response = await fetch(`${API_BASE_URL}/client-auth/complete-manual-activation`, {
+    // Use /api/public endpoint (workaround for 401 issue)
+    const response = await fetch(`${API_BASE_URL}/public/complete-manual-activation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
