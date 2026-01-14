@@ -39,15 +39,25 @@ import {
   Loader2,
 } from "lucide-react"
 import { contactsAPI, type Contact } from "@/lib/contacts-api"
-import { quotesAPI, type CreateQuoteData, type PricingGuide, type QuoteItem } from "@/lib/quotes-api"
+import { quotesAPI, type CreateQuoteData, type PricingGuide, type QuoteItem, type QuoteObjective } from "@/lib/quotes-api"
 import { toast } from "sonner"
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 4 | 5 | 6
+
+interface QuotePackageForm {
+  name: string
+  description: string
+  features: string[]
+  price: number
+  isRecommended: boolean
+}
 
 interface QuoteFormData {
   contactId: number
   title: string
   description: string
+  objectives: QuoteObjective[]
+  packages: QuotePackageForm[]
   validUntil: string
   items: QuoteItem[]
   discountAmount: number
@@ -74,6 +84,8 @@ export default function CreateQuotePage() {
     contactId: urlContactId ? parseInt(urlContactId) : 0,
     title: '',
     description: '',
+    objectives: [],
+    packages: [],
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     items: [],
     discountAmount: 0,
@@ -83,6 +95,24 @@ export default function CreateQuotePage() {
     payment3Discount: 2,
     payment4Discount: 0,
   })
+
+  // Objective being edited
+  const [editingObjective, setEditingObjective] = useState<QuoteObjective>({
+    title: '',
+    description: '',
+  })
+
+  // Package being edited
+  const [editingPackage, setEditingPackage] = useState<QuotePackageForm>({
+    name: '',
+    description: '',
+    features: [],
+    price: 0,
+    isRecommended: false,
+  })
+
+  // Feature being added to package
+  const [newFeature, setNewFeature] = useState('')
 
   // Item being edited
   const [editingItem, setEditingItem] = useState<QuoteItem>({
@@ -152,6 +182,85 @@ export default function CreateQuotePage() {
     })
   }
 
+  // Add objective
+  const addObjective = () => {
+    if (!editingObjective.title || !editingObjective.description) {
+      toast.error('Inserisci titolo e descrizione obiettivo')
+      return
+    }
+
+    setFormData({
+      ...formData,
+      objectives: [...formData.objectives, { ...editingObjective }],
+    })
+
+    setEditingObjective({ title: '', description: '' })
+  }
+
+  // Remove objective
+  const removeObjective = (index: number) => {
+    setFormData({
+      ...formData,
+      objectives: formData.objectives.filter((_, i) => i !== index),
+    })
+  }
+
+  // Add feature to editing package
+  const addFeatureToPackage = () => {
+    if (!newFeature.trim()) {
+      toast.error('Inserisci una caratteristica')
+      return
+    }
+
+    setEditingPackage({
+      ...editingPackage,
+      features: [...editingPackage.features, newFeature.trim()],
+    })
+    setNewFeature('')
+  }
+
+  // Remove feature from editing package
+  const removeFeatureFromPackage = (index: number) => {
+    setEditingPackage({
+      ...editingPackage,
+      features: editingPackage.features.filter((_, i) => i !== index),
+    })
+  }
+
+  // Add package
+  const addPackage = () => {
+    if (!editingPackage.name || !editingPackage.description || editingPackage.price <= 0) {
+      toast.error('Inserisci nome, descrizione e prezzo del pacchetto')
+      return
+    }
+
+    if (editingPackage.features.length === 0) {
+      toast.error('Aggiungi almeno una caratteristica al pacchetto')
+      return
+    }
+
+    setFormData({
+      ...formData,
+      packages: [...formData.packages, { ...editingPackage }],
+    })
+
+    setEditingPackage({
+      name: '',
+      description: '',
+      features: [],
+      price: 0,
+      isRecommended: false,
+    })
+  }
+
+  // Remove package
+  const removePackage = (index: number) => {
+    setFormData({
+      ...formData,
+      packages: formData.packages.filter((_, i) => i !== index),
+    })
+  }
+
   // Use pricing from guide
   const usePricing = (category: string, item: string, price: number) => {
     const selectedContact = contacts.find(c => c.id === formData.contactId)
@@ -169,12 +278,22 @@ export default function CreateQuotePage() {
   const canProceed = (step: Step): boolean => {
     switch (step) {
       case 1:
+        // Step 1: Basic info
         return formData.contactId > 0 && formData.title.length > 0 && formData.validUntil.length > 0
       case 2:
-        return formData.items.length > 0
+        // Step 2: Objectives (optional but recommended)
+        return true
       case 3:
+        // Step 3: Packages (optional)
         return true
       case 4:
+        // Step 4: Items (optional)
+        return true
+      case 5:
+        // Step 5: Discounts (always OK)
+        return true
+      case 6:
+        // Step 6: Summary (always OK)
         return true
       default:
         return false
@@ -183,8 +302,14 @@ export default function CreateQuotePage() {
 
   // Submit quote
   const handleSubmit = async () => {
-    if (!canProceed(4)) {
+    if (!canProceed(6)) {
       toast.error('Completa tutti i campi obbligatori')
+      return
+    }
+
+    // Validate: must have either packages or items
+    if (formData.packages.length === 0 && formData.items.length === 0) {
+      toast.error('Aggiungi almeno un pacchetto o una voce al preventivo')
       return
     }
 
@@ -194,6 +319,7 @@ export default function CreateQuotePage() {
         contactId: formData.contactId,
         title: formData.title,
         description: formData.description,
+        objectives: formData.objectives.length > 0 ? formData.objectives : undefined,
         validUntil: formData.validUntil,
         discountAmount: formData.discountAmount,
         taxRate: formData.taxRate,
@@ -201,7 +327,15 @@ export default function CreateQuotePage() {
         payment2Discount: formData.payment2Discount,
         payment3Discount: formData.payment3Discount,
         payment4Discount: formData.payment4Discount,
-        items: formData.items,
+        items: formData.items.length > 0 ? formData.items : undefined,
+        packages: formData.packages.length > 0 ? formData.packages.map((pkg, index) => ({
+          name: pkg.name,
+          description: pkg.description,
+          price: pkg.price,
+          features: pkg.features,
+          isRecommended: pkg.isRecommended,
+          order: index,
+        })) : undefined,
       }
 
       const response = await quotesAPI.create(data)
@@ -249,7 +383,7 @@ export default function CreateQuotePage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5, 6].map((step) => (
                 <React.Fragment key={step}>
                   <div className="flex flex-col items-center gap-2">
                     <div
@@ -263,15 +397,17 @@ export default function CreateQuotePage() {
                     >
                       {currentStep > step ? <Check className="h-5 w-5" /> : step}
                     </div>
-                    <span className="text-sm font-medium">
+                    <span className="text-xs font-medium text-center">
                       {step === 1 && 'Info Base'}
-                      {step === 2 && 'Voci Preventivo'}
-                      {step === 3 && 'Sconti'}
-                      {step === 4 && 'Riepilogo'}
+                      {step === 2 && 'Obiettivi'}
+                      {step === 3 && 'Pacchetti'}
+                      {step === 4 && 'Voci'}
+                      {step === 5 && 'Sconti'}
+                      {step === 6 && 'Riepilogo'}
                     </span>
                   </div>
-                  {step < 4 && (
-                    <div className="h-0.5 flex-1 bg-muted mx-4">
+                  {step < 6 && (
+                    <div className="h-0.5 flex-1 bg-muted mx-2">
                       <div
                         className={`h-full ${currentStep > step ? 'bg-primary' : 'bg-muted'}`}
                       />
@@ -356,8 +492,222 @@ export default function CreateQuotePage() {
           </Card>
         )}
 
-        {/* Step 2: Items + Pricing Helper */}
+        {/* Step 2: Project Objectives */}
         {currentStep === 2 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Obiettivi del Progetto</CardTitle>
+              <CardDescription>
+                Definisci gli obiettivi principali del progetto (opzionale ma consigliato)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add Objective Form */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="objectiveTitle">Titolo Obiettivo</Label>
+                  <Input
+                    id="objectiveTitle"
+                    value={editingObjective.title}
+                    onChange={(e) => setEditingObjective({ ...editingObjective, title: e.target.value })}
+                    placeholder="es. Aumentare la visibilità online"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="objectiveDescription">Descrizione Obiettivo</Label>
+                  <Textarea
+                    id="objectiveDescription"
+                    value={editingObjective.description}
+                    onChange={(e) => setEditingObjective({ ...editingObjective, description: e.target.value })}
+                    placeholder="es. Creare una presenza digitale forte attraverso un sito web moderno e una strategia SEO efficace"
+                    rows={3}
+                  />
+                </div>
+                <Button onClick={addObjective} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Aggiungi Obiettivo
+                </Button>
+              </div>
+
+              {/* Objectives List */}
+              {formData.objectives.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nessun obiettivo aggiunto</p>
+                  <p className="text-sm">Gli obiettivi aiutano il cliente a comprendere il valore del progetto</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {formData.objectives.map((objective, index) => (
+                    <div key={index} className="p-4 border rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">{objective.title}</h4>
+                          <p className="text-sm text-muted-foreground">{objective.description}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeObjective(index)}
+                          className="ml-2"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Packages */}
+        {currentStep === 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pacchetti Proposti</CardTitle>
+              <CardDescription>
+                Crea 2-3 pacchetti con diverse opzioni per il cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Add Package Form */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="packageName">Nome Pacchetto *</Label>
+                    <Input
+                      id="packageName"
+                      value={editingPackage.name}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })}
+                      placeholder="es. Pacchetto Base / Pro / Premium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="packagePrice">Prezzo (€) *</Label>
+                    <Input
+                      id="packagePrice"
+                      type="number"
+                      value={editingPackage.price}
+                      onChange={(e) => setEditingPackage({ ...editingPackage, price: parseFloat(e.target.value) || 0 })}
+                      placeholder="es. 1500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="packageDescription">Descrizione *</Label>
+                  <Textarea
+                    id="packageDescription"
+                    value={editingPackage.description}
+                    onChange={(e) => setEditingPackage({ ...editingPackage, description: e.target.value })}
+                    placeholder="Breve descrizione del pacchetto"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2">
+                  <Label>Caratteristiche Incluse *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newFeature}
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      placeholder="es. Logo professionale"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addFeatureToPackage()
+                        }
+                      }}
+                    />
+                    <Button onClick={addFeatureToPackage} size="icon">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {editingPackage.features.length > 0 && (
+                    <ul className="space-y-1 mt-2">
+                      {editingPackage.features.map((feature, index) => (
+                        <li key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded">
+                          <span>• {feature}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeFeatureFromPackage(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isRecommended"
+                    checked={editingPackage.isRecommended}
+                    onChange={(e) => setEditingPackage({ ...editingPackage, isRecommended: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="isRecommended" className="cursor-pointer">Pacchetto consigliato</Label>
+                </div>
+
+                <Button onClick={addPackage} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Aggiungi Pacchetto
+                </Button>
+              </div>
+
+              {/* Packages List */}
+              {formData.packages.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nessun pacchetto aggiunto</p>
+                  <p className="text-sm">Aggiungi almeno 2-3 pacchetti per dare scelta al cliente</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {formData.packages.map((pkg, index) => (
+                    <div key={index} className={`p-4 border-2 rounded-lg ${pkg.isRecommended ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold">{pkg.name}</h4>
+                          {pkg.isRecommended && (
+                            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">Consigliato</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePackage(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">{pkg.description}</p>
+                      <ul className="space-y-1 mb-3">
+                        {pkg.features.map((feature, fIndex) => (
+                          <li key={fIndex} className="text-sm flex items-start">
+                            <Check className="h-4 w-4 text-primary mr-1 mt-0.5 flex-shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="text-lg font-bold text-primary">{pkg.price.toFixed(2)}€</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4: Items + Pricing Helper */}
+        {currentStep === 4 && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Pricing Helper */}
             <Card>
@@ -526,8 +876,8 @@ export default function CreateQuotePage() {
           </div>
         )}
 
-        {/* Step 3: Discounts */}
-        {currentStep === 3 && (
+        {/* Step 5: Discounts */}
+        {currentStep === 5 && (
           <Card>
             <CardHeader>
               <CardTitle>Sconti e Tasse</CardTitle>
@@ -649,8 +999,8 @@ export default function CreateQuotePage() {
           </Card>
         )}
 
-        {/* Step 4: Summary */}
-        {currentStep === 4 && (
+        {/* Step 6: Summary */}
+        {currentStep === 6 && (
           <Card>
             <CardHeader>
               <CardTitle>Riepilogo Preventivo</CardTitle>
@@ -754,9 +1104,9 @@ export default function CreateQuotePage() {
             Indietro
           </Button>
 
-          {currentStep < 4 ? (
+          {currentStep < 6 ? (
             <Button
-              onClick={() => setCurrentStep((s) => Math.min(4, s + 1) as Step)}
+              onClick={() => setCurrentStep((s) => Math.min(6, s + 1) as Step)}
               disabled={!canProceed(currentStep)}
             >
               Avanti
