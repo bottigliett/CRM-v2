@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { sendClientActivationCodeEmail } from '../services/email.service';
 
 /**
  * CLIENT JWT PAYLOAD
@@ -458,6 +459,95 @@ export const verifyUsername = async (req: Request, res: Response) => {
 };
 
 /**
+ * POST /api/activate/send-code
+ * Send activation code via email
+ */
+export const sendActivationCode = async (req: Request, res: Response) => {
+  try {
+    const { username, email } = req.body;
+
+    if (!username || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username e email sono obbligatori',
+      });
+    }
+
+    // Trova client access
+    const clientAccess = await prisma.clientAccess.findUnique({
+      where: { username: username.toLowerCase() },
+      include: {
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!clientAccess) {
+      return res.status(404).json({
+        success: false,
+        message: 'Username non trovato',
+      });
+    }
+
+    // Verifica se già attivato
+    if (clientAccess.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account già attivato',
+      });
+    }
+
+    // Genera codice a 6 cifre
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Salva il codice con timestamp (scade dopo 15 minuti)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minuti
+    const activationData = JSON.stringify({
+      code: verificationCode,
+      expiresAt: expiresAt.toISOString(),
+    });
+
+    await prisma.clientAccess.update({
+      where: { id: clientAccess.id },
+      data: {
+        activationToken: activationData,
+      },
+    });
+
+    // Invia email con il codice
+    const emailSent = await sendClientActivationCodeEmail(
+      email,
+      clientAccess.contact.name,
+      verificationCode
+    );
+
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: "Errore nell'invio dell'email",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Codice inviato a ${email}`,
+    });
+  } catch (error: any) {
+    console.error('Error sending activation code:', error);
+    res.status(500).json({
+      success: false,
+      message: "Errore nell'invio del codice",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * POST /api/client/auth/verify-activation-code
  * Manual Flow Step 2: Verifica codice di attivazione
  */
@@ -484,8 +574,29 @@ export const verifyActivationCode = async (req: Request, res: Response) => {
       });
     }
 
-    // Verifica codice di attivazione
-    if (clientAccess.activationToken !== activationCode) {
+    // Verifica che ci sia un activation token
+    if (!clientAccess.activationToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nessun codice di attivazione generato. Richiedi un nuovo codice.',
+      });
+    }
+
+    // Parse activation data (può essere JSON o stringa semplice per retrocompatibilità)
+    let savedCode: string;
+    let expiresAt: Date | null = null;
+
+    try {
+      const activationData = JSON.parse(clientAccess.activationToken);
+      savedCode = activationData.code;
+      expiresAt = new Date(activationData.expiresAt);
+    } catch {
+      // Retrocompatibilità: se non è JSON, usa il valore diretto
+      savedCode = clientAccess.activationToken;
+    }
+
+    // Verifica codice
+    if (savedCode !== activationCode) {
       return res.status(400).json({
         success: false,
         message: 'Codice di attivazione non valido',
@@ -493,10 +604,10 @@ export const verifyActivationCode = async (req: Request, res: Response) => {
     }
 
     // Verifica scadenza
-    if (clientAccess.activationExpires && clientAccess.activationExpires < new Date()) {
+    if (expiresAt && expiresAt < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Codice di attivazione scaduto',
+        message: 'Codice di attivazione scaduto. Richiedi un nuovo codice.',
       });
     }
 

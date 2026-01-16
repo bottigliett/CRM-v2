@@ -144,7 +144,27 @@ class ClientAuthAPI {
   }
 
   /**
-   * Manual Flow Step 2: Verify activation code
+   * Manual Flow Step 2a: Send activation code via email
+   */
+  async sendActivationCode(username: string, email: string): Promise<SendVerificationCodeResponse> {
+    const response = await fetch(`${API_BASE_URL}/activate/send-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Errore nell'invio del codice");
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Manual Flow Step 2b: Verify activation code
    */
   async verifyActivationCode(username: string, activationCode: string): Promise<VerifyCodeResponse> {
     const response = await fetch(`${API_BASE_URL}/activate/verify-code`, {

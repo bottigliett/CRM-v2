@@ -46,6 +46,7 @@ export default function ClientActivationPage() {
   // Manual flow: Step 2 - Activation code
   const [activationCode, setActivationCode] = useState('')
   const [activationCodeVerified, setActivationCodeVerified] = useState(false)
+  const [codeSentToEmail, setCodeSentToEmail] = useState(false)
 
   // Step 3 (token flow) / Step 4 (manual flow) - Password
   const [password, setPassword] = useState('')
@@ -138,6 +139,25 @@ export default function ClientActivationPage() {
     } catch (error: any) {
       console.error('Username verification failed:', error)
       toast.error(error.message || 'Username non trovato o già attivato')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSendActivationCode = async () => {
+    if (!email.trim()) {
+      toast.error('Inserisci un indirizzo email valido')
+      return
+    }
+
+    try {
+      setLoading(true)
+      await clientAuthAPI.sendActivationCode(username, email)
+      setCodeSentToEmail(true)
+      toast.success(`Codice inviato a ${email}`)
+    } catch (error: any) {
+      console.error('Send activation code failed:', error)
+      toast.error(error.message || "Errore nell'invio del codice")
     } finally {
       setLoading(false)
     }
@@ -301,48 +321,82 @@ export default function ClientActivationPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className='pl-10'
-                  disabled={loading}
+                  disabled={loading || codeSentToEmail}
                 />
               </div>
               <p className='text-xs text-muted-foreground'>
-                Modifica l'email se necessario
+                {codeSentToEmail ? `Codice inviato a ${email}` : 'Modifica l\'email se necessario'}
               </p>
             </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='activationCode'>Codice di Attivazione</Label>
-              <div className='relative'>
-                <Key className='absolute left-3 top-3 h-4 w-4 text-muted-foreground' />
-                <Input
-                  id='activationCode'
-                  placeholder='Inserisci il codice di attivazione'
-                  value={activationCode}
-                  onChange={(e) => setActivationCode(e.target.value)}
-                  className='pl-10'
+            {!codeSentToEmail ? (
+              <Button
+                onClick={handleSendActivationCode}
+                disabled={loading || !email.trim()}
+                className='w-full'
+                size='lg'
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Invio in corso...
+                  </>
+                ) : (
+                  <>
+                    <Mail className='mr-2 h-4 w-4' />
+                    Invia Codice via Email
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <Label htmlFor='activationCode'>Codice di Verifica</Label>
+                  <div className='relative'>
+                    <Key className='absolute left-3 top-3 h-4 w-4 text-muted-foreground' />
+                    <Input
+                      id='activationCode'
+                      placeholder='Inserisci il codice a 6 cifre'
+                      value={activationCode}
+                      onChange={(e) => setActivationCode(e.target.value)}
+                      className='pl-10 text-center text-xl tracking-widest'
+                      disabled={loading}
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </div>
+                  <p className='text-xs text-muted-foreground'>
+                    Controlla la tua email per il codice di verifica (valido 15 minuti)
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleVerifyActivationCode}
+                  disabled={loading || !activationCode.trim()}
+                  className='w-full'
+                  size='lg'
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      Verifica in corso...
+                    </>
+                  ) : (
+                    'Verifica Codice'
+                  )}
+                </Button>
+
+                <Button
+                  variant='ghost'
+                  onClick={handleSendActivationCode}
                   disabled={loading}
-                  autoFocus
-                />
+                  className='w-full'
+                  size='sm'
+                >
+                  Invia nuovo codice
+                </Button>
               </div>
-              <p className='text-xs text-muted-foreground'>
-                Il codice ti è stato fornito dal team
-              </p>
-            </div>
-
-            <Button
-              onClick={handleVerifyActivationCode}
-              disabled={loading || !activationCode.trim()}
-              className='w-full'
-              size='lg'
-            >
-              {loading ? (
-                <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Verifica in corso...
-                </>
-              ) : (
-                'Verifica Codice'
-              )}
-            </Button>
+            )}
 
             <Button
               variant='ghost'
