@@ -19,6 +19,7 @@ import quoteRoutes from './routes/quote.routes';
 import clientAccessRoutes from './routes/client-access.routes';
 import clientAuthRoutes from './routes/client-auth.routes';
 import publicRoutes from './routes/public.routes';
+import activateRoutes from './routes/activate.routes';
 import ticketRoutes, { clientTicketRouter } from './routes/ticket.routes';
 import adminNotificationRoutes, { clientNotificationRouter } from './routes/client-notification.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
@@ -54,6 +55,9 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
+// ACTIVATION ROUTES - Must be FIRST to avoid middleware blocking
+app.use('/api/activate', activateRoutes);
+
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
 app.use('/api/contacts', contactRoutes);

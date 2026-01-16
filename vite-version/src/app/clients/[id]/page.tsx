@@ -419,14 +419,6 @@ export default function ClientDetailPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/quotes`)}
-                          >
-                            <FileText className="h-3 w-3 mr-2" />
-                            Dettagli
-                          </Button>
                           {client.linkedQuoteId === quote.id ? (
                             <Button
                               size="sm"

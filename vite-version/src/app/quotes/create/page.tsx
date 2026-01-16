@@ -340,7 +340,7 @@ export default function CreateQuotePage() {
 
       const response = await quotesAPI.create(data)
       toast.success('Preventivo creato con successo!')
-      navigate('/quotes')
+      navigate(`/clients/${formData.contactId}`)
     } catch (error: any) {
       console.error('Error creating quote:', error)
       toast.error(error.response?.data?.message || 'Errore nella creazione del preventivo')
@@ -367,7 +367,7 @@ export default function CreateQuotePage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/quotes')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(formData.contactId ? `/clients/${formData.contactId}` : '/dashboard')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
