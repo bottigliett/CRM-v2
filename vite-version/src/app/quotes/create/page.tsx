@@ -1139,42 +1139,6 @@ export default function CreateQuotePage() {
                   </>
                 )}
 
-                {/* Items */}
-                {formData.items.length > 0 && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h3 className="font-semibold mb-3">
-                        Voci di Preventivo ({formData.items.length})
-                      </h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Descrizione</TableHead>
-                            <TableHead className="text-right">Q.tà</TableHead>
-                            <TableHead className="text-right">Prezzo</TableHead>
-                            <TableHead className="text-right">Totale</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {formData.items.map((item, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{item.itemName}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {item.description}
-                              </TableCell>
-                              <TableCell className="text-right">{item.quantity}</TableCell>
-                              <TableCell className="text-right">{item.unitPrice.toFixed(2)}€</TableCell>
-                              <TableCell className="text-right">{item.total.toFixed(2)}€</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                )}
-
                 <Separator />
 
                 {/* Payment Options */}
