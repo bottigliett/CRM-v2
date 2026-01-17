@@ -41,21 +41,20 @@ export default function ClientQuotesPage() {
     try {
       setLoading(true)
 
-      // Load client data
+      // Load client data (includes linkedQuote)
       const clientResponse = await clientAuthAPI.getMe()
       setClientData(clientResponse.data)
 
-      // Load linked quote if exists
-      if (clientResponse.data.linkedQuoteId) {
-        const quoteResponse = await quotesAPI.getById(clientResponse.data.linkedQuoteId)
-        setQuote(quoteResponse.data)
+      // Use linked quote from client data (already included in /me response)
+      if (clientResponse.data.linkedQuote) {
+        setQuote(clientResponse.data.linkedQuote)
 
         // Pre-select if already selected
-        if (quoteResponse.data.selectedPackageId) {
-          setSelectedPackageId(quoteResponse.data.selectedPackageId)
+        if (clientResponse.data.linkedQuote.selectedPackageId) {
+          setSelectedPackageId(clientResponse.data.linkedQuote.selectedPackageId)
         }
-        if (quoteResponse.data.selectedPaymentOption) {
-          setSelectedPaymentOption(quoteResponse.data.selectedPaymentOption)
+        if (clientResponse.data.linkedQuote.selectedPaymentOption) {
+          setSelectedPaymentOption(clientResponse.data.linkedQuote.selectedPaymentOption)
         }
       }
     } catch (error) {
