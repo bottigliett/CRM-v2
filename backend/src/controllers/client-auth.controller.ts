@@ -905,7 +905,8 @@ export const clientLogin = async (req: Request, res: Response) => {
       message: 'Login effettuato con successo',
       data: {
         token: authToken,
-        user: {
+        clientAccess: {
+          id: clientAccess.id,
           username: clientAccess.username,
           accessType: clientAccess.accessType,
           contact: clientAccess.contact,
