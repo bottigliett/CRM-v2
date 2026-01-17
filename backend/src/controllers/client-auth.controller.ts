@@ -673,8 +673,31 @@ export const completeManualActivation = async (req: Request, res: Response) => {
       });
     }
 
+    // Verifica che ci sia un activation token
+    if (!clientAccess.activationToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nessun codice di attivazione generato. Richiedi un nuovo codice.',
+      });
+    }
+
+    // Parse activation data (può essere JSON o stringa semplice per retrocompatibilità)
+    let savedCode: string;
+    let expiresAt: Date | null = null;
+
+    try {
+      const activationData = JSON.parse(clientAccess.activationToken);
+      savedCode = activationData.code;
+      expiresAt = new Date(activationData.expiresAt);
+    } catch {
+      // Retrocompatibilità: se non è JSON, usa il valore diretto
+      savedCode = clientAccess.activationToken;
+      // Usa il campo activationExpires per vecchi token
+      expiresAt = clientAccess.activationExpires;
+    }
+
     // Verifica codice di attivazione
-    if (clientAccess.activationToken !== activationCode) {
+    if (savedCode !== activationCode) {
       return res.status(400).json({
         success: false,
         message: 'Codice di attivazione non valido',
@@ -682,10 +705,10 @@ export const completeManualActivation = async (req: Request, res: Response) => {
     }
 
     // Verifica scadenza
-    if (clientAccess.activationExpires && clientAccess.activationExpires < new Date()) {
+    if (expiresAt && expiresAt < new Date()) {
       return res.status(400).json({
         success: false,
-        message: 'Codice di attivazione scaduto',
+        message: 'Codice di attivazione scaduto. Richiedi un nuovo codice.',
       });
     }
 
