@@ -966,6 +966,7 @@ export const getClientMe = async (req: Request, res: Response) => {
         username: clientAccess.username,
         accessType: clientAccess.accessType,
         contact: clientAccess.contact,
+        linkedQuoteId: clientAccess.linkedQuoteId,
         linkedQuote: clientAccess.linkedQuote,
         projectName: clientAccess.projectName,
         projectDescription: clientAccess.projectDescription,
