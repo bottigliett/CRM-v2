@@ -263,6 +263,7 @@ export const updateClientAccess = async (req: Request, res: Response) => {
     const {
       isActive,
       accessType,
+      linkedQuoteId,
       projectName,
       projectDescription,
       projectBudget,
@@ -290,12 +291,30 @@ export const updateClientAccess = async (req: Request, res: Response) => {
       });
     }
 
+    // Se linkedQuoteId viene impostato (mostra al cliente), cambia lo stato del preventivo a SENT
+    if (linkedQuoteId !== undefined && linkedQuoteId !== existingAccess.linkedQuoteId) {
+      if (linkedQuoteId !== null) {
+        // Linking a quote - change status from DRAFT to SENT
+        const quote = await prisma.quote.findUnique({
+          where: { id: parseInt(linkedQuoteId) },
+        });
+
+        if (quote && quote.status === 'DRAFT') {
+          await prisma.quote.update({
+            where: { id: parseInt(linkedQuoteId) },
+            data: { status: 'SENT' },
+          });
+        }
+      }
+    }
+
     // Aggiorna
     const clientAccess = await prisma.clientAccess.update({
       where: { id: parseInt(id) },
       data: {
         isActive,
         accessType,
+        linkedQuoteId: linkedQuoteId !== undefined ? (linkedQuoteId ? parseInt(linkedQuoteId) : null) : undefined,
         projectName,
         projectDescription,
         projectBudget,
