@@ -101,6 +101,19 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
   const userName = clientData?.contact?.name || "Cliente"
   const userEmail = clientData?.contact?.email || ""
 
+  // Filter nav items based on access type
+  const visibleNavItems = React.useMemo(() => {
+    if (!clientData) return navItems
+
+    // QUOTE_ONLY clients can only see Preventivi
+    if (clientData.accessType === 'QUOTE_ONLY') {
+      return navItems.filter(item => item.url === '/client/quotes')
+    }
+
+    // FULL_CLIENT can see everything
+    return navItems
+  }, [clientData])
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -125,7 +138,7 @@ export function ClientSidebar({ ...props }: React.ComponentProps<typeof Sidebar>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>

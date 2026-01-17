@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { clientAuthAPI } from '@/lib/client-auth-api'
 import { Loader2 } from 'lucide-react'
 
@@ -9,6 +9,8 @@ interface ClientProtectedRouteProps {
 
 export function ClientProtectedRoute({ children }: ClientProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [clientData, setClientData] = useState<any>(null)
+  const location = useLocation()
 
   useEffect(() => {
     checkAuth()
@@ -23,7 +25,8 @@ export function ClientProtectedRoute({ children }: ClientProtectedRouteProps) {
       }
 
       // Verify token is still valid by calling /me
-      await clientAuthAPI.getMe()
+      const response = await clientAuthAPI.getMe()
+      setClientData(response.data)
       setIsAuthenticated(true)
     } catch (error) {
       console.error('Auth check failed:', error)
@@ -42,6 +45,16 @@ export function ClientProtectedRoute({ children }: ClientProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to='/client/login' replace />
+  }
+
+  // Access control: QUOTE_ONLY clients can only access /client/quotes
+  if (clientData?.accessType === 'QUOTE_ONLY') {
+    const allowedPaths = ['/client/quotes', '/client/settings', '/client/login']
+    const currentPath = location.pathname
+
+    if (!allowedPaths.some(path => currentPath.startsWith(path))) {
+      return <Navigate to='/client/quotes' replace />
+    }
   }
 
   return <>{children}</>

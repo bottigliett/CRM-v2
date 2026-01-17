@@ -313,6 +313,22 @@ export const createQuote = async (req: Request, res: Response) => {
       return newQuote;
     });
 
+    // Auto-link quote to QUOTE_ONLY client access if not already linked
+    const quoteOnlyAccess = await prisma.clientAccess.findFirst({
+      where: {
+        contactId: parseInt(contactId),
+        accessType: 'QUOTE_ONLY',
+        linkedQuoteId: null,
+      },
+    });
+
+    if (quoteOnlyAccess) {
+      await prisma.clientAccess.update({
+        where: { id: quoteOnlyAccess.id },
+        data: { linkedQuoteId: quote.id },
+      });
+    }
+
     // Ricarica con relazioni
     const fullQuote = await prisma.quote.findUnique({
       where: { id: quote.id },
