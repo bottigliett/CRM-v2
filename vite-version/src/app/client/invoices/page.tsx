@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Receipt, Download, ExternalLink } from "lucide-react"
-import { invoicesAPI, type Invoice } from "@/lib/invoices-api"
+import { clientInvoicesAPI, type Invoice } from "@/lib/client-invoices-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
@@ -20,9 +20,8 @@ export default function ClientInvoicesPage() {
   const loadInvoices = async () => {
     try {
       setLoading(true)
-      const response = await invoicesAPI.getInvoices({ limit: 100 })
-      // Filter only visible to client invoices if needed
-      setInvoices(response.data.invoices || [])
+      const response = await clientInvoicesAPI.getInvoices({ limit: 100 })
+      setInvoices(response.data || [])
     } catch (error) {
       console.error('Error loading invoices:', error)
       toast.error('Errore nel caricamento delle fatture')

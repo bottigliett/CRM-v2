@@ -22,6 +22,9 @@ import publicRoutes from './routes/public.routes';
 import activateRoutes from './routes/activate.routes';
 import ticketRoutes, { clientTicketRouter } from './routes/ticket.routes';
 import adminNotificationRoutes, { clientNotificationRouter } from './routes/client-notification.routes';
+import clientInvoiceRoutes from './routes/client-invoice.routes';
+import clientTaskRoutes from './routes/client-task.routes';
+import clientEventRoutes from './routes/client-event.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Load .env from backend root directory (not from dist/)
@@ -81,6 +84,9 @@ app.use('/api/admin/notifications', adminNotificationRoutes);
 // Client-specific routes (require client authentication)
 app.use('/api/client/tickets', clientTicketRouter);
 app.use('/api/client/notifications', clientNotificationRouter);
+app.use('/api/client/invoices', clientInvoiceRoutes);
+app.use('/api/client/tasks', clientTaskRoutes);
+app.use('/api/client/events', clientEventRoutes);
 
 // Error handling
 app.use(notFound);

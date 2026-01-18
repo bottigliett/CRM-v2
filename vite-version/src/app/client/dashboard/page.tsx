@@ -21,9 +21,9 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { clientAuthAPI } from "@/lib/client-auth-api"
-import { invoicesAPI, type Invoice } from "@/lib/invoices-api"
-import { tasksAPI, type Task } from "@/lib/tasks-api"
-import { eventsAPI, type Event } from "@/lib/events-api"
+import { clientInvoicesAPI, type Invoice } from "@/lib/client-invoices-api"
+import { clientTasksAPI, type Task } from "@/lib/client-tasks-api"
+import { clientEventsAPI, type Event } from "@/lib/client-events-api"
 import { ticketsAPI, type Ticket } from "@/lib/tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
@@ -48,19 +48,17 @@ export default function ClientDashboardPage() {
       const clientResponse = await clientAuthAPI.getMe()
       setClientData(clientResponse.data)
 
-      const contactId = clientResponse.data.contact.id
-
       // Load recent data in parallel
       const [invoicesRes, tasksRes, eventsRes, ticketsRes] = await Promise.all([
-        invoicesAPI.getInvoices({ limit: 5 }).catch(() => ({ data: { invoices: [] } })),
-        tasksAPI.getTasks({ contactId, visibleToClient: true, limit: 5 }).catch(() => ({ data: { tasks: [] } })),
-        eventsAPI.getEvents({ contactId, limit: 5 }).catch(() => ({ data: { events: [] } })),
+        clientInvoicesAPI.getInvoices({ limit: 5 }).catch(() => ({ data: [] })),
+        clientTasksAPI.getTasks({ limit: 5 }).catch(() => ({ data: [] })),
+        clientEventsAPI.getEvents({ limit: 5 }).catch(() => ({ data: [] })),
         ticketsAPI.getAll({ limit: 5 }).catch(() => ({ data: [] })),
       ])
 
-      setInvoices(invoicesRes.data.invoices || [])
-      setTasks(tasksRes.data.tasks || [])
-      setEvents(eventsRes.data.events || [])
+      setInvoices(invoicesRes.data || [])
+      setTasks(tasksRes.data || [])
+      setEvents(eventsRes.data || [])
       setTickets(ticketsRes.data || [])
     } catch (error) {
       console.error('Error loading dashboard data:', error)

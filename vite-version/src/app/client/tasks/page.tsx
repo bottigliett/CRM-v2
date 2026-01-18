@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { CheckSquare, Clock, Calendar } from "lucide-react"
 import { clientAuthAPI } from "@/lib/client-auth-api"
-import { tasksAPI, type Task } from "@/lib/tasks-api"
+import { clientTasksAPI, type Task } from "@/lib/client-tasks-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
@@ -21,16 +21,11 @@ export default function ClientTasksPage() {
   const loadTasks = async () => {
     try {
       setLoading(true)
-      const clientResponse = await clientAuthAPI.getMe()
-      const contactId = clientResponse.data.contact.id
-
-      const response = await tasksAPI.getTasks({
-        contactId,
-        visibleToClient: true,
+      const response = await clientTasksAPI.getTasks({
         limit: 100,
         isArchived: false,
       })
-      setTasks(response.data.tasks || [])
+      setTasks(response.data || [])
     } catch (error) {
       console.error('Error loading tasks:', error)
       toast.error('Errore nel caricamento dei task')

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Calendar as CalendarIcon, MapPin, Clock, Video } from "lucide-react"
 import { clientAuthAPI } from "@/lib/client-auth-api"
-import { eventsAPI, type Event } from "@/lib/events-api"
+import { clientEventsAPI, type Event } from "@/lib/client-events-api"
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
@@ -23,19 +23,15 @@ export default function ClientCalendarPage() {
   const loadEvents = async () => {
     try {
       setLoading(true)
-      const clientResponse = await clientAuthAPI.getMe()
-      const contactId = clientResponse.data.contact.id
-
       const start = startOfMonth(currentDate)
       const end = endOfMonth(currentDate)
 
-      const response = await eventsAPI.getEvents({
-        contactId,
+      const response = await clientEventsAPI.getEvents({
         startDate: start.toISOString(),
         endDate: end.toISOString(),
         limit: 100,
       })
-      setEvents(response.data.events || [])
+      setEvents(response.data || [])
     } catch (error) {
       console.error('Error loading events:', error)
       toast.error('Errore nel caricamento degli eventi')
