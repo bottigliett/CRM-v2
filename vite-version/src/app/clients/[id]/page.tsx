@@ -68,6 +68,7 @@ export default function ClientDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showActivationCode, setShowActivationCode] = useState(false)
   const [showDashboardDialog, setShowDashboardDialog] = useState(false)
+  const [showFoldersDialog, setShowFoldersDialog] = useState(false)
   const [activeTab, setActiveTab] = useState("overview")
 
   // Dashboard form data
@@ -76,6 +77,18 @@ export default function ClientDetailPage() {
     projectDescription: '',
     monthlyFee: 0,
     supportHoursIncluded: 0,
+    driveFolderLink: '',
+    documentsFolder: '',
+    assetsFolder: '',
+    invoiceFolder: '',
+  })
+
+  // Folders form data
+  const [foldersForm, setFoldersForm] = useState({
+    driveFolderLink: '',
+    documentsFolder: '',
+    assetsFolder: '',
+    invoiceFolder: '',
   })
 
   useEffect(() => {
@@ -145,10 +158,51 @@ export default function ClientDetailPage() {
       projectDescription: client.projectDescription || '',
       monthlyFee: client.monthlyFee || 0,
       supportHoursIncluded: client.supportHoursIncluded || 0,
+      driveFolderLink: client.driveFolderLink || '',
+      documentsFolder: client.documentsFolder || '',
+      assetsFolder: client.assetsFolder || '',
+      invoiceFolder: client.invoiceFolder || '',
     })
 
     // Open dialog
     setShowDashboardDialog(true)
+  }
+
+  const handleEditFolders = () => {
+    if (!client) return
+
+    // Initialize form with current data
+    setFoldersForm({
+      driveFolderLink: client.driveFolderLink || '',
+      documentsFolder: client.documentsFolder || '',
+      assetsFolder: client.assetsFolder || '',
+      invoiceFolder: client.invoiceFolder || '',
+    })
+
+    // Open dialog
+    setShowFoldersDialog(true)
+  }
+
+  const handleSaveFolders = async () => {
+    if (!client) return
+
+    try {
+      setSaving(true)
+      await clientAccessAPI.update(client.id, {
+        driveFolderLink: foldersForm.driveFolderLink || null,
+        documentsFolder: foldersForm.documentsFolder || null,
+        assetsFolder: foldersForm.assetsFolder || null,
+        invoiceFolder: foldersForm.invoiceFolder || null,
+      })
+      toast.success('Cartelle aggiornate con successo')
+      setShowFoldersDialog(false)
+      loadClientData()
+    } catch (error: any) {
+      console.error('Error updating folders:', error)
+      toast.error(error.message || "Errore nell'aggiornamento delle cartelle")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleSaveDashboard = async () => {
@@ -163,6 +217,10 @@ export default function ClientDetailPage() {
         monthlyFee: dashboardForm.monthlyFee,
         supportHoursIncluded: dashboardForm.supportHoursIncluded,
         supportHoursUsed: 0,
+        driveFolderLink: dashboardForm.driveFolderLink || null,
+        documentsFolder: dashboardForm.documentsFolder || null,
+        assetsFolder: dashboardForm.assetsFolder || null,
+        invoiceFolder: dashboardForm.invoiceFolder || null,
       })
       toast.success('Dashboard attivata con successo')
       setShowDashboardDialog(false)
@@ -526,8 +584,16 @@ export default function ClientDetailPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Cartelle Drive</CardTitle>
-                    <CardDescription>Link alle cartelle del progetto</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Cartelle Drive</CardTitle>
+                        <CardDescription>Link alle cartelle del progetto</CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleEditFolders}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Modifica
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {(client.driveFolderLink || client.documentsFolder || client.assetsFolder || client.invoiceFolder) ? (
@@ -578,9 +644,12 @@ export default function ClientDetailPage() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Nessuna cartella configurata
-                      </p>
+                      <div className="text-center py-8">
+                        <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Nessuna cartella configurata
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -768,6 +837,48 @@ export default function ClientDetailPage() {
                 />
               </div>
             </div>
+
+            <div className="border-t pt-4 mt-4">
+              <Label className="text-sm font-semibold mb-3 block">Cartelle Drive (opzionali)</Label>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="driveFolderLink" className="text-sm">Cartella Principale</Label>
+                  <Input
+                    id="driveFolderLink"
+                    placeholder="https://drive.google.com/..."
+                    value={dashboardForm.driveFolderLink}
+                    onChange={(e) => setDashboardForm({ ...dashboardForm, driveFolderLink: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documentsFolder" className="text-sm">Cartella Documenti</Label>
+                  <Input
+                    id="documentsFolder"
+                    placeholder="https://drive.google.com/..."
+                    value={dashboardForm.documentsFolder}
+                    onChange={(e) => setDashboardForm({ ...dashboardForm, documentsFolder: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="assetsFolder" className="text-sm">Cartella Assets</Label>
+                  <Input
+                    id="assetsFolder"
+                    placeholder="https://drive.google.com/..."
+                    value={dashboardForm.assetsFolder}
+                    onChange={(e) => setDashboardForm({ ...dashboardForm, assetsFolder: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoiceFolder" className="text-sm">Cartella Fatture</Label>
+                  <Input
+                    id="invoiceFolder"
+                    placeholder="https://drive.google.com/..."
+                    value={dashboardForm.invoiceFolder}
+                    onChange={(e) => setDashboardForm({ ...dashboardForm, invoiceFolder: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -784,6 +895,79 @@ export default function ClientDetailPage() {
                 <>
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   Attiva Dashboard
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Folders Edit Dialog */}
+      <Dialog open={showFoldersDialog} onOpenChange={setShowFoldersDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Modifica Cartelle Drive</DialogTitle>
+            <DialogDescription>
+              Aggiorna i link alle cartelle del progetto. Lascia vuoto per rimuovere un link.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editDriveFolderLink">Cartella Principale</Label>
+              <Input
+                id="editDriveFolderLink"
+                placeholder="https://drive.google.com/..."
+                value={foldersForm.driveFolderLink}
+                onChange={(e) => setFoldersForm({ ...foldersForm, driveFolderLink: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editDocumentsFolder">Cartella Documenti</Label>
+              <Input
+                id="editDocumentsFolder"
+                placeholder="https://drive.google.com/..."
+                value={foldersForm.documentsFolder}
+                onChange={(e) => setFoldersForm({ ...foldersForm, documentsFolder: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editAssetsFolder">Cartella Assets</Label>
+              <Input
+                id="editAssetsFolder"
+                placeholder="https://drive.google.com/..."
+                value={foldersForm.assetsFolder}
+                onChange={(e) => setFoldersForm({ ...foldersForm, assetsFolder: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="editInvoiceFolder">Cartella Fatture</Label>
+              <Input
+                id="editInvoiceFolder"
+                placeholder="https://drive.google.com/..."
+                value={foldersForm.invoiceFolder}
+                onChange={(e) => setFoldersForm({ ...foldersForm, invoiceFolder: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFoldersDialog(false)} disabled={saving}>
+              Annulla
+            </Button>
+            <Button onClick={handleSaveFolders} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvataggio...
+                </>
+              ) : (
+                <>
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Salva Cartelle
                 </>
               )}
             </Button>
