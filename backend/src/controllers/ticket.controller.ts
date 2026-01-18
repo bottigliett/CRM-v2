@@ -832,3 +832,128 @@ export const createClientTicket = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * GET /api/client/tickets/:id
+ * Ottieni singolo ticket del cliente (CLIENT)
+ */
+export const getClientTicketById = async (req: Request, res: Response) => {
+  try {
+    const clientAccessId = (req as any).client.clientAccessId;
+    const { id } = req.params;
+
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        id: parseInt(id),
+        clientAccessId,
+      },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            clientAccess: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+        },
+        contact: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket non trovato',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: ticket,
+    });
+  } catch (error: any) {
+    console.error('Error fetching client ticket:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nel recupero del ticket',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/client/tickets/:id/messages
+ * Aggiungi messaggio a ticket (CLIENT)
+ */
+export const addClientTicketMessage = async (req: Request, res: Response) => {
+  try {
+    const clientAccessId = (req as any).client.clientAccessId;
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Messaggio obbligatorio',
+      });
+    }
+
+    // Verifica che il ticket appartenga al cliente
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        id: parseInt(id),
+        clientAccessId,
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket non trovato',
+      });
+    }
+
+    // Crea messaggio
+    const ticketMessage = await prisma.ticketMessage.create({
+      data: {
+        ticketId: parseInt(id),
+        clientAccessId,
+        isClientMessage: true,
+        message,
+      },
+    });
+
+    // Log attività
+    await prisma.ticketActivityLog.create({
+      data: {
+        ticketId: parseInt(id),
+        action: 'message_added',
+        details: 'Messaggio aggiunto da cliente',
+      },
+    });
+
+    // TODO: Notifica admin di nuova risposta
+
+    res.status(201).json({
+      success: true,
+      message: 'Messaggio inviato con successo',
+      data: ticketMessage,
+    });
+  } catch (error: any) {
+    console.error('Error adding client ticket message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nell\'invio del messaggio',
+      error: error.message,
+    });
+  }
+};

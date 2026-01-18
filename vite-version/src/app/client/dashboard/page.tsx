@@ -24,7 +24,7 @@ import { clientAuthAPI } from "@/lib/client-auth-api"
 import { clientInvoicesAPI, type Invoice } from "@/lib/client-invoices-api"
 import { clientTasksAPI, type Task } from "@/lib/client-tasks-api"
 import { clientEventsAPI, type Event } from "@/lib/client-events-api"
-import { ticketsAPI, type Ticket } from "@/lib/tickets-api"
+import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 
@@ -53,7 +53,7 @@ export default function ClientDashboardPage() {
         clientInvoicesAPI.getInvoices({ limit: 5 }).catch(() => ({ data: [] })),
         clientTasksAPI.getTasks({ limit: 5 }).catch(() => ({ data: [] })),
         clientEventsAPI.getEvents({ limit: 5 }).catch(() => ({ data: [] })),
-        ticketsAPI.getAll({ limit: 5 }).catch(() => ({ data: [] })),
+        clientTicketsAPI.getAll({ limit: 5 }).catch(() => ({ data: [] })),
       ])
 
       setInvoices(invoicesRes.data || [])

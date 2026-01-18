@@ -11,6 +11,8 @@ import {
   reopenTicket,
   getClientTickets,
   createClientTicket,
+  getClientTicketById,
+  addClientTicketMessage,
 } from '../controllers/ticket.controller';
 import { authenticate } from '../middleware/auth';
 import { authenticateClient } from '../middleware/client-auth';
@@ -38,6 +40,8 @@ router.post('/:id/reopen', authenticate, reopenTicket);
  */
 export const clientTicketRouter = express.Router();
 clientTicketRouter.get('/', authenticateClient, getClientTickets);
+clientTicketRouter.get('/:id', authenticateClient, getClientTicketById);
 clientTicketRouter.post('/', authenticateClient, createClientTicket);
+clientTicketRouter.post('/:id/messages', authenticateClient, addClientTicketMessage);
 
 export default router;

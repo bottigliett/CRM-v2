@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select"
 import { MessageSquare, Plus, Clock } from "lucide-react"
 import { Link } from "react-router-dom"
-import { ticketsAPI, type Ticket } from "@/lib/tickets-api"
+import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
@@ -35,9 +35,10 @@ export default function ClientTicketsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [formData, setFormData] = React.useState({
-    title: '',
+    supportType: 'GENERAL',
+    subject: '',
     description: '',
-    priority: 'P2',
+    priority: 'NORMAL',
   })
 
   React.useEffect(() => {
@@ -47,7 +48,7 @@ export default function ClientTicketsPage() {
   const loadTickets = async () => {
     try {
       setLoading(true)
-      const response = await ticketsAPI.getAll({ limit: 100 })
+      const response = await clientTicketsAPI.getAll({ limit: 100 })
       setTickets(response.data || [])
     } catch (error) {
       console.error('Error loading tickets:', error)
@@ -60,22 +61,23 @@ export default function ClientTicketsPage() {
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.title.trim()) {
+    if (!formData.subject.trim()) {
       toast.error('Il titolo è obbligatorio')
       return
     }
 
     try {
       setSubmitting(true)
-      await ticketsAPI.create({
-        title: formData.title,
+      await clientTicketsAPI.create({
+        supportType: formData.supportType,
+        subject: formData.subject,
         description: formData.description,
-        priority: formData.priority as 'P1' | 'P2' | 'P3',
+        priority: formData.priority,
       })
 
       toast.success('Ticket creato con successo')
       setDialogOpen(false)
-      setFormData({ title: '', description: '', priority: 'P2' })
+      setFormData({ supportType: 'GENERAL', subject: '', description: '', priority: 'NORMAL' })
       loadTickets()
     } catch (error: any) {
       console.error('Error creating ticket:', error)
@@ -133,11 +135,28 @@ export default function ClientTicketsPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titolo *</Label>
+                  <Label htmlFor="supportType">Tipo di Supporto *</Label>
+                  <Select
+                    value={formData.supportType}
+                    onValueChange={(value) => setFormData({ ...formData, supportType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="GENERAL">Generale</SelectItem>
+                      <SelectItem value="TECHNICAL">Tecnico</SelectItem>
+                      <SelectItem value="BILLING">Fatturazione</SelectItem>
+                      <SelectItem value="FEATURE_REQUEST">Richiesta Funzionalità</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Titolo *</Label>
                   <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    id="subject"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     placeholder="Breve descrizione del problema"
                     required
                   />
@@ -152,20 +171,21 @@ export default function ClientTicketsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="P1">Alta (P1)</SelectItem>
-                      <SelectItem value="P2">Media (P2)</SelectItem>
-                      <SelectItem value="P3">Bassa (P3)</SelectItem>
+                      <SelectItem value="HIGH">Alta</SelectItem>
+                      <SelectItem value="NORMAL">Normale</SelectItem>
+                      <SelectItem value="LOW">Bassa</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrizione</Label>
+                  <Label htmlFor="description">Descrizione *</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Descrivi in dettaglio il tuo problema o richiesta..."
                     rows={4}
+                    required
                   />
                 </div>
               </div>
