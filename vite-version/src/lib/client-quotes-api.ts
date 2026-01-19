@@ -1,4 +1,4 @@
-import { clientApi } from './client-api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface Contact {
   id: number;
@@ -74,13 +74,46 @@ export interface QuoteResponse {
   message?: string;
 }
 
-export const clientQuotesAPI = {
+class ClientQuotesAPI {
+  private getAuthToken(): string | null {
+    return localStorage.getItem('client_auth_token');
+  }
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('Token non fornito');
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    };
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'An error occurred');
+    }
+
+    return response.json();
+  }
+
   /**
    * Get the linked quote for the authenticated client
    */
   async getQuote(): Promise<QuoteResponse> {
-    return await clientApi.get('/client/quotes');
-  },
+    return this.request<QuoteResponse>('/client/quotes');
+  }
 
   /**
    * Accept the quote with selected package and payment option
@@ -89,15 +122,21 @@ export const clientQuotesAPI = {
     selectedPackageId: number;
     selectedPaymentOption: string;
   }): Promise<QuoteResponse> {
-    return await clientApi.put('/client/quotes/accept', data);
-  },
+    return this.request<QuoteResponse>('/client/quotes/accept', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
 
   /**
    * Reject the quote
    */
   async rejectQuote(): Promise<QuoteResponse> {
-    return await clientApi.put('/client/quotes/reject', {});
-  },
+    return this.request<QuoteResponse>('/client/quotes/reject', {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    });
+  }
 
   /**
    * Calculate package total with discount
@@ -121,5 +160,7 @@ export const clientQuotesAPI = {
 
     const discount = discountMap[paymentOption] || 0;
     return basePrice - (basePrice * discount) / 100;
-  },
-};
+  }
+}
+
+export const clientQuotesAPI = new ClientQuotesAPI();
