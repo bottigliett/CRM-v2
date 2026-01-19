@@ -49,6 +49,16 @@ export default function ClientTasksPage() {
     }
   }
 
+  const translateStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'COMPLETED': 'Completato',
+      'IN_PROGRESS': 'In Corso',
+      'PENDING': 'In Attesa',
+      'TODO': 'Da Fare'
+    }
+    return statusMap[status] || status
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'P1':
@@ -60,6 +70,15 @@ export default function ClientTasksPage() {
       default:
         return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
     }
+  }
+
+  const translatePriority = (priority: string) => {
+    const priorityMap: Record<string, string> = {
+      'P1': 'Alta',
+      'P2': 'Media',
+      'P3': 'Bassa'
+    }
+    return priorityMap[priority] || priority
   }
 
   const isOverdue = (deadline: string) => {
@@ -155,10 +174,10 @@ export default function ClientTasksPage() {
                       </div>
                       <div className="flex gap-2">
                         <Badge variant="outline" className={getStatusColor(task.status)}>
-                          {task.status}
+                          {translateStatus(task.status)}
                         </Badge>
                         <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                          {task.priority}
+                          {translatePriority(task.priority)}
                         </Badge>
                       </div>
                     </div>

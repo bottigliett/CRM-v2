@@ -100,6 +100,15 @@ export default function ClientTicketsPage() {
     }
   }
 
+  const translateStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'OPEN': 'Aperto',
+      'IN_PROGRESS': 'In Lavorazione',
+      'CLOSED': 'Chiuso'
+    }
+    return statusMap[status] || status
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'P1':
@@ -108,9 +117,27 @@ export default function ClientTicketsPage() {
         return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
       case 'P3':
         return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      case 'NORMAL':
+        return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      case 'HIGH':
+        return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+      case 'URGENT':
+        return 'bg-red-500/10 text-red-500 border-red-500/20'
       default:
         return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
     }
+  }
+
+  const translatePriority = (priority: string) => {
+    const priorityMap: Record<string, string> = {
+      'P1': 'Alta',
+      'P2': 'Media',
+      'P3': 'Bassa',
+      'NORMAL': 'Normale',
+      'HIGH': 'Alta',
+      'URGENT': 'Urgente'
+    }
+    return priorityMap[priority] || priority
   }
 
   return (
@@ -238,10 +265,10 @@ export default function ClientTicketsPage() {
                     </div>
                     <div className="flex gap-2">
                       <Badge variant="outline" className={getStatusColor(ticket.status)}>
-                        {ticket.status}
+                        {translateStatus(ticket.status)}
                       </Badge>
                       <Badge variant="outline" className={getPriorityColor(ticket.priority)}>
-                        {ticket.priority}
+                        {translatePriority(ticket.priority)}
                       </Badge>
                     </div>
                   </div>

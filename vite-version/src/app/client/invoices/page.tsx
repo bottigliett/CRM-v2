@@ -45,6 +45,17 @@ export default function ClientInvoicesPage() {
     }
   }
 
+  const translateStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'DRAFT': 'Bozza',
+      'ISSUED': 'Emessa',
+      'PAID': 'Pagata',
+      'CANCELLED': 'Annullata',
+      'OVERDUE': 'Scaduta'
+    }
+    return statusMap[status] || status
+  }
+
   const isOverdue = (invoice: Invoice) => {
     if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') return false
     return new Date(invoice.dueDate) < new Date()
@@ -91,7 +102,7 @@ export default function ClientInvoicesPage() {
                       <CardDescription className="mt-1">{invoice.subject}</CardDescription>
                     </div>
                     <Badge variant="outline" className={getStatusColor(invoice.status)}>
-                      {invoice.status}
+                      {translateStatus(invoice.status)}
                     </Badge>
                   </div>
                 </CardHeader>
