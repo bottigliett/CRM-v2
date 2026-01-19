@@ -18,16 +18,18 @@ export const getClientEvents = async (req: ClientAuthRequest, res: Response) => 
     const { limit = '100', startDate, endDate } = req.query;
     const contactId = req.client.contactId;
 
-    // Find "Appuntamento Cliente" category
+    // Find "Appuntamento Cliente" or "Appuntamento Clienti" category (both variants)
     const clientAppointmentCategory = await prisma.eventCategory.findFirst({
       where: {
-        name: 'Appuntamento Cliente',
+        name: {
+          in: ['Appuntamento Cliente', 'Appuntamento Clienti'],
+        },
       },
     });
 
     const where: any = {
       contactId,
-      // Only show events with "Appuntamento Cliente" category
+      // Only show events with "Appuntamento Cliente/Clienti" category
       categoryId: clientAppointmentCategory?.id || -1, // Use -1 if category not found (will return empty)
     };
 
