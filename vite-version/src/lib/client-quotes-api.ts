@@ -34,7 +34,7 @@ export interface QuotePackage {
   id: number;
   name: string;
   description: string | null;
-  basePrice: number;
+  price: number;
   features: string | string[];  // Can be JSON string or parsed array
   recommended: boolean;
   order: number;

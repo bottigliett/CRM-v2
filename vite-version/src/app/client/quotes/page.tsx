@@ -88,8 +88,8 @@ export default function ClientQuotesPage() {
     return []
   }
 
-  const calculatePackageTotal = (basePrice: number, paymentOption: string) => {
-    if (!quote || !basePrice || isNaN(basePrice)) return 0
+  const calculatePackageTotal = (price: number, paymentOption: string) => {
+    if (!quote || !price || isNaN(price)) return 0
 
     const discounts = {
       oneTime: quote.oneTimeDiscount || 0,
@@ -99,7 +99,7 @@ export default function ClientQuotesPage() {
     }
 
     const discount = discounts[paymentOption as keyof typeof discounts] || 0
-    return basePrice - (basePrice * discount) / 100
+    return price - (price * discount) / 100
   }
 
   const getPaymentLabel = (option: string) => {
@@ -314,7 +314,7 @@ export default function ClientQuotesPage() {
             <div className="grid gap-4 md:grid-cols-3">
               {quote.packages.map((pkg) => {
                 const isSelected = selectedPackageId === pkg.id
-                const total = calculatePackageTotal(pkg.basePrice, selectedPaymentOption)
+                const total = calculatePackageTotal(pkg.price, selectedPaymentOption)
                 const features = parseFeatures(pkg.features)
 
                 return (

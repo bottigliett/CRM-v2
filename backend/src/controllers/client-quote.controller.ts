@@ -58,9 +58,19 @@ export const getClientQuote = async (req: ClientAuthRequest, res: Response) => {
       });
     }
 
+    // Map isRecommended to recommended for frontend compatibility
+    const mappedQuote = {
+      ...quote,
+      packages: quote.packages.map((pkg: any) => ({
+        ...pkg,
+        recommended: pkg.isRecommended,
+        basePrice: pkg.price, // Also map price to basePrice for compatibility
+      })),
+    };
+
     res.json({
       success: true,
-      data: quote,
+      data: mappedQuote,
     });
   } catch (error) {
     console.error('Errore durante il recupero del preventivo:', error);
@@ -151,11 +161,21 @@ export const acceptClientQuote = async (req: ClientAuthRequest, res: Response) =
       },
     });
 
+    // Map isRecommended to recommended for frontend compatibility
+    const mappedQuote = {
+      ...updatedQuote,
+      packages: updatedQuote.packages.map((pkg: any) => ({
+        ...pkg,
+        recommended: pkg.isRecommended,
+        basePrice: pkg.price,
+      })),
+    };
+
     // TODO: Send email notifications to client and admin
 
     res.json({
       success: true,
-      data: updatedQuote,
+      data: mappedQuote,
       message: 'Preventivo accettato con successo',
     });
   } catch (error) {
@@ -222,11 +242,21 @@ export const rejectClientQuote = async (req: ClientAuthRequest, res: Response) =
       },
     });
 
+    // Map isRecommended to recommended for frontend compatibility
+    const mappedQuote = {
+      ...updatedQuote,
+      packages: updatedQuote.packages.map((pkg: any) => ({
+        ...pkg,
+        recommended: pkg.isRecommended,
+        basePrice: pkg.price,
+      })),
+    };
+
     // TODO: Send email notification to admin
 
     res.json({
       success: true,
-      data: updatedQuote,
+      data: mappedQuote,
       message: 'Preventivo rifiutato',
     });
   } catch (error) {
