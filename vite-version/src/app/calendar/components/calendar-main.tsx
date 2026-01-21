@@ -156,17 +156,30 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
   }
 
   const navigate = (direction: "prev" | "next") => {
+    let newDate: Date
     if (viewMode === "month") {
-      setCurrentDate(direction === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1))
+      newDate = direction === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1)
     } else if (viewMode === "week" || viewMode === "workWeek") {
-      setCurrentDate(direction === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1))
+      newDate = direction === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1)
     } else if (viewMode === "day") {
-      setCurrentDate(direction === "prev" ? subDays(currentDate, 1) : addDays(currentDate, 1))
+      newDate = direction === "prev" ? subDays(currentDate, 1) : addDays(currentDate, 1)
+    } else {
+      return
+    }
+    setCurrentDate(newDate)
+    // Notify parent component to reload events for the new date range
+    if (onDateSelect) {
+      onDateSelect(newDate)
     }
   }
 
   const goToToday = () => {
-    setCurrentDate(new Date())
+    const today = new Date()
+    setCurrentDate(today)
+    // Notify parent component to reload events for today's month
+    if (onDateSelect) {
+      onDateSelect(today)
+    }
   }
 
   const handleViewChange = (view: CalendarView) => {

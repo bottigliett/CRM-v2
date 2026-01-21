@@ -101,9 +101,10 @@ export function useCalendar(initialEvents: CalendarEvent[] = []): UseCalendarRet
     try {
       setIsLoading(true)
 
-      // Default to current month if no dates provided
-      const start = startDate || startOfMonth(selectedDate)
-      const end = endDate || endOfMonth(selectedDate)
+      // Default to ±2 months from current month if no dates provided
+      // This ensures events created in future months are visible
+      const start = startDate || startOfMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 2, 1))
+      const end = endDate || endOfMonth(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 2, 1))
 
       console.log('[DEBUG] Loading events for date range:', {
         start: format(start, 'yyyy-MM-dd'),
