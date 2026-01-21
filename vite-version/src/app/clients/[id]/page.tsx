@@ -105,9 +105,13 @@ export default function ClientDetailPage() {
   // Folders form data
   const [foldersForm, setFoldersForm] = useState({
     driveFolderLink: '',
+    driveFolderLinkTitle: '',
     documentsFolder: '',
+    documentsFolderTitle: '',
     assetsFolder: '',
+    assetsFolderTitle: '',
     invoiceFolder: '',
+    invoiceFolderTitle: '',
   })
 
   useEffect(() => {
@@ -219,9 +223,13 @@ export default function ClientDetailPage() {
     // Initialize form with current data
     setFoldersForm({
       driveFolderLink: client.driveFolderLink || '',
+      driveFolderLinkTitle: (client as any).driveFolderLinkTitle || '',
       documentsFolder: client.documentsFolder || '',
+      documentsFolderTitle: (client as any).documentsFolderTitle || '',
       assetsFolder: client.assetsFolder || '',
+      assetsFolderTitle: (client as any).assetsFolderTitle || '',
       invoiceFolder: client.invoiceFolder || '',
+      invoiceFolderTitle: (client as any).invoiceFolderTitle || '',
     })
 
     // Open dialog
@@ -235,9 +243,13 @@ export default function ClientDetailPage() {
       setSaving(true)
       await clientAccessAPI.update(client.id, {
         driveFolderLink: foldersForm.driveFolderLink || null,
+        driveFolderLinkTitle: foldersForm.driveFolderLinkTitle || null,
         documentsFolder: foldersForm.documentsFolder || null,
+        documentsFolderTitle: foldersForm.documentsFolderTitle || null,
         assetsFolder: foldersForm.assetsFolder || null,
+        assetsFolderTitle: foldersForm.assetsFolderTitle || null,
         invoiceFolder: foldersForm.invoiceFolder || null,
+        invoiceFolderTitle: foldersForm.invoiceFolderTitle || null,
       })
       toast.success('Cartelle aggiornate con successo')
       setShowFoldersDialog(false)
@@ -962,7 +974,7 @@ export default function ClientDetailPage() {
 
       {/* Dashboard Activation Dialog */}
       <Dialog open={showDashboardDialog} onOpenChange={setShowDashboardDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Attiva Dashboard Completa</DialogTitle>
             <DialogDescription>
@@ -1139,11 +1151,11 @@ export default function ClientDetailPage() {
 
       {/* Folders Edit Dialog */}
       <Dialog open={showFoldersDialog} onOpenChange={setShowFoldersDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Cartelle Drive</DialogTitle>
             <DialogDescription>
-              Aggiorna i link alle cartelle del progetto. Lascia vuoto per rimuovere un link.
+              Aggiorna i link alle cartelle del progetto e i titoli personalizzati. Lascia vuoto per rimuovere.
             </DialogDescription>
           </DialogHeader>
 
@@ -1156,6 +1168,12 @@ export default function ClientDetailPage() {
                 value={foldersForm.driveFolderLink}
                 onChange={(e) => setFoldersForm({ ...foldersForm, driveFolderLink: e.target.value })}
               />
+              <Input
+                placeholder="Titolo link (es. Cartella Principale)"
+                value={foldersForm.driveFolderLinkTitle}
+                onChange={(e) => setFoldersForm({ ...foldersForm, driveFolderLinkTitle: e.target.value })}
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">
@@ -1165,6 +1183,12 @@ export default function ClientDetailPage() {
                 placeholder="https://drive.google.com/..."
                 value={foldersForm.documentsFolder}
                 onChange={(e) => setFoldersForm({ ...foldersForm, documentsFolder: e.target.value })}
+              />
+              <Input
+                placeholder="Titolo link (es. Documenti)"
+                value={foldersForm.documentsFolderTitle}
+                onChange={(e) => setFoldersForm({ ...foldersForm, documentsFolderTitle: e.target.value })}
+                className="text-sm"
               />
             </div>
 
@@ -1176,6 +1200,12 @@ export default function ClientDetailPage() {
                 value={foldersForm.assetsFolder}
                 onChange={(e) => setFoldersForm({ ...foldersForm, assetsFolder: e.target.value })}
               />
+              <Input
+                placeholder="Titolo link (es. Assets)"
+                value={foldersForm.assetsFolderTitle}
+                onChange={(e) => setFoldersForm({ ...foldersForm, assetsFolderTitle: e.target.value })}
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">
@@ -1185,6 +1215,12 @@ export default function ClientDetailPage() {
                 placeholder="https://drive.google.com/..."
                 value={foldersForm.invoiceFolder}
                 onChange={(e) => setFoldersForm({ ...foldersForm, invoiceFolder: e.target.value })}
+              />
+              <Input
+                placeholder="Titolo link (es. Fatture)"
+                value={foldersForm.invoiceFolderTitle}
+                onChange={(e) => setFoldersForm({ ...foldersForm, invoiceFolderTitle: e.target.value })}
+                className="text-sm"
               />
             </div>
           </div>
