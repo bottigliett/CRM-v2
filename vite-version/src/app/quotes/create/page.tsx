@@ -365,7 +365,13 @@ export default function CreateQuotePage() {
 
       const response = await quotesAPI.create(data)
       toast.success('Preventivo creato con successo!')
-      navigate(`/clients/${formData.contactId}`)
+
+      // Redirect to client page if we have a valid contactId, otherwise to quotes list
+      if (formData.contactId && formData.contactId > 0) {
+        navigate(`/clients/${formData.contactId}`)
+      } else {
+        navigate('/quotes')
+      }
     } catch (error: any) {
       console.error('Error creating quote:', error)
       toast.error(error.response?.data?.message || 'Errore nella creazione del preventivo')

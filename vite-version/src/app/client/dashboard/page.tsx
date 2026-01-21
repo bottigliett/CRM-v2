@@ -188,51 +188,54 @@ export default function ClientDashboardPage() {
           </Card>
         </div>
 
-        {/* Project Info */}
-        {clientData?.projectDescription && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Informazioni Progetto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Descrizione</p>
-                  <p className="text-sm">{clientData.projectDescription}</p>
-                </div>
-                {(clientData.projectStartDate || clientData.projectEndDate) && (
-                  <div className="flex gap-6">
-                    {clientData.projectStartDate && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Data Inizio</p>
-                        <p className="text-sm">
-                          {format(new Date(clientData.projectStartDate), 'dd MMMM yyyy', { locale: it })}
-                        </p>
-                      </div>
-                    )}
-                    {clientData.projectEndDate && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Data Fine Prevista</p>
-                        <p className="text-sm">
-                          {format(new Date(clientData.projectEndDate), 'dd MMMM yyyy', { locale: it })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {clientData.projectBudget && (
+        {/* Project Info & Progress - 50/50 Grid */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Project Info */}
+          {clientData?.projectDescription && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Informazioni Progetto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Budget</p>
-                    <p className="text-sm">€{clientData.projectBudget.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Descrizione</p>
+                    <p className="text-sm">{clientData.projectDescription}</p>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  {(clientData.projectStartDate || clientData.projectEndDate) && (
+                    <div className="flex gap-6">
+                      {clientData.projectStartDate && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Data Inizio</p>
+                          <p className="text-sm">
+                            {format(new Date(clientData.projectStartDate), 'dd MMMM yyyy', { locale: it })}
+                          </p>
+                        </div>
+                      )}
+                      {clientData.projectEndDate && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Data Fine Prevista</p>
+                          <p className="text-sm">
+                            {format(new Date(clientData.projectEndDate), 'dd MMMM yyyy', { locale: it })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {clientData.projectBudget && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Budget</p>
+                      <p className="text-sm">€{clientData.projectBudget.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Project Progress */}
-        <ClientProjectProgress />
+          {/* Project Progress */}
+          <ClientProjectProgress />
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Documents Section */}

@@ -641,6 +641,16 @@ export default function ClientDetailPage() {
                                 Mostra al Cliente
                               </Button>
                             )}
+                            {quote.status === 'ACCEPTED' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate(`/quotes/${quote.id}`)}
+                              >
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Gestisci Progetto
+                              </Button>
+                            )}
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
