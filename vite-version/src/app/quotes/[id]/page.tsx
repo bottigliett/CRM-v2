@@ -193,6 +193,18 @@ export default function QuoteDetailPage() {
                 </div>
               </div>
 
+              {quote.projectDurationDays && (
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Durata progetto</p>
+                    <p className="text-sm text-muted-foreground">
+                      {quote.projectDurationDays} {quote.projectDurationDays === 1 ? 'giorno' : 'giorni'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {quote.acceptedDate && (
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />

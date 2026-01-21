@@ -36,6 +36,9 @@ export default function EditQuotePage() {
     payment2Discount: 0,
     payment3Discount: 0,
     payment4Discount: 0,
+    projectDurationDays: null as number | null,
+    discountAmount: 0,
+    taxRate: 22,
   })
 
   useEffect(() => {
@@ -60,6 +63,9 @@ export default function EditQuotePage() {
           payment2Discount: response.data.payment2Discount,
           payment3Discount: response.data.payment3Discount,
           payment4Discount: response.data.payment4Discount,
+          projectDurationDays: response.data.projectDurationDays,
+          discountAmount: response.data.discountAmount,
+          taxRate: response.data.taxRate,
         })
       }
     } catch (error) {
@@ -87,6 +93,9 @@ export default function EditQuotePage() {
         payment2Discount: formData.payment2Discount,
         payment3Discount: formData.payment3Discount,
         payment4Discount: formData.payment4Discount,
+        projectDurationDays: formData.projectDurationDays || undefined,
+        discountAmount: formData.discountAmount,
+        taxRate: formData.taxRate,
       })
       toast.success('Preventivo aggiornato con successo')
       navigate('/quotes')
@@ -134,9 +143,9 @@ export default function EditQuotePage() {
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Informazioni Generali</CardTitle>
+            <CardTitle>Modifica Preventivo</CardTitle>
             <CardDescription>
-              Modifica i campi principali del preventivo. Per modificare pacchetti e voci, crea un nuovo preventivo.
+              Modifica le informazioni del preventivo. Nota: per modificare obiettivi, pacchetti o voci esistenti, è consigliabile creare un nuovo preventivo.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -213,17 +222,65 @@ export default function EditQuotePage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="projectDurationDays">Durata Progetto (giorni)</Label>
+              <Input
+                id="projectDurationDays"
+                type="number"
+                min="1"
+                value={formData.projectDurationDays || ''}
+                onChange={(e) => setFormData({ ...formData, projectDurationDays: e.target.value ? parseInt(e.target.value) : null })}
+                placeholder="es. 30"
+              />
+              <p className="text-xs text-muted-foreground">Durata stimata del progetto in giorni (opzionale)</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="discountAmount">Sconto Base (€)</Label>
+                <Input
+                  id="discountAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.discountAmount}
+                  onChange={(e) => setFormData({ ...formData, discountAmount: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="taxRate">IVA (%)</Label>
+                <Input
+                  id="taxRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.taxRate}
+                  onChange={(e) => setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 22 })}
+                />
+              </div>
+            </div>
+
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="enablePaymentPlans">Abilita pagamenti rateali</Label>
                 <p className="text-sm text-muted-foreground">
-                  Consenti al cliente di scegliere pagamenti a rate
+                  Consenti al cliente di scegliere pagamenti a rate con sconti personalizzati
                 </p>
               </div>
               <Switch
                 id="enablePaymentPlans"
                 checked={formData.enablePaymentPlans}
-                onCheckedChange={(checked) => setFormData({ ...formData, enablePaymentPlans: checked })}
+                onCheckedChange={(checked) => setFormData({
+                  ...formData,
+                  enablePaymentPlans: checked,
+                  // Se disabilitato, azzera tutti gli sconti
+                  oneTimeDiscount: checked ? formData.oneTimeDiscount : 0,
+                  payment2Discount: checked ? formData.payment2Discount : 0,
+                  payment3Discount: checked ? formData.payment3Discount : 0,
+                  payment4Discount: checked ? formData.payment4Discount : 0,
+                })}
               />
             </div>
 

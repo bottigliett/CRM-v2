@@ -927,6 +927,9 @@ model Quote {
   rejectedDate         DateTime?   @map("rejected_date")
   rejectionReason      String?     @map("rejection_reason") @db.Text // Motivo del rifiuto
 
+  // Project details
+  projectDurationDays  Int?        @map("project_duration_days") // Durata stimata del progetto in giorni
+
   // Client selections (filled when client accepts quote)
   selectedPackageId    Int?        @map("selected_package_id") // FK to QuotePackage
   selectedPaymentOption String?    @map("selected_payment_option") // one_time, payment_2, payment_3, payment_4

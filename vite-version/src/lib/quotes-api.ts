@@ -61,6 +61,7 @@ export interface Quote {
   acceptedDate: string | null;
   selectedPackageId: number | null;
   selectedPaymentOption: string | null;
+  projectDurationDays: number | null;
   createdAt: string;
   updatedAt: string;
   contact: Contact;
@@ -83,6 +84,7 @@ export interface CreateQuoteData {
   payment4Discount?: number;
   enableTemporaryAccess?: boolean;
   temporaryPassword?: string;
+  projectDurationDays?: number;
   items?: Omit<QuoteItem, 'id'>[];
   packages?: Array<{
     name: string;

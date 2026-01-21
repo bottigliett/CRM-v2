@@ -70,6 +70,7 @@ interface QuoteFormData {
   payment4Discount: number
   enableTemporaryAccess: boolean
   temporaryPassword: string
+  projectDurationDays: number | null
 }
 
 export default function CreateQuotePage() {
@@ -95,12 +96,13 @@ export default function CreateQuotePage() {
     discountAmount: 0,
     taxRate: 0,
     enablePaymentPlans: true,
-    oneTimeDiscount: 5,
-    payment2Discount: 3,
-    payment3Discount: 2,
+    oneTimeDiscount: 0,
+    payment2Discount: 0,
+    payment3Discount: 0,
     payment4Discount: 0,
     enableTemporaryAccess: false,
     temporaryPassword: '',
+    projectDurationDays: null,
   })
 
   // Objective being edited
@@ -348,6 +350,7 @@ export default function CreateQuotePage() {
         payment4Discount: formData.payment4Discount,
         enableTemporaryAccess: formData.enableTemporaryAccess,
         temporaryPassword: formData.enableTemporaryAccess ? formData.temporaryPassword : undefined,
+        projectDurationDays: formData.projectDurationDays || undefined,
         items: formData.items.length > 0 ? formData.items : undefined,
         packages: formData.packages.length > 0 ? formData.packages.map((pkg, index) => ({
           name: pkg.name,
@@ -508,6 +511,19 @@ export default function CreateQuotePage() {
                   value={formData.validUntil}
                   onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="projectDurationDays">Durata Progetto (giorni)</Label>
+                <Input
+                  id="projectDurationDays"
+                  type="number"
+                  min="1"
+                  value={formData.projectDurationDays || ''}
+                  onChange={(e) => setFormData({ ...formData, projectDurationDays: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="es. 30"
+                />
+                <p className="text-xs text-muted-foreground">Durata stimata del progetto in giorni (opzionale)</p>
               </div>
             </CardContent>
           </Card>
@@ -969,13 +985,21 @@ export default function CreateQuotePage() {
                 <div className="space-y-0.5">
                   <Label htmlFor="enablePaymentPlans">Abilita pagamenti rateali</Label>
                   <p className="text-sm text-muted-foreground">
-                    Consenti al cliente di scegliere pagamenti a rate
+                    Consenti al cliente di scegliere pagamenti a rate con sconti personalizzati
                   </p>
                 </div>
                 <Switch
                   id="enablePaymentPlans"
                   checked={formData.enablePaymentPlans}
-                  onCheckedChange={(checked) => setFormData({ ...formData, enablePaymentPlans: checked })}
+                  onCheckedChange={(checked) => setFormData({
+                    ...formData,
+                    enablePaymentPlans: checked,
+                    // Se disabilitato, azzera tutti gli sconti
+                    oneTimeDiscount: checked ? formData.oneTimeDiscount : 0,
+                    payment2Discount: checked ? formData.payment2Discount : 0,
+                    payment3Discount: checked ? formData.payment3Discount : 0,
+                    payment4Discount: checked ? formData.payment4Discount : 0,
+                  })}
                 />
               </div>
 
@@ -1147,6 +1171,17 @@ export default function CreateQuotePage() {
                         {new Date(formData.validUntil).toLocaleDateString('it-IT')}
                       </dd>
                     </div>
+                    {formData.projectDurationDays && (
+                      <div className="flex justify-between">
+                        <dt className="text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Durata progetto:
+                        </dt>
+                        <dd className="font-medium">
+                          {formData.projectDurationDays} {formData.projectDurationDays === 1 ? 'giorno' : 'giorni'}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 </div>
 

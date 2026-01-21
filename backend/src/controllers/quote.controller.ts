@@ -194,6 +194,7 @@ export const createQuote = async (req: Request, res: Response) => {
       validityDays = 30,
       enableTemporaryAccess = false,
       temporaryPassword,
+      projectDurationDays,
     } = req.body;
 
     const userId = (req as any).user.userId;
@@ -264,6 +265,7 @@ export const createQuote = async (req: Request, res: Response) => {
           validUntil,
           status: 'DRAFT',
           createdBy: userId,
+          projectDurationDays: projectDurationDays ? parseInt(projectDurationDays) : null,
         },
       });
 
@@ -440,6 +442,7 @@ export const updateQuote = async (req: Request, res: Response) => {
       payment4Discount,
       status,
       validUntil,
+      projectDurationDays,
     } = req.body;
 
     // Verifica esistenza
@@ -487,6 +490,7 @@ export const updateQuote = async (req: Request, res: Response) => {
           payment4Discount,
           status,
           validUntil,
+          ...(projectDurationDays !== undefined && { projectDurationDays: projectDurationDays ? parseInt(projectDurationDays) : null }),
         },
       });
 

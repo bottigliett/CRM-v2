@@ -62,6 +62,7 @@ export interface Quote {
   acceptedDate: string | null;
   selectedPackageId: number | null;
   selectedPaymentOption: string | null;
+  projectDurationDays: number | null;
   createdAt: string;
   updatedAt: string;
   contact: Contact;
