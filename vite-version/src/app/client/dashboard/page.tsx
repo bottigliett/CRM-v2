@@ -27,6 +27,7 @@ import { clientEventsAPI, type Event } from "@/lib/client-events-api"
 import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
+import { ClientProjectProgress } from "@/components/client-project-progress"
 
 export default function ClientDashboardPage() {
   const [clientData, setClientData] = React.useState<any>(null)
@@ -229,6 +230,9 @@ export default function ClientDashboardPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Project Progress */}
+        <ClientProjectProgress />
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Documents Section */}

@@ -26,6 +26,7 @@ import {
 import { formatCurrency } from '@/lib/utils'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
+import { ProjectTaskList } from '@/components/project-task-list'
 
 const statusConfig = {
   DRAFT: { label: 'Bozza', variant: 'secondary' as const, icon: FileText },
@@ -416,6 +417,11 @@ export default function QuoteDetailPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Project Tasks (if accepted) */}
+        {quote.status === 'ACCEPTED' && (
+          <ProjectTaskList quoteId={quote.id} />
         )}
       </div>
     </BaseLayout>
