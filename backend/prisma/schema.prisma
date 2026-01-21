@@ -64,6 +64,7 @@ model User {
   notificationPreference NotificationPreference?
   createdInvoices        Invoice[]           @relation("InvoiceCreator") // Invoices created by this user
   createdProjects        Project[]           @relation("ProjectCreator") // Projects created by this user
+  completedProjectTasks  ProjectTask[]       @relation("TaskCompletedBy") // Project tasks completed by this user
 
   @@map("users")
 }
@@ -943,6 +944,7 @@ model Quote {
   items                QuoteItem[]
   packages             QuotePackage[]
   linkedClientAccess   ClientAccess[] @relation("LinkedQuote") // Client access records linked to this quote
+  projectTasks         ProjectTask[] // Task di avanzamento progetto
 
   @@index([contactId])
   @@index([quoteNumber])
@@ -1004,6 +1006,29 @@ model QuotePackage {
   @@index([quoteId])
   @@index([quoteId, order])
   @@map("quote_packages")
+}
+
+model ProjectTask {
+  id             Int       @id @default(autoincrement())
+  quoteId        Int       @map("quote_id")
+  title          String    // Titolo del task (preso dalle features)
+  description    String?   @db.Text // Descrizione opzionale
+  isCompleted    Boolean   @default(false) @map("is_completed")
+  completedAt    DateTime? @map("completed_at")
+  completedBy    Int?      @map("completed_by") // User che ha completato il task
+  order          Int       @default(0) // Ordine di visualizzazione
+
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  quote          Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  completedByUser User?   @relation("TaskCompletedBy", fields: [completedBy], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([quoteId, order])
+  @@index([isCompleted])
+  @@map("project_tasks")
 }
 
 // ===================================

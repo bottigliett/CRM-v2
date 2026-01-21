@@ -173,6 +173,44 @@ export const acceptClientQuote = async (req: ClientAuthRequest, res: Response) =
       })),
     };
 
+    // Create project tasks from selected package features
+    try {
+      const selectedPackage = updatedQuote.packages.find(pkg => pkg.id === parseInt(selectedPackageId));
+      if (selectedPackage && selectedPackage.features) {
+        // Parse features (can be JSON string or already parsed array)
+        let features: string[] = [];
+        if (typeof selectedPackage.features === 'string') {
+          try {
+            features = JSON.parse(selectedPackage.features);
+          } catch {
+            // If not JSON, split by newlines
+            features = selectedPackage.features.split('\n').filter(f => f.trim());
+          }
+        } else if (Array.isArray(selectedPackage.features)) {
+          features = selectedPackage.features;
+        }
+
+        // Create a task for each feature
+        if (features.length > 0) {
+          const tasksData = features.map((feature, index) => ({
+            quoteId: quoteId,
+            title: feature,
+            order: index,
+            isCompleted: false,
+          }));
+
+          await prisma.projectTask.createMany({
+            data: tasksData,
+          });
+
+          console.log(`✅ Created ${features.length} project tasks for quote ${updatedQuote.quoteNumber}`);
+        }
+      }
+    } catch (taskError) {
+      console.error('Error creating project tasks:', taskError);
+      // Don't fail the request if task creation fails
+    }
+
     // Send email notifications to client and admin
     try {
       // Calculate final price with discount

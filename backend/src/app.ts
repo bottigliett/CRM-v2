@@ -26,6 +26,8 @@ import clientInvoiceRoutes from './routes/client-invoice.routes';
 import clientTaskRoutes from './routes/client-task.routes';
 import clientEventRoutes from './routes/client-event.routes';
 import clientQuoteRoutes from './routes/client-quote.routes';
+import projectTaskRoutes from './routes/project-task.routes';
+import clientProjectTaskRoutes from './routes/client-project-task.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 // Load .env from backend root directory (not from dist/)
@@ -76,6 +78,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/on-duty', onDutyRoutes);
 app.use('/api/quotes', quoteRoutes);
+app.use('/api', projectTaskRoutes); // Project task routes (/api/quotes/:quoteId/tasks)
 app.use('/api/client-access', clientAccessRoutes);
 app.use('/api/client-auth', clientAuthRoutes);
 app.use('/api/public', publicRoutes); // Public endpoints (workaround for 401 issue)
@@ -89,6 +92,7 @@ app.use('/api/client/invoices', clientInvoiceRoutes);
 app.use('/api/client/tasks', clientTaskRoutes);
 app.use('/api/client/events', clientEventRoutes);
 app.use('/api/client/quotes', clientQuoteRoutes);
+app.use('/api/client/project-tasks', clientProjectTaskRoutes);
 
 // Error handling
 app.use(notFound);
