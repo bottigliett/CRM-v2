@@ -552,16 +552,26 @@ export const addTicketMessage = async (req: Request, res: Response) => {
         },
       });
 
-      // Send email notification to client
+      // Send email notification to client if they have an active FULL_CLIENT dashboard
       if (ticket.clientAccess?.contact?.email) {
         try {
-          await sendClientTicketReplyEmail(
-            ticket.clientAccess.contact.email,
-            ticket.clientAccess.contact.name,
-            ticket.ticketNumber,
-            ticket.subject
-          );
-          console.log(`Ticket reply email sent to ${ticket.clientAccess.contact.email}`);
+          // Check if client access is active and has full client access (not just quote access)
+          const clientAccess = await prisma.clientAccess.findUnique({
+            where: { id: ticket.clientAccessId },
+            select: { isActive: true, accessType: true },
+          });
+
+          if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
+            await sendClientTicketReplyEmail(
+              ticket.clientAccess.contact.email,
+              ticket.clientAccess.contact.name,
+              ticket.ticketNumber,
+              ticket.subject
+            );
+            console.log(`Ticket reply email sent to ${ticket.clientAccess.contact.email}`);
+          } else {
+            console.log(`Ticket reply email NOT sent to ${ticket.clientAccess.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+          }
         } catch (emailError) {
           console.error('Failed to send ticket reply email:', emailError);
           // Don't fail the request if email fails

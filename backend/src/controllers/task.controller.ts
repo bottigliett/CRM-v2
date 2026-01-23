@@ -273,17 +273,26 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Send email notification to client if task is visible to them
+    // Send email notification to client if task is visible to them AND they have an active FULL_CLIENT dashboard
     if (task.contactId && task.visibleToClient && task.contact?.email) {
       try {
-        await sendClientTaskAssignedEmail(
-          task.contact.email,
-          task.contact.name,
-          task.title,
-          task.deadline,
-          task.description || undefined
-        );
-        console.log(`Task assignment email sent to ${task.contact.email}`);
+        // Check if client has an active full dashboard (not just quote access)
+        const clientAccess = await prisma.clientAccess.findUnique({
+          where: { contactId: task.contactId },
+        });
+
+        if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
+          await sendClientTaskAssignedEmail(
+            task.contact.email,
+            task.contact.name,
+            task.title,
+            task.deadline,
+            task.description || undefined
+          );
+          console.log(`Task assignment email sent to ${task.contact.email}`);
+        } else {
+          console.log(`Task email NOT sent to ${task.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+        }
       } catch (emailError) {
         console.error('Failed to send task assignment email:', emailError);
         // Don't fail the request if email fails

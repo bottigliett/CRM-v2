@@ -353,17 +353,26 @@ export const createInvoice = async (req: Request, res: Response) => {
 
     console.log(`Invoice created: ${invoice.invoiceNumber} (ID: ${invoice.id})`);
 
-    // Send email notification to client if invoice is issued and has contact
+    // Send email notification to client if invoice is issued and has contact AND client has active FULL_CLIENT dashboard
     if (invoice.contactId && invoice.status === 'ISSUED' && invoice.contact?.email) {
       try {
-        await sendClientInvoiceCreatedEmail(
-          invoice.contact.email,
-          invoice.contact.name,
-          invoice.invoiceNumber,
-          invoice.total,
-          new Date(invoice.dueDate)
-        );
-        console.log(`Invoice notification email sent to ${invoice.contact.email}`);
+        // Check if client has an active full dashboard (not just quote access)
+        const clientAccess = await prisma.clientAccess.findUnique({
+          where: { contactId: invoice.contactId },
+        });
+
+        if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
+          await sendClientInvoiceCreatedEmail(
+            invoice.contact.email,
+            invoice.contact.name,
+            invoice.invoiceNumber,
+            invoice.total,
+            new Date(invoice.dueDate)
+          );
+          console.log(`Invoice notification email sent to ${invoice.contact.email}`);
+        } else {
+          console.log(`Invoice email NOT sent to ${invoice.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+        }
       } catch (emailError) {
         console.error('Failed to send invoice notification email:', emailError);
         // Don't fail the request if email fails
@@ -547,18 +556,27 @@ export const updateInvoice = async (req: Request, res: Response) => {
       console.log(`Created income transaction for invoice ${invoice.invoiceNumber}`);
     }
 
-    // Send email notification to client when invoice status changes to ISSUED
+    // Send email notification to client when invoice status changes to ISSUED AND client has active FULL_CLIENT dashboard
     const isBecomingIssued = statusChanged && newStatus === 'ISSUED';
     if (isBecomingIssued && invoice.contactId && invoice.contact?.email) {
       try {
-        await sendClientInvoiceCreatedEmail(
-          invoice.contact.email,
-          invoice.contact.name,
-          invoice.invoiceNumber,
-          invoice.total,
-          new Date(invoice.dueDate)
-        );
-        console.log(`Invoice notification email sent to ${invoice.contact.email}`);
+        // Check if client has an active full dashboard (not just quote access)
+        const clientAccess = await prisma.clientAccess.findUnique({
+          where: { contactId: invoice.contactId },
+        });
+
+        if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
+          await sendClientInvoiceCreatedEmail(
+            invoice.contact.email,
+            invoice.contact.name,
+            invoice.invoiceNumber,
+            invoice.total,
+            new Date(invoice.dueDate)
+          );
+          console.log(`Invoice notification email sent to ${invoice.contact.email}`);
+        } else {
+          console.log(`Invoice email NOT sent to ${invoice.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+        }
       } catch (emailError) {
         console.error('Failed to send invoice notification email:', emailError);
         // Don't fail the request if email fails

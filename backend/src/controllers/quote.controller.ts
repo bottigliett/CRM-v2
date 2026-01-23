@@ -603,16 +603,25 @@ export const updateQuote = async (req: Request, res: Response) => {
       },
     });
 
-    // Send email notification if quote status changed to SENT
-    if (status === 'SENT' && existingQuote.status !== 'SENT' && fullQuote?.contact?.email) {
+    // Send email notification if quote status changed to SENT AND client has active FULL_CLIENT dashboard
+    if (status === 'SENT' && existingQuote.status !== 'SENT' && fullQuote?.contact?.email && fullQuote?.contactId) {
       try {
-        await sendClientQuoteSharedEmail(
-          fullQuote.contact.email,
-          fullQuote.contact.name,
-          fullQuote.quoteNumber,
-          fullQuote.total
-        );
-        console.log(`Quote shared email sent to ${fullQuote.contact.email}`);
+        // Check if client has an active full dashboard (not just quote access)
+        const clientAccess = await prisma.clientAccess.findUnique({
+          where: { contactId: fullQuote.contactId },
+        });
+
+        if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
+          await sendClientQuoteSharedEmail(
+            fullQuote.contact.email,
+            fullQuote.contact.name,
+            fullQuote.quoteNumber,
+            fullQuote.total
+          );
+          console.log(`Quote shared email sent to ${fullQuote.contact.email}`);
+        } else {
+          console.log(`Quote email NOT sent to ${fullQuote.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+        }
       } catch (emailError) {
         console.error('Failed to send quote shared email:', emailError);
         // Don't fail the request if email fails
