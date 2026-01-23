@@ -66,21 +66,26 @@ export default function EditQuotePage() {
       const response = await quotesAPI.getById(quoteId)
       if (response.success && response.data) {
         setQuote(response.data)
+
+        // Ensure objectives and packages are always arrays
+        const objectives = Array.isArray(response.data.objectives) ? response.data.objectives : []
+        const packages = Array.isArray(response.data.packages) ? response.data.packages : []
+
         setFormData({
           title: response.data.title,
           description: response.data.description || '',
           status: response.data.status,
           validUntil: response.data.validUntil.split('T')[0], // Format for input date
-          objectives: response.data.objectives || [],
-          packages: response.data.packages || [],
+          objectives,
+          packages,
           enablePaymentPlans: response.data.enablePaymentPlans !== undefined ? response.data.enablePaymentPlans : true,
-          oneTimeDiscount: response.data.oneTimeDiscount,
-          payment2Discount: response.data.payment2Discount,
-          payment3Discount: response.data.payment3Discount,
-          payment4Discount: response.data.payment4Discount,
-          projectDurationDays: response.data.projectDurationDays,
-          discountAmount: response.data.discountAmount,
-          taxRate: response.data.taxRate,
+          oneTimeDiscount: response.data.oneTimeDiscount || 0,
+          payment2Discount: response.data.payment2Discount || 0,
+          payment3Discount: response.data.payment3Discount || 0,
+          payment4Discount: response.data.payment4Discount || 0,
+          projectDurationDays: response.data.projectDurationDays || null,
+          discountAmount: response.data.discountAmount || 0,
+          taxRate: response.data.taxRate || 22,
         })
       }
     } catch (error) {
@@ -385,12 +390,21 @@ export default function EditQuotePage() {
                         <div className="mt-2">
                           <p className="text-sm font-medium mb-1">Caratteristiche:</p>
                           <ul className="text-sm text-muted-foreground space-y-1">
-                            {(typeof pkg.features === 'string'
-                              ? JSON.parse(pkg.features)
-                              : pkg.features
-                            ).map((feature: string, fIndex: number) => (
-                              <li key={fIndex}>• {feature}</li>
-                            ))}
+                            {(() => {
+                              try {
+                                const features = typeof pkg.features === 'string'
+                                  ? JSON.parse(pkg.features)
+                                  : pkg.features
+                                return Array.isArray(features)
+                                  ? features.map((feature: string, fIndex: number) => (
+                                      <li key={fIndex}>• {feature}</li>
+                                    ))
+                                  : null
+                              } catch (e) {
+                                console.error('Error parsing features:', e)
+                                return null
+                              }
+                            })()}
                           </ul>
                         </div>
                       )}
