@@ -263,7 +263,7 @@ class ClientAuthAPI {
    * Get authenticated client data
    */
   async getMe(): Promise<ClientMeResponse> {
-    const token = localStorage.getItem('client_auth_token');
+    const token = this.getToken();
     if (!token) {
       throw new Error('Non autenticato');
     }
@@ -287,7 +287,7 @@ class ClientAuthAPI {
    * Change password
    */
   async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const token = localStorage.getItem('client_auth_token');
+    const token = this.getToken();
     if (!token) {
       throw new Error('Non autenticato');
     }
@@ -320,6 +320,12 @@ class ClientAuthAPI {
    * Check if client is authenticated
    */
   isAuthenticated(): boolean {
+    // Check for preview token first (sessionStorage)
+    const previewToken = sessionStorage.getItem('client_preview_token');
+    if (previewToken) {
+      return true;
+    }
+    // Fallback to regular auth token (localStorage)
     return !!localStorage.getItem('client_auth_token');
   }
 
@@ -327,6 +333,12 @@ class ClientAuthAPI {
    * Get stored token
    */
   getToken(): string | null {
+    // Check for preview token first (sessionStorage)
+    const previewToken = sessionStorage.getItem('client_preview_token');
+    if (previewToken) {
+      return previewToken;
+    }
+    // Fallback to regular auth token (localStorage)
     return localStorage.getItem('client_auth_token');
   }
 }
