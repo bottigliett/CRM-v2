@@ -155,7 +155,7 @@ export default function ClientTicketDetailPage() {
               <div className="flex-1">
                 <CardTitle className="text-xl">{ticket.title}</CardTitle>
                 <CardDescription className="mt-2">
-                  Creato il {format(new Date(ticket.createdAt), 'dd MMMM yyyy alle HH:mm', { locale: it })}
+                  Creato il {format(new Date(ticket.createdAt), 'dd MMMM yyyy \'alle\' HH:mm', { locale: it })}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
