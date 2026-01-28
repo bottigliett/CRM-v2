@@ -61,6 +61,17 @@ interface AuthResponse {
 class ApiService {
   private getAuthHeader(): HeadersInit {
     const token = localStorage.getItem('auth_token');
+    if (!token) {
+      console.warn('No auth token found in localStorage');
+      // Check if user is actually logged in
+      const userType = localStorage.getItem('user_type');
+      if (userType === 'ADMIN' || userType === 'CLIENT') {
+        // Token should exist but doesn't - session expired or cleared
+        console.error('User type exists but token is missing - redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+    }
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
@@ -337,6 +348,14 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        console.error('Unauthorized request - clearing session and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+
       const error = await response.json();
       throw new Error(error.message || `HTTP Error ${response.status}`);
     }
@@ -355,6 +374,14 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        console.error('Unauthorized request - clearing session and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+
       const error = await response.json();
       throw new Error(error.message || `HTTP Error ${response.status}`);
     }
@@ -373,6 +400,14 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        console.error('Unauthorized request - clearing session and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+
       const error = await response.json();
       throw new Error(error.message || `HTTP Error ${response.status}`);
     }
@@ -391,6 +426,14 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        console.error('Unauthorized request - clearing session and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+
       const error = await response.json();
       throw new Error(error.message || `HTTP Error ${response.status}`);
     }
@@ -408,6 +451,14 @@ class ApiService {
     });
 
     if (!response.ok) {
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        console.error('Unauthorized request - clearing session and redirecting to login');
+        localStorage.clear();
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
+
       const error = await response.json();
       throw new Error(error.message || `HTTP Error ${response.status}`);
     }
