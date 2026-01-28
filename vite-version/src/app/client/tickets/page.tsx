@@ -35,7 +35,7 @@ export default function ClientTicketsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [formData, setFormData] = React.useState({
-    supportType: 'GENERAL',
+    supportType: 'OTHER',
     subject: '',
     description: '',
     priority: 'NORMAL',
@@ -77,7 +77,7 @@ export default function ClientTicketsPage() {
 
       toast.success('Ticket creato con successo')
       setDialogOpen(false)
-      setFormData({ supportType: 'GENERAL', subject: '', description: '', priority: 'NORMAL' })
+      setFormData({ supportType: 'OTHER', subject: '', description: '', priority: 'NORMAL' })
       loadTickets()
     } catch (error: any) {
       console.error('Error creating ticket:', error)
@@ -171,10 +171,11 @@ export default function ClientTicketsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="GENERAL">Generale</SelectItem>
                       <SelectItem value="TECHNICAL">Tecnico</SelectItem>
+                      <SelectItem value="DESIGN">Design</SelectItem>
+                      <SelectItem value="CONTENT">Contenuti</SelectItem>
                       <SelectItem value="BILLING">Fatturazione</SelectItem>
-                      <SelectItem value="FEATURE_REQUEST">Richiesta Funzionalità</SelectItem>
+                      <SelectItem value="OTHER">Altro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
