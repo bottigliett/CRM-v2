@@ -14,10 +14,18 @@ import {
   User,
   ArrowLeft,
 } from "lucide-react"
-import { ticketsAPI, type Ticket, type TicketMessage } from "@/lib/tickets-api"
+import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
+
+interface TicketMessage {
+  id: number;
+  ticketId: number;
+  isClientMessage: boolean;
+  message: string;
+  createdAt: string;
+}
 
 export default function ClientTicketDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -37,7 +45,7 @@ export default function ClientTicketDetailPage() {
   const loadTicketData = async () => {
     try {
       setLoading(true)
-      const response = await ticketsAPI.getById(parseInt(id!))
+      const response = await clientTicketsAPI.getById(parseInt(id!))
       setTicket(response.data)
       setMessages(response.data.messages || [])
     } catch (error: any) {
@@ -53,7 +61,7 @@ export default function ClientTicketDetailPage() {
 
     try {
       setSending(true)
-      await ticketsAPI.addMessage(ticket.id, { message: newMessage })
+      await clientTicketsAPI.addMessage(ticket.id, newMessage)
       setNewMessage('')
       toast.success('Messaggio inviato')
       loadTicketData()
