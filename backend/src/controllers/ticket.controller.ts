@@ -645,6 +645,89 @@ export const assignTicket = async (req: Request, res: Response) => {
 };
 
 /**
+ * POST /api/tickets/:id/log-time
+ * Registra tempo speso su ticket
+ */
+export const logTime = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { minutes } = req.body;
+
+    if (!minutes || minutes <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specificare un valore valido per i minuti',
+      });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+      select: {
+        id: true,
+        clientAccessId: true,
+        timeSpentMinutes: true,
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket non trovato',
+      });
+    }
+
+    // Aggiorna tempo speso
+    const updated = await prisma.ticket.update({
+      where: { id: parseInt(id) },
+      data: {
+        timeSpentMinutes: ticket.timeSpentMinutes + minutes,
+      },
+    });
+
+    // Log attività
+    await prisma.ticketActivityLog.create({
+      data: {
+        ticketId: updated.id,
+        action: 'time_logged',
+        details: `Tempo registrato: ${minutes} minuti (totale: ${updated.timeSpentMinutes} minuti)`,
+      },
+    });
+
+    // Aggiorna ore supporto usate per FULL_CLIENT
+    const clientAccess = await prisma.clientAccess.findUnique({
+      where: { id: ticket.clientAccessId },
+      select: {
+        accessType: true,
+        supportHoursUsed: true,
+      },
+    });
+
+    if (clientAccess?.accessType === 'FULL_CLIENT') {
+      const hoursUsed = minutes / 60;
+      await prisma.clientAccess.update({
+        where: { id: ticket.clientAccessId },
+        data: {
+          supportHoursUsed: clientAccess.supportHoursUsed + hoursUsed,
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Tempo registrato con successo',
+      data: updated,
+    });
+  } catch (error: any) {
+    console.error('Error logging time:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nella registrazione del tempo',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * POST /api/tickets/:id/close
  * Chiudi ticket con note
  */

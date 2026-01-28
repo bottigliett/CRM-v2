@@ -7,6 +7,7 @@ import {
   deleteTicket,
   addTicketMessage,
   assignTicket,
+  logTime,
   closeTicket,
   reopenTicket,
   getClientTickets,
@@ -31,6 +32,7 @@ router.delete('/:id', authenticate, deleteTicket);
 // Azioni ticket
 router.post('/:id/messages', authenticate, addTicketMessage);
 router.post('/:id/assign', authenticate, assignTicket);
+router.post('/:id/log-time', authenticate, logTime);
 router.post('/:id/close', authenticate, closeTicket);
 router.post('/:id/reopen', authenticate, reopenTicket);
 

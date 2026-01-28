@@ -69,7 +69,7 @@ class ApiService {
         // Token should exist but doesn't - session expired or cleared
         console.error('User type exists but token is missing - redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     }
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -352,7 +352,7 @@ class ApiService {
       if (response.status === 401) {
         console.error('Unauthorized request - clearing session and redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }
 
@@ -378,7 +378,7 @@ class ApiService {
       if (response.status === 401) {
         console.error('Unauthorized request - clearing session and redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }
 
@@ -404,7 +404,7 @@ class ApiService {
       if (response.status === 401) {
         console.error('Unauthorized request - clearing session and redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }
 
@@ -430,7 +430,7 @@ class ApiService {
       if (response.status === 401) {
         console.error('Unauthorized request - clearing session and redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }
 
@@ -455,7 +455,7 @@ class ApiService {
       if (response.status === 401) {
         console.error('Unauthorized request - clearing session and redirecting to login');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/';
         throw new Error('Session expired. Please login again.');
       }
 
