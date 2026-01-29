@@ -65,6 +65,7 @@ model User {
   createdInvoices        Invoice[]           @relation("InvoiceCreator") // Invoices created by this user
   createdProjects        Project[]           @relation("ProjectCreator") // Projects created by this user
   completedProjectTasks  ProjectTask[]       @relation("TaskCompletedBy") // Project tasks completed by this user
+  ticketMessages         TicketMessage[]     // Messages sent by this user
 
   @@map("users")
 }
@@ -1156,6 +1157,7 @@ model TicketMessage {
 
   // Relations
   ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   clientAccess    ClientAccess? @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])

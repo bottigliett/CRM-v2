@@ -1013,6 +1013,13 @@ export const getClientTicketById = async (req: Request, res: Response) => {
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
             clientAccess: {
               select: {
                 id: true,

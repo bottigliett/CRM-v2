@@ -22,9 +22,19 @@ import { toast } from "sonner"
 interface TicketMessage {
   id: number;
   ticketId: number;
-  isClientMessage: boolean;
+  userId: number | null;
+  clientAccessId: number | null;
   message: string;
   createdAt: string;
+  user?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+  };
+  clientAccess?: {
+    id: number;
+    username: string;
+  };
 }
 
 export default function ClientTicketDetailPage() {
@@ -242,7 +252,7 @@ export default function ClientTicketDetailPage() {
                 </div>
               ) : (
                 messages.map((message) => {
-                  const isFromClient = message.isFromClient
+                  const isFromClient = message.clientAccessId !== null
                   const sender = isFromClient
                     ? 'Tu'
                     : message.user
