@@ -455,7 +455,7 @@ export default function TicketsPage() {
 
         {/* Ticket Details Dialog */}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
+          <DialogContent className='max-w-6xl max-h-[90vh] overflow-y-auto'>
             {selectedTicket && (
               <>
                 <DialogHeader>
