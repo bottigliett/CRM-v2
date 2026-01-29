@@ -15,9 +15,25 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
   messages?: TicketMessage[];
+  attachments?: TicketAttachment[];
   _count?: {
     messages: number;
   };
+}
+
+export interface TicketAttachment {
+  id: number;
+  ticketId: number;
+  ticketMessageId: number | null;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
+  mimeType: string;
+  storagePath: string;
+  isInternal: boolean;
+  uploadedBy: string;
+  uploadedById: number;
+  uploadedAt: string;
 }
 
 export interface TicketMessage {
@@ -26,6 +42,7 @@ export interface TicketMessage {
   isClientMessage: boolean;
   message: string;
   createdAt: string;
+  attachments?: TicketAttachment[];
 }
 
 export interface CreateTicketData {
@@ -115,6 +132,55 @@ class ClientTicketsAPI {
       method: 'POST',
       body: JSON.stringify({ message }),
     });
+  }
+
+  async uploadAttachments(
+    ticketId: number,
+    files: File[],
+    ticketMessageId?: number
+  ): Promise<{
+    success: boolean;
+    data: TicketAttachment[];
+    message: string;
+  }> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('Token non fornito');
+    }
+
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    if (ticketMessageId) {
+      formData.append('ticketMessageId', ticketMessageId.toString());
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/client/tickets/${ticketId}/attachments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Errore nel caricamento degli allegati');
+    }
+
+    return response.json();
+  }
+
+  downloadAttachment(attachmentId: number): string {
+    const token = this.getAuthToken();
+    return `${API_BASE_URL}/client/tickets/attachments/${attachmentId}?token=${token}`;
   }
 }
 

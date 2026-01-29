@@ -18,6 +18,8 @@ import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
+import { FileUpload } from "@/components/ui/file-upload"
+import { AttachmentList } from "@/components/ui/attachment-list"
 
 interface TicketMessage {
   id: number;
@@ -26,6 +28,16 @@ interface TicketMessage {
   clientAccessId: number | null;
   message: string;
   createdAt: string;
+  attachments?: {
+    id: number;
+    fileName: string;
+    originalFileName: string;
+    fileSize: number;
+    mimeType: string;
+    isInternal: boolean;
+    uploadedBy: string;
+    uploadedAt: string;
+  }[];
   user?: {
     id: number;
     firstName: string;
@@ -45,6 +57,8 @@ export default function ClientTicketDetailPage() {
   const [loading, setLoading] = React.useState(true)
   const [newMessage, setNewMessage] = React.useState('')
   const [sending, setSending] = React.useState(false)
+  const [uploadFiles, setUploadFiles] = React.useState<any[]>([])
+  const [uploading, setUploading] = React.useState(false)
   const previousMessageCountRef = React.useRef<number>(0)
 
   React.useEffect(() => {
@@ -95,18 +109,39 @@ export default function ClientTicketDetailPage() {
     }
   }
 
+  const handleDownloadAttachment = (attachmentId: number) => {
+    const url = clientTicketsAPI.downloadAttachment(attachmentId)
+    window.open(url, '_blank')
+  }
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !ticket) return
+    if ((!newMessage.trim() && uploadFiles.length === 0) || !ticket) return
 
     try {
       setSending(true)
-      await clientTicketsAPI.addMessage(ticket.id, newMessage)
-      setNewMessage('')
+      let messageId: number | undefined
+
+      // Send message if there's text
+      if (newMessage.trim()) {
+        const response = await clientTicketsAPI.addMessage(ticket.id, newMessage)
+        messageId = response.data.id
+        setNewMessage('')
+      }
+
+      // Upload files if present
+      if (uploadFiles.length > 0) {
+        setUploading(true)
+        await clientTicketsAPI.uploadAttachments(ticket.id, uploadFiles, messageId)
+        setUploadFiles([])
+        setUploading(false)
+      }
+
       toast.success('Messaggio inviato')
       loadTicketData()
     } catch (error: any) {
       console.error('Error sending message:', error)
       toast.error(error.message || "Errore nell'invio del messaggio")
+      setUploading(false)
     } finally {
       setSending(false)
     }
@@ -285,6 +320,15 @@ export default function ClientTicketDetailPage() {
                         >
                           {message.message}
                         </div>
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className='mt-2'>
+                            <AttachmentList
+                              attachments={message.attachments}
+                              onDownload={handleDownloadAttachment}
+                              showDelete={false}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
@@ -308,15 +352,20 @@ export default function ClientTicketDetailPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Scrivi il tuo messaggio..."
                   rows={4}
-                  disabled={sending}
+                  disabled={sending || uploading}
+                />
+                <FileUpload
+                  files={uploadFiles}
+                  onFilesChange={setUploadFiles}
+                  disabled={sending || uploading}
                 />
                 <div className="flex justify-end">
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && uploadFiles.length === 0) || sending || uploading}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    {sending ? 'Invio...' : 'Invia Messaggio'}
+                    {sending || uploading ? 'Invio...' : 'Invia Messaggio'}
                   </Button>
                 </div>
               </div>

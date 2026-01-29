@@ -61,6 +61,8 @@ import {
 import { toast } from 'sonner'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
+import { FileUpload } from '@/components/ui/file-upload'
+import { AttachmentList } from '@/components/ui/attachment-list'
 
 const priorityConfig = {
   LOW: { label: 'Bassa', variant: 'outline' as const, icon: Circle },
@@ -97,6 +99,8 @@ export default function TicketsPage() {
   const [isInternal, setIsInternal] = useState(false)
   const [newStatus, setNewStatus] = useState<string>('')
   const [timeToLog, setTimeToLog] = useState('')
+  const [uploadFiles, setUploadFiles] = useState<any[]>([])
+  const [uploading, setUploading] = useState(false)
   const previousMessageCountRef = useRef<number>(0)
 
   useEffect(() => {
@@ -163,19 +167,40 @@ export default function TicketsPage() {
   }
 
   const handleAddMessage = async () => {
-    if (!selectedTicket || !newMessage.trim()) {
-      toast.error('Inserisci un messaggio')
+    if (!selectedTicket || (!newMessage.trim() && uploadFiles.length === 0)) {
+      toast.error('Inserisci un messaggio o seleziona dei file')
       return
     }
 
     try {
-      await ticketsAPI.addMessage(selectedTicket.id, {
-        message: newMessage,
-        isInternal
-      })
+      let messageId: number | undefined
+
+      // Send message if there's text
+      if (newMessage.trim()) {
+        const response = await ticketsAPI.addMessage(selectedTicket.id, {
+          message: newMessage,
+          isInternal
+        })
+        messageId = response.data.id
+      }
+
+      // Upload files if present
+      if (uploadFiles.length > 0) {
+        setUploading(true)
+        await ticketsAPI.uploadAttachments(
+          selectedTicket.id,
+          uploadFiles,
+          isInternal,
+          messageId
+        )
+        setUploadFiles([])
+      }
+
       toast.success('Messaggio aggiunto')
       setNewMessage('')
       setIsInternal(false)
+      setUploading(false)
+
       // Reload ticket details
       const response = await ticketsAPI.getById(selectedTicket.id)
       setSelectedTicket(response.data)
@@ -183,6 +208,30 @@ export default function TicketsPage() {
     } catch (error) {
       console.error('Failed to add message:', error)
       toast.error('Errore nell\'aggiunta del messaggio')
+      setUploading(false)
+    }
+  }
+
+  const handleDownloadAttachment = (attachmentId: number) => {
+    const url = ticketsAPI.downloadAttachment(attachmentId)
+    window.open(url, '_blank')
+  }
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    if (!confirm('Eliminare questo allegato?')) return
+
+    try {
+      await ticketsAPI.deleteAttachment(attachmentId)
+      toast.success('Allegato eliminato')
+
+      // Reload ticket details
+      if (selectedTicket) {
+        const response = await ticketsAPI.getById(selectedTicket.id)
+        setSelectedTicket(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to delete attachment:', error)
+      toast.error('Errore nell\'eliminazione dell\'allegato')
     }
   }
 
@@ -481,6 +530,16 @@ export default function TicketsPage() {
                             </span>
                           </div>
                           <p className='text-sm whitespace-pre-wrap'>{message.message}</p>
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className='mt-2'>
+                              <AttachmentList
+                                attachments={message.attachments}
+                                onDownload={handleDownloadAttachment}
+                                onDelete={handleDeleteAttachment}
+                                showDelete={true}
+                              />
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -495,6 +554,11 @@ export default function TicketsPage() {
                       onChange={(e) => setNewMessage(e.target.value)}
                       rows={3}
                     />
+                    <FileUpload
+                      files={uploadFiles}
+                      onFilesChange={setUploadFiles}
+                      disabled={uploading}
+                    />
                     <div className='flex items-center gap-2'>
                       <label className='flex items-center gap-2 text-sm'>
                         <input
@@ -505,9 +569,9 @@ export default function TicketsPage() {
                         />
                         Nota interna (non visibile al cliente)
                       </label>
-                      <Button onClick={handleAddMessage} size='sm'>
+                      <Button onClick={handleAddMessage} size='sm' disabled={uploading}>
                         <Send className='mr-2 h-4 w-4' />
-                        Invia
+                        {uploading ? 'Caricamento...' : 'Invia'}
                       </Button>
                     </div>
                   </div>

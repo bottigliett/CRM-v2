@@ -13,6 +13,21 @@ export interface ClientAccess {
   contact: Contact;
 }
 
+export interface TicketAttachment {
+  id: number;
+  ticketId: number;
+  ticketMessageId: number | null;
+  fileName: string;
+  originalFileName: string;
+  fileSize: number;
+  mimeType: string;
+  storagePath: string;
+  isInternal: boolean;
+  uploadedBy: string;
+  uploadedById: number;
+  uploadedAt: string;
+}
+
 export interface TicketMessage {
   id: number;
   ticketId: number;
@@ -22,6 +37,7 @@ export interface TicketMessage {
   isInternal: boolean;
   clientReadAt: string | null;
   createdAt: string;
+  attachments?: TicketAttachment[];
 }
 
 export interface TicketActivityLog {
@@ -56,6 +72,7 @@ export interface Ticket {
   contact: Contact;
   messages: TicketMessage[];
   activityLogs: TicketActivityLog[];
+  attachments?: TicketAttachment[];
 }
 
 export interface CreateTicketData {
@@ -210,6 +227,50 @@ export const ticketsAPI = {
   async reopen(ticketId: number): Promise<TicketResponse> {
     const response = await api.post(`/tickets/${ticketId}/reopen`);
     return response.data;
+  },
+
+  /**
+   * Upload attachments to ticket
+   */
+  async uploadAttachments(
+    ticketId: number,
+    files: File[],
+    isInternal: boolean = false,
+    ticketMessageId?: number
+  ): Promise<{ success: boolean; data: TicketAttachment[]; message: string }> {
+    const formData = new FormData();
+
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+
+    formData.append('isInternal', isInternal.toString());
+
+    if (ticketMessageId) {
+      formData.append('ticketMessageId', ticketMessageId.toString());
+    }
+
+    return await api.post(`/tickets/${ticketId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Get download URL for attachment
+   */
+  downloadAttachment(attachmentId: number): string {
+    const token = localStorage.getItem('token');
+    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    return `${baseURL}/tickets/attachments/${attachmentId}?token=${token}`;
+  },
+
+  /**
+   * Delete attachment
+   */
+  async deleteAttachment(attachmentId: number): Promise<{ success: boolean; message: string }> {
+    return await api.delete(`/tickets/attachments/${attachmentId}`);
   },
 
   /**
