@@ -24,6 +24,7 @@ const QuoteEdit = lazy(() => import('@/app/quotes/[id]/edit/page'))
 const Finance = lazy(() => import('@/app/finance/page'))
 const Invoices = lazy(() => import('@/app/invoices/page'))
 const Tickets = lazy(() => import('@/app/tickets/page'))
+const TicketDetail = lazy(() => import('@/app/tickets/[id]/page'))
 
 // Projects pages
 const Projects = lazy(() => import('@/app/projects/page'))
@@ -157,6 +158,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/tickets",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="tickets"><Tickets /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/tickets/:id",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="tickets"><TicketDetail /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/on-duty",

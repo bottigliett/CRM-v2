@@ -196,7 +196,6 @@ export default function TicketsPage() {
                       <TableHead>Stato</TableHead>
                       <TableHead>Tempo</TableHead>
                       <TableHead>Creato</TableHead>
-                      <TableHead className='text-right'>Azioni</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -208,7 +207,11 @@ export default function TicketsPage() {
                       const StatusIcon = status.icon
 
                       return (
-                        <TableRow key={ticket.id}>
+                        <TableRow
+                          key={ticket.id}
+                          className='cursor-pointer hover:bg-muted/50'
+                          onClick={() => openDetails(ticket.id)}
+                        >
                           <TableCell className='font-medium'>
                             {ticket.ticketNumber}
                           </TableCell>
@@ -246,15 +249,6 @@ export default function TicketsPage() {
                           </TableCell>
                           <TableCell className='text-sm text-muted-foreground'>
                             {formatDate(ticket.createdAt)}
-                          </TableCell>
-                          <TableCell className='text-right'>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              onClick={() => openDetails(ticket.id)}
-                            >
-                              <Eye className='h-4 w-4' />
-                            </Button>
                           </TableCell>
                         </TableRow>
                       )

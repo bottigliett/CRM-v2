@@ -288,12 +288,6 @@ export default function TicketDetailPage() {
               </p>
             </div>
           </div>
-          {ticket.status !== 'CLOSED' && (
-            <Button onClick={handleCloseTicket} variant="outline">
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Chiudi Ticket
-            </Button>
-          )}
         </div>
 
         {/* Ticket Info Cards */}
@@ -434,7 +428,7 @@ export default function TicketDetailPage() {
         </Card>
 
         {/* Actions */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader>
               <CardTitle>Cambia Stato</CardTitle>
@@ -477,6 +471,26 @@ export default function TicketDetailPage() {
                   Log
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Chiudi Ticket</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ticket.status !== 'CLOSED' ? (
+                <Button
+                  onClick={handleCloseTicket}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Chiudi Ticket
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">Ticket già chiuso</p>
+              )}
             </CardContent>
           </Card>
         </div>
