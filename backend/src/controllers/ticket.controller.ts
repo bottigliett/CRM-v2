@@ -1011,6 +1011,9 @@ export const getClientTicketById = async (req: Request, res: Response) => {
       },
       include: {
         messages: {
+          where: {
+            isInternal: false, // Escludi note interne
+          },
           orderBy: { createdAt: 'asc' },
           include: {
             user: {
