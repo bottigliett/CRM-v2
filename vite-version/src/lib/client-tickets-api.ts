@@ -160,7 +160,7 @@ class ClientTicketsAPI {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/client/tickets/${ticketId}/attachments`,
+      `${API_BASE_URL}/client/attachments/ticket/${ticketId}`,
       {
         method: 'POST',
         headers: {

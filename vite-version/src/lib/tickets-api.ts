@@ -262,7 +262,7 @@ export const ticketsAPI = {
       formData.append('ticketMessageId', ticketMessageId.toString());
     }
 
-    return await api.post(`/tickets/${ticketId}/attachments`, formData, {
+    return await api.post(`/attachments/ticket/${ticketId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

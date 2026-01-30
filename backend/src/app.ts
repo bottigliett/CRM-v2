@@ -87,14 +87,14 @@ app.use('/api', projectTaskRoutes); // Project task routes (/api/quotes/:quoteId
 app.use('/api/client-access', clientAccessRoutes);
 app.use('/api/client-auth', clientAuthRoutes);
 app.use('/api/public', publicRoutes); // Public endpoints (workaround for 401 issue)
-// IMPORTANT: attachmentRoutes MUST come before ticketRoutes to avoid /:id conflict
-app.use('/api', attachmentRoutes);
+// Attachment routes on dedicated path to avoid router.use(authenticate) conflicts
+app.use('/api/attachments', attachmentRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/admin/notifications', adminNotificationRoutes);
 
 // Client-specific routes (require client authentication)
 app.use('/api/client/tickets', clientTicketRouter);
-app.use('/api/client', clientAttachmentRouter);
+app.use('/api/client/attachments', clientAttachmentRouter);
 app.use('/api/client/notifications', clientNotificationRouter);
 app.use('/api/client/invoices', clientInvoiceRoutes);
 app.use('/api/client/tasks', clientTaskRoutes);

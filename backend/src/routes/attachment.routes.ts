@@ -15,23 +15,23 @@ const router = express.Router();
  * ADMIN ROUTES
  */
 // Upload attachments to ticket (supports multiple files)
+// Path: POST /api/attachments/ticket/:id
 router.post(
-  '/tickets/:id/attachments',
+  '/ticket/:id',
   authenticate,
   uploadTicketAttachments.array('files', 10), // Max 10 files
   uploadAttachments
 );
 
 // Download attachment (no middleware - auth handled in controller to support query token)
-// Using /attachments/:id to avoid conflict with /api/tickets/:id route
 router.get(
-  '/attachments/:id',
+  '/:id',
   downloadAttachment
 );
 
 // Delete attachment
 router.delete(
-  '/attachments/:id',
+  '/:id',
   authenticate,
   deleteAttachment
 );
@@ -42,17 +42,17 @@ router.delete(
 export const clientAttachmentRouter = express.Router();
 
 // Upload attachments (client)
+// Path: POST /api/client/attachments/ticket/:id
 clientAttachmentRouter.post(
-  '/tickets/:id/attachments',
+  '/ticket/:id',
   authenticateClient,
   uploadTicketAttachments.array('files', 10),
   uploadAttachments
 );
 
 // Download attachment (client - no middleware, auth handled in controller to support query token)
-// Using /attachments/:id to avoid conflict with /api/client/tickets/:id route
 clientAttachmentRouter.get(
-  '/attachments/:id',
+  '/:id',
   downloadClientAttachment
 );
 
