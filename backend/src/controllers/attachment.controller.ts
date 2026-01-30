@@ -137,25 +137,30 @@ export const downloadAttachment = async (req: Request, res: Response) => {
       token = req.query.token as string;
     }
 
-    // Verify token manually if from query param
-    if (token && !req.headers.authorization) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-        (req as any).user = { userId: decoded.userId };
-      } catch (error) {
-        return res.status(401).json({
-          success: false,
-          message: 'Token non valido'
-        });
-      }
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token non fornito'
+      });
+    }
+
+    // Verify token
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+      (req as any).user = { userId: decoded.userId };
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token non valido'
+      });
     }
 
     const userId = (req as any).user?.userId;
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: 'Token non fornito'
+        message: 'Autenticazione fallita'
       });
     }
 
@@ -214,28 +219,33 @@ export const downloadClientAttachment = async (req: Request, res: Response) => {
       token = req.query.token as string;
     }
 
-    // Verify token manually if from query param
-    if (token && !req.headers.authorization) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-        (req as any).client = {
-          clientAccessId: decoded.clientAccessId,
-          contactId: decoded.contactId
-        };
-      } catch (error) {
-        return res.status(401).json({
-          success: false,
-          message: 'Token non valido'
-        });
-      }
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token non fornito'
+      });
+    }
+
+    // Verify token
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
+      (req as any).client = {
+        clientAccessId: decoded.clientAccessId,
+        contactId: decoded.contactId
+      };
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token non valido'
+      });
     }
 
     const clientAccessId = (req as any).client?.clientAccessId;
     if (!clientAccessId) {
       return res.status(401).json({
         success: false,
-        message: 'Token non fornito'
+        message: 'Autenticazione fallita'
       });
     }
 

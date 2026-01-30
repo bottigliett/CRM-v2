@@ -278,7 +278,7 @@ export default function ClientTicketsPage() {
             {tickets.map((ticket) => (
               <Card key={ticket.id} className="flex flex-col">
                 <CardHeader>
-                  <CardTitle className="text-base line-clamp-2">{ticket.title}</CardTitle>
+                  <CardTitle className="text-base line-clamp-2">{ticket.subject}</CardTitle>
                   <CardDescription className="text-xs">
                     {format(new Date(ticket.createdAt), 'dd MMM yyyy', { locale: it })}
                   </CardDescription>
