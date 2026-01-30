@@ -275,14 +275,14 @@ export const ticketsAPI = {
   downloadAttachment(attachmentId: number): string {
     const token = localStorage.getItem('auth_token');
     const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    return `${baseURL}/tickets/attachments/${attachmentId}?token=${token}`;
+    return `${baseURL}/attachments/${attachmentId}?token=${token}`;
   },
 
   /**
    * Delete attachment
    */
   async deleteAttachment(attachmentId: number): Promise<{ success: boolean; message: string }> {
-    return await api.delete(`/tickets/attachments/${attachmentId}`);
+    return await api.delete(`/attachments/${attachmentId}`);
   },
 
   /**

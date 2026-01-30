@@ -23,14 +23,15 @@ router.post(
 );
 
 // Download attachment (no middleware - auth handled in controller to support query token)
+// Using /attachments/:id to avoid conflict with /api/tickets/:id route
 router.get(
-  '/tickets/attachments/:id',
+  '/attachments/:id',
   downloadAttachment
 );
 
 // Delete attachment
 router.delete(
-  '/tickets/attachments/:id',
+  '/attachments/:id',
   authenticate,
   deleteAttachment
 );
@@ -49,8 +50,9 @@ clientAttachmentRouter.post(
 );
 
 // Download attachment (client - no middleware, auth handled in controller to support query token)
+// Using /attachments/:id to avoid conflict with /api/client/tickets/:id route
 clientAttachmentRouter.get(
-  '/tickets/attachments/:id',
+  '/attachments/:id',
   downloadClientAttachment
 );
 

@@ -180,7 +180,7 @@ class ClientTicketsAPI {
 
   downloadAttachment(attachmentId: number): string {
     const token = this.getAuthToken();
-    return `${API_BASE_URL}/client/tickets/attachments/${attachmentId}?token=${token}`;
+    return `${API_BASE_URL}/client/attachments/${attachmentId}?token=${token}`;
   }
 }
 
