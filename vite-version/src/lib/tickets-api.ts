@@ -38,6 +38,18 @@ export interface TicketMessage {
   clientReadAt: string | null;
   createdAt: string;
   attachments?: TicketAttachment[];
+  user?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+  };
+  clientAccess?: {
+    id: number;
+    username: string;
+    contact: {
+      name: string;
+    };
+  };
 }
 
 export interface TicketActivityLog {

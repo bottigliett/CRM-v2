@@ -1143,6 +1143,156 @@ export async function sendClientTicketReplyEmail(
 }
 
 /**
+ * Send email to client when a ticket is closed
+ */
+export async function sendClientTicketClosedEmail(
+  to: string,
+  clientName: string,
+  ticketNumber: string,
+  ticketSubject: string,
+  closingNotes?: string
+): Promise<boolean> {
+  const subject = `Ticket ${ticketNumber} Risolto`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #1a1a1a;
+          margin: 0;
+          padding: 0;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 40px auto;
+          background: white;
+          border: 1px solid #e0e0e0;
+        }
+        .header {
+          background: #16a34a;
+          color: white;
+          padding: 30px;
+          border-bottom: 3px solid #15803d;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+          letter-spacing: -0.5px;
+        }
+        .content {
+          padding: 40px 30px;
+          background: white;
+        }
+        .content p {
+          margin: 0 0 16px 0;
+          color: #333333;
+        }
+        .ticket-details {
+          background: #f0fdf4;
+          padding: 24px;
+          margin: 24px 0;
+          border: 1px solid #bbf7d0;
+          border-left: 4px solid #16a34a;
+        }
+        .ticket-details h2 {
+          margin: 0 0 16px 0;
+          color: #16a34a;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        .ticket-details p {
+          margin: 8px 0;
+          color: #333333;
+        }
+        .closing-notes {
+          background: #fafafa;
+          padding: 20px;
+          margin: 20px 0;
+          border-left: 4px solid #000000;
+          font-style: italic;
+        }
+        .footer {
+          text-align: center;
+          padding: 24px 30px;
+          background: #fafafa;
+          border-top: 1px solid #e0e0e0;
+          color: #666666;
+          font-size: 13px;
+        }
+        .footer p {
+          margin: 4px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Ticket Risolto</h1>
+        </div>
+        <div class="content">
+          <p>Gentile ${clientName},</p>
+          <p>Il tuo ticket di supporto è stato risolto dal nostro team:</p>
+
+          <div class="ticket-details">
+            <h2>Ticket ${ticketNumber}</h2>
+            <p><strong>Oggetto:</strong> ${ticketSubject}</p>
+          </div>
+
+          ${closingNotes ? `
+            <p><strong>Note di chiusura:</strong></p>
+            <div class="closing-notes">
+              ${closingNotes}
+            </div>
+          ` : ''}
+
+          <p>Se hai ulteriori domande o il problema persiste, non esitare ad aprire un nuovo ticket.</p>
+          <p>Grazie per averci contattato!</p>
+
+          <p>Cordiali saluti,<br>Il Team di Studio Mismo</p>
+        </div>
+        <div class="footer">
+          <p><strong>Studio Mismo CRM</strong></p>
+          <p>Questa è una email automatica, si prega di non rispondere a questo messaggio.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Ticket Risolto
+
+Gentile ${clientName},
+
+Il tuo ticket di supporto è stato risolto dal nostro team:
+
+Ticket: ${ticketNumber}
+Oggetto: ${ticketSubject}
+
+${closingNotes ? `Note di chiusura:\n${closingNotes}\n\n` : ''}
+
+Se hai ulteriori domande o il problema persiste, non esitare ad aprire un nuovo ticket.
+
+Grazie per averci contattato!
+
+Cordiali saluti,
+Il Team di Studio Mismo
+
+--
+Studio Mismo CRM
+Questa è una email automatica, si prega di non rispondere a questo messaggio.
+  `.trim();
+
+  return sendEmail(to, subject, html, text);
+}
+
+/**
  * Send email to admin when a quote is accepted by a client
  */
 export async function sendAdminQuoteAcceptedEmail(

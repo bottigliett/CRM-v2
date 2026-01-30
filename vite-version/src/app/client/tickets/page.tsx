@@ -28,12 +28,15 @@ import { clientTicketsAPI, type Ticket } from "@/lib/client-tickets-api"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
+import { FileUpload } from "@/components/ui/file-upload"
 
 export default function ClientTicketsPage() {
   const [tickets, setTickets] = React.useState<Ticket[]>([])
   const [loading, setLoading] = React.useState(true)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
+  const [uploadFiles, setUploadFiles] = React.useState<File[]>([])
+  const [uploading, setUploading] = React.useState(false)
   const [formData, setFormData] = React.useState({
     supportType: 'OTHER',
     subject: '',
@@ -68,22 +71,32 @@ export default function ClientTicketsPage() {
 
     try {
       setSubmitting(true)
-      await clientTicketsAPI.create({
+
+      // Crea il ticket
+      const response = await clientTicketsAPI.create({
         supportType: formData.supportType,
         subject: formData.subject,
         description: formData.description,
         priority: formData.priority,
       })
 
+      // Se ci sono file, caricali
+      if (uploadFiles.length > 0 && response.data) {
+        setUploading(true)
+        await clientTicketsAPI.uploadAttachments(response.data.id, uploadFiles)
+      }
+
       toast.success('Ticket creato con successo')
       setDialogOpen(false)
       setFormData({ supportType: 'OTHER', subject: '', description: '', priority: 'NORMAL' })
+      setUploadFiles([])
       loadTickets()
     } catch (error: any) {
       console.error('Error creating ticket:', error)
       toast.error(error.message || 'Errore nella creazione del ticket')
     } finally {
       setSubmitting(false)
+      setUploading(false)
     }
   }
 
@@ -216,13 +229,21 @@ export default function ClientTicketsPage() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Allegati (opzionale)</Label>
+                  <FileUpload
+                    files={uploadFiles}
+                    onFilesChange={setUploadFiles}
+                    disabled={submitting || uploading}
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Annulla
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Creazione...' : 'Crea Ticket'}
+                <Button type="submit" disabled={submitting || uploading}>
+                  {uploading ? 'Caricamento...' : submitting ? 'Creazione...' : 'Crea Ticket'}
                 </Button>
               </DialogFooter>
             </form>

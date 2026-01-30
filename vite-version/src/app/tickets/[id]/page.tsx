@@ -21,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ticketsAPI } from '@/lib/tickets-api'
 import type { Ticket } from '@/lib/tickets-api'
 import {
@@ -76,6 +84,9 @@ export default function TicketDetailPage() {
   const [timeToLog, setTimeToLog] = useState('')
   const [uploadFiles, setUploadFiles] = useState<any[]>([])
   const [uploading, setUploading] = useState(false)
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false)
+  const [closingNotes, setClosingNotes] = useState('')
+  const [closing, setClosing] = useState(false)
   const previousMessageCountRef = useRef<number>(0)
 
   const loadTicket = async () => {
@@ -225,12 +236,17 @@ export default function TicketDetailPage() {
     if (!ticket) return
 
     try {
-      await ticketsAPI.close(ticket.id)
-      toast.success('Ticket chiuso')
+      setClosing(true)
+      await ticketsAPI.close(ticket.id, closingNotes)
+      toast.success('Ticket chiuso e email inviata al cliente')
+      setCloseDialogOpen(false)
+      setClosingNotes('')
       navigate('/tickets')
     } catch (error) {
       console.error('Failed to close ticket:', error)
       toast.error('Errore nella chiusura del ticket')
+    } finally {
+      setClosing(false)
     }
   }
 
@@ -358,38 +374,53 @@ export default function TicketDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-[500px] overflow-y-auto mb-4">
-              {ticket.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`rounded-lg p-4 ${
-                    message.isInternal
-                      ? 'bg-yellow-50 border border-yellow-200'
-                      : message.userId
-                      ? 'bg-blue-50 border border-blue-200'
-                      : 'bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium">
-                      {message.isInternal ? 'Nota Interna' : message.userId ? 'Admin' : 'Cliente'}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(message.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-3">
-                      <AttachmentList
-                        attachments={message.attachments}
-                        onDownload={handleDownloadAttachment}
-                        onDelete={handleDeleteAttachment}
-                        showDelete={true}
-                      />
+              {ticket.messages.map((message) => {
+                // Determina il nome di chi ha scritto il messaggio
+                let senderName = '';
+                if (message.userId && message.user) {
+                  senderName = `${message.user.firstName} ${message.user.lastName}`;
+                } else if (message.clientAccessId && message.clientAccess) {
+                  senderName = message.clientAccess.contact.name;
+                }
+
+                return (
+                  <div
+                    key={message.id}
+                    className={`rounded-lg p-4 ${
+                      message.isInternal
+                        ? 'bg-yellow-50 border border-yellow-200'
+                        : message.userId
+                        ? 'bg-blue-50 border border-blue-200'
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium">
+                        {message.isInternal
+                          ? `Nota Interna - ${senderName}`
+                          : message.userId
+                          ? `Admin - ${senderName}`
+                          : `Cliente - ${senderName}`
+                        }
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(message.createdAt)}
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-3">
+                        <AttachmentList
+                          attachments={message.attachments}
+                          onDownload={handleDownloadAttachment}
+                          onDelete={handleDeleteAttachment}
+                          showDelete={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <Separator className="my-4" />
@@ -481,7 +512,7 @@ export default function TicketDetailPage() {
             <CardContent>
               {ticket.status !== 'CLOSED' ? (
                 <Button
-                  onClick={handleCloseTicket}
+                  onClick={() => setCloseDialogOpen(true)}
                   variant="outline"
                   className="w-full"
                 >
@@ -494,6 +525,50 @@ export default function TicketDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Dialog chiusura ticket */}
+        <Dialog open={closeDialogOpen} onOpenChange={setCloseDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Chiudi Ticket</DialogTitle>
+              <DialogDescription>
+                Inserisci le note di chiusura che verranno inviate al cliente via email.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="closingNotes">Note di chiusura *</Label>
+                <Textarea
+                  id="closingNotes"
+                  value={closingNotes}
+                  onChange={(e) => setClosingNotes(e.target.value)}
+                  placeholder="Descrivi la risoluzione del problema..."
+                  rows={4}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCloseDialogOpen(false)
+                  setClosingNotes('')
+                }}
+                disabled={closing}
+              >
+                Annulla
+              </Button>
+              <Button
+                onClick={handleCloseTicket}
+                disabled={closing || !closingNotes.trim()}
+              >
+                {closing ? 'Chiusura...' : 'Chiudi e Invia Email'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </BaseLayout>
   )

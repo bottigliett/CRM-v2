@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
-import { sendClientTicketReplyEmail, sendAdminNewTicketEmail } from '../services/email.service';
+import { sendClientTicketReplyEmail, sendAdminNewTicketEmail, sendClientTicketClosedEmail } from '../services/email.service';
 
 /**
  * Generate ticket number: T{YEAR}-{NUM}
@@ -743,6 +743,30 @@ export const closeTicket = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { closingNotes, timeSpentMinutes } = req.body;
 
+    // Prima ottieni il ticket per le informazioni del cliente
+    const existingTicket = await prisma.ticket.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        clientAccess: {
+          select: {
+            contact: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingTicket) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ticket non trovato',
+      });
+    }
+
     const ticket = await prisma.ticket.update({
       where: { id: parseInt(id) },
       data: {
@@ -772,6 +796,23 @@ export const closeTicket = async (req: Request, res: Response) => {
         relatedType: 'ticket',
       },
     });
+
+    // Invia email al cliente
+    if (existingTicket.clientAccess?.contact?.email) {
+      try {
+        await sendClientTicketClosedEmail(
+          existingTicket.clientAccess.contact.email,
+          existingTicket.clientAccess.contact.name,
+          existingTicket.ticketNumber,
+          existingTicket.subject,
+          closingNotes
+        );
+        console.log(`Email di chiusura ticket inviata a ${existingTicket.clientAccess.contact.email}`);
+      } catch (emailError) {
+        console.error('Failed to send ticket closed email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     // Se è un FULL_CLIENT e il supporto è a pagamento, aggiorna ore usate
     if (timeSpentMinutes && timeSpentMinutes > 0) {
