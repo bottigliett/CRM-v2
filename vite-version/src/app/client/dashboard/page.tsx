@@ -560,7 +560,7 @@ export default function ClientDashboardPage() {
               {tickets.slice(0, 5).map((ticket) => (
                 <div key={ticket.id} className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{ticket.title}</p>
+                    <p className="text-sm font-medium">{ticket.subject}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="outline" className={getStatusColor(ticket.status)} size="sm">
                         {getTicketStatusLabel(ticket.status)}
