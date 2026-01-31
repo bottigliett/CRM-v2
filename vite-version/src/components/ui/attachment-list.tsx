@@ -94,7 +94,7 @@ export function AttachmentList({
       <div className={cn('space-y-3', className)}>
         {/* Image Grid */}
         {imageAttachments.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-3">
             {imageAttachments.map((attachment) => {
               const previewUrl = getPreviewUrl ? getPreviewUrl(attachment.id) : undefined;
               return (
@@ -109,11 +109,11 @@ export function AttachmentList({
                     <img
                       src={previewUrl}
                       alt={attachment.originalFileName}
-                      className="w-full h-32 object-cover cursor-pointer transition-transform hover:scale-105"
+                      className="w-full h-48 object-cover cursor-pointer transition-transform hover:scale-105"
                       onClick={() => openLightbox(previewUrl, attachment.originalFileName)}
                     />
                   ) : (
-                    <div className="w-full h-32 bg-muted flex items-center justify-center">
+                    <div className="w-full h-48 bg-muted flex items-center justify-center">
                       <File className="h-8 w-8 text-muted-foreground" />
                     </div>
                   )}

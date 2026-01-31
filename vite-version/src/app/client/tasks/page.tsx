@@ -120,9 +120,9 @@ export default function ClientTasksPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 lg:h-[calc(100vh-200px)]">
             {/* Left Side - Summary */}
-            <Card className="h-fit">
+            <Card className="flex flex-col overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckSquare className="h-5 w-5" />
@@ -130,7 +130,7 @@ export default function ClientTasksPage() {
                 </CardTitle>
                 <CardDescription>Progressi complessivi del progetto</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="flex-1 overflow-y-auto space-y-6">
                 {/* Progress */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -210,13 +210,14 @@ export default function ClientTasksPage() {
             </Card>
 
             {/* Right Side - Tasks List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">Elenco Task</h3>
-                <span className="text-sm text-muted-foreground">{tasks.length} task</span>
-              </div>
-
-              <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-2">
+            <Card className="flex flex-col overflow-hidden">
+              <CardHeader className="shrink-0">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Elenco Task</CardTitle>
+                  <span className="text-sm text-muted-foreground">{tasks.length} task</span>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto p-4 space-y-3">
                 {tasks.map((task) => {
                   const overdue = task.status !== 'COMPLETED' && isOverdue(task.deadline)
 
@@ -280,8 +281,8 @@ export default function ClientTasksPage() {
                     </Card>
                   )
                 })}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

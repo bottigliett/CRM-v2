@@ -184,6 +184,17 @@ export const getTicketById = async (req: Request, res: Response) => {
       });
     }
 
+    // Mark ticket as viewed by admin - create activity log
+    // This is used to determine if a ticket has unread client messages
+    await prisma.ticketActivityLog.create({
+      data: {
+        ticketId: ticket.id,
+        userId: (req as any).user?.userId || null,
+        action: 'admin_viewed',
+        details: 'Ticket visualizzato da admin',
+      },
+    });
+
     res.json({
       success: true,
       data: ticket,
@@ -898,11 +909,11 @@ export const reopenTicket = async (req: Request, res: Response) => {
 
 /**
  * GET /api/tickets/unread-count
- * Conta ticket con messaggi non letti (ultimo messaggio da client)
+ * Conta ticket con messaggi non letti (ultimo messaggio da client dopo ultima visualizzazione admin)
  */
 export const getUnreadTicketCount = async (req: Request, res: Response) => {
   try {
-    // Get all open/in-progress tickets
+    // Get all open/in-progress tickets with last client message and last admin view
     const openTickets = await prisma.ticket.findMany({
       where: {
         status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CLIENT'] },
@@ -910,22 +921,43 @@ export const getUnreadTicketCount = async (req: Request, res: Response) => {
       select: {
         id: true,
         messages: {
+          where: {
+            clientAccessId: { not: null },
+            userId: null,
+          },
           orderBy: { createdAt: 'desc' },
           take: 1,
           select: {
-            clientAccessId: true,
-            userId: true,
+            createdAt: true,
+          },
+        },
+        activityLogs: {
+          where: {
+            action: 'admin_viewed',
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            createdAt: true,
           },
         },
       },
     });
 
-    // Count tickets where the last message is from a client (has clientAccessId, no userId)
+    // Count tickets where the last client message is newer than the last admin view
     const unreadCount = openTickets.filter(ticket => {
+      // No client messages = not unread
       if (ticket.messages.length === 0) return false;
-      const lastMessage = ticket.messages[0];
-      // Message is from client if it has clientAccessId and no userId
-      return lastMessage.clientAccessId !== null && lastMessage.userId === null;
+
+      const lastClientMessageTime = ticket.messages[0].createdAt;
+
+      // No admin view yet = unread
+      if (ticket.activityLogs.length === 0) return true;
+
+      const lastAdminViewTime = ticket.activityLogs[0].createdAt;
+
+      // Unread if client message is after admin view
+      return lastClientMessageTime > lastAdminViewTime;
     }).length;
 
     res.json({
