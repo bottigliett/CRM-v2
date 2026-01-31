@@ -10,6 +10,7 @@ import {
   logTime,
   closeTicket,
   reopenTicket,
+  getUnreadTicketCount,
   getClientTickets,
   createClientTicket,
   getClientTicketById,
@@ -24,6 +25,7 @@ const router = express.Router();
  * ADMIN ROUTES - Gestione completa ticket
  */
 router.get('/', authenticate, getTickets);
+router.get('/unread-count', authenticate, getUnreadTicketCount);
 router.get('/:id', authenticate, getTicketById);
 router.post('/', authenticate, createTicket);
 router.put('/:id', authenticate, updateTicket);

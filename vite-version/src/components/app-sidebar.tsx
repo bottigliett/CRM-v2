@@ -32,6 +32,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useAuthStore } from "@/store/auth-store"
+import { ticketsAPI } from "@/lib/tickets-api"
 
 interface NavItem {
   title: string
@@ -39,6 +40,7 @@ interface NavItem {
   icon?: any
   items?: NavItem[]
   moduleName?: string // Added to map to backend permission module
+  badge?: number
 }
 
 interface NavGroup {
@@ -143,6 +145,31 @@ const allNavGroups: NavGroup[] = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthStore()
+  const [unreadTicketCount, setUnreadTicketCount] = React.useState(0)
+
+  // Fetch unread ticket count
+  React.useEffect(() => {
+    if (!user) return
+
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await ticketsAPI.getUnreadCount()
+        if (response.success) {
+          setUnreadTicketCount(response.data.count)
+        }
+      } catch (error) {
+        console.error('Error fetching unread ticket count:', error)
+      }
+    }
+
+    // Initial fetch
+    fetchUnreadCount()
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000)
+
+    return () => clearInterval(interval)
+  }, [user])
 
   const userData = {
     name: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : "Ospite",
@@ -155,9 +182,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const getFilteredNavGroups = React.useMemo(() => {
     if (!user) return []
 
+    // Helper function to add badge to ticket item
+    const addBadgeToItems = (items: NavItem[]) => {
+      return items.map(item => {
+        if (item.url === '/tickets') {
+          return { ...item, badge: unreadTicketCount }
+        }
+        return item
+      })
+    }
+
     // SUPER_ADMIN can see everything
     if (user.role === 'SUPER_ADMIN') {
-      return allNavGroups
+      return allNavGroups.map(group => ({
+        ...group,
+        items: addBadgeToItems(group.items),
+      }))
     }
 
     // ADMIN can only see items they have permission for
@@ -183,7 +223,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         return {
           ...group,
-          items: filteredItems,
+          items: addBadgeToItems(filteredItems),
         }
       }).filter(group => group.items.length > 0) // Remove empty groups
     }
@@ -193,14 +233,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       if (group.label === 'Overview' || group.label === 'Amministrazione') {
         return {
           ...group,
-          items: group.items.filter(item =>
+          items: addBadgeToItems(group.items.filter(item =>
             item.url === '/dashboard' || item.url === '#'
-          ),
+          )),
         }
       }
       return { ...group, items: [] }
     }).filter(group => group.items.length > 0)
-  }, [user])
+  }, [user, unreadTicketCount])
 
   return (
     <Sidebar {...props}>

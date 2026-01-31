@@ -272,9 +272,9 @@ export default function ClientTicketDetailPage() {
       }
     >
       <div className="px-4 lg:px-6">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 lg:h-[calc(100vh-200px)]">
           {/* Left Side - Ticket Info */}
-          <Card className="h-fit">
+          <Card className="flex flex-col overflow-hidden">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Dettagli Ticket</CardTitle>
@@ -283,7 +283,7 @@ export default function ClientTicketDetailPage() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex-1 overflow-y-auto space-y-6">
               {/* Basic Info */}
               <div className="space-y-4">
                 <div>
@@ -373,7 +373,7 @@ export default function ClientTicketDetailPage() {
           </Card>
 
           {/* Right Side - Chat */}
-          <Card className="flex flex-col h-[calc(100vh-200px)] min-h-[500px]">
+          <Card className="flex flex-col overflow-hidden">
             <CardHeader className="border-b shrink-0">
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
@@ -431,7 +431,7 @@ export default function ClientTicketDetailPage() {
                             {message.message}
                           </div>
                           {message.attachments && message.attachments.length > 0 && (
-                            <div className="mt-2 w-full">
+                            <div className="mt-2">
                               <AttachmentList
                                 attachments={message.attachments}
                                 onDownload={handleDownloadAttachment}

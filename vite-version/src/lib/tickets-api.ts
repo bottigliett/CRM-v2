@@ -242,6 +242,13 @@ export const ticketsAPI = {
   },
 
   /**
+   * Get count of tickets with unread messages (last message from client)
+   */
+  async getUnreadCount(): Promise<{ success: boolean; data: { count: number } }> {
+    return await api.get('/tickets/unread-count');
+  },
+
+  /**
    * Upload attachments to ticket
    */
   async uploadAttachments(

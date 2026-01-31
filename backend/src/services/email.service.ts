@@ -1794,6 +1794,134 @@ Questa è una email automatica, si prega di non rispondere a questo messaggio.
   }
 }
 
+/**
+ * Send email notification to admins when a client replies to a ticket
+ */
+export async function sendAdminTicketReplyEmail(
+  adminEmails: string[],
+  clientName: string,
+  ticketNumber: string,
+  ticketSubject: string,
+  messagePreview: string
+): Promise<boolean> {
+  // Truncate message preview
+  const preview = messagePreview.length > 200 ? messagePreview.substring(0, 200) + '...' : messagePreview;
+
+  const subject = `Nuova Risposta - Ticket ${ticketNumber}`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #1a1a1a;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #2563eb, #1d4ed8);
+          color: white;
+          padding: 24px 30px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+        }
+        .content {
+          padding: 30px;
+        }
+        .message-box {
+          background: #f3f4f6;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 20px 0;
+          border-left: 4px solid #2563eb;
+        }
+        .message-box p {
+          margin: 0;
+          color: #333333;
+          white-space: pre-wrap;
+        }
+        .footer {
+          text-align: center;
+          padding: 24px 30px;
+          background: #fafafa;
+          border-top: 1px solid #e0e0e0;
+          color: #666666;
+          font-size: 13px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Nuova Risposta al Ticket</h1>
+        </div>
+        <div class="content">
+          <p><strong>${clientName}</strong> ha risposto al ticket:</p>
+
+          <p><strong>Ticket:</strong> ${ticketNumber}<br>
+          <strong>Oggetto:</strong> ${ticketSubject}</p>
+
+          <div class="message-box">
+            <p>${preview}</p>
+          </div>
+
+          <p>Accedi al CRM per visualizzare il messaggio completo e rispondere.</p>
+
+          <p>Cordiali saluti,<br>Il Sistema CRM Studio Mismo</p>
+        </div>
+        <div class="footer">
+          <p><strong>Studio Mismo CRM</strong></p>
+          <p>Questa è una email automatica, si prega di non rispondere a questo messaggio.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Nuova Risposta al Ticket
+
+${clientName} ha risposto al ticket:
+
+Ticket: ${ticketNumber}
+Oggetto: ${ticketSubject}
+
+Messaggio:
+${preview}
+
+Accedi al CRM per visualizzare il messaggio completo e rispondere.
+
+--
+Studio Mismo CRM
+Questa è una email automatica, si prega di non rispondere a questo messaggio.
+  `.trim();
+
+  try {
+    for (const adminEmail of adminEmails) {
+      await sendEmail(adminEmail, subject, html, text);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error sending admin ticket reply notification emails:', error);
+    return false;
+  }
+}
+
 // Verify transporter configuration
 export async function verifyEmailConfig(): Promise<boolean> {
   try {

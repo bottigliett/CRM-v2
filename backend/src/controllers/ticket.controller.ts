@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
-import { sendClientTicketReplyEmail, sendAdminNewTicketEmail, sendClientTicketClosedEmail } from '../services/email.service';
+import { sendClientTicketReplyEmail, sendAdminNewTicketEmail, sendClientTicketClosedEmail, sendAdminTicketReplyEmail } from '../services/email.service';
 
 /**
  * Generate ticket number: T{YEAR}-{NUM}
@@ -897,6 +897,52 @@ export const reopenTicket = async (req: Request, res: Response) => {
 };
 
 /**
+ * GET /api/tickets/unread-count
+ * Conta ticket con messaggi non letti (ultimo messaggio da client)
+ */
+export const getUnreadTicketCount = async (req: Request, res: Response) => {
+  try {
+    // Get all open/in-progress tickets
+    const openTickets = await prisma.ticket.findMany({
+      where: {
+        status: { in: ['OPEN', 'IN_PROGRESS', 'WAITING_CLIENT'] },
+      },
+      select: {
+        id: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            clientAccessId: true,
+            userId: true,
+          },
+        },
+      },
+    });
+
+    // Count tickets where the last message is from a client (has clientAccessId, no userId)
+    const unreadCount = openTickets.filter(ticket => {
+      if (ticket.messages.length === 0) return false;
+      const lastMessage = ticket.messages[0];
+      // Message is from client if it has clientAccessId and no userId
+      return lastMessage.clientAccessId !== null && lastMessage.userId === null;
+    }).length;
+
+    res.json({
+      success: true,
+      data: { count: unreadCount },
+    });
+  } catch (error: any) {
+    console.error('Error getting unread ticket count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore nel conteggio ticket non letti',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * GET /api/client/tickets
  * Ottieni ticket del cliente autenticato (CLIENT)
  */
@@ -1153,6 +1199,13 @@ export const addClientTicketMessage = async (req: Request, res: Response) => {
         id: parseInt(id),
         clientAccessId,
       },
+      include: {
+        clientAccess: {
+          include: {
+            contact: true,
+          },
+        },
+      },
     });
 
     if (!ticket) {
@@ -1180,7 +1233,33 @@ export const addClientTicketMessage = async (req: Request, res: Response) => {
       },
     });
 
-    // TODO: Notifica admin di nuova risposta
+    // Notifica admin di nuova risposta
+    try {
+      // Get admin/superadmin emails
+      const admins = await prisma.user.findMany({
+        where: {
+          role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+          isActive: true,
+        },
+        select: { email: true },
+      });
+
+      if (admins.length > 0) {
+        const adminEmails = admins.map(a => a.email);
+        const clientName = ticket.clientAccess?.contact?.name || 'Cliente';
+
+        await sendAdminTicketReplyEmail(
+          adminEmails,
+          clientName,
+          ticket.ticketNumber,
+          ticket.subject,
+          message
+        );
+      }
+    } catch (emailError) {
+      console.error('Error sending admin notification email:', emailError);
+      // Don't fail the request if email fails
+    }
 
     res.status(201).json({
       success: true,
