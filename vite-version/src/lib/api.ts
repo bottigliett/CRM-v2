@@ -364,13 +364,21 @@ class ApiService {
   }
 
   async post(endpoint: string, data?: any): Promise<any> {
+    const isFormData = data instanceof FormData;
+
+    const headers: HeadersInit = {
+      ...this.getAuthHeader(),
+    };
+
+    // Only set Content-Type for JSON data - let browser set it for FormData with boundary
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-      },
-      body: data ? JSON.stringify(data) : undefined,
+      headers,
+      body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
     });
 
     if (!response.ok) {
