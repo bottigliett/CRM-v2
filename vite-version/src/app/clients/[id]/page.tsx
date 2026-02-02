@@ -289,11 +289,11 @@ export default function ClientDetailPage() {
   const handleSaveDashboard = async () => {
     if (!client) return
 
+    const isEditing = client.accessType === 'FULL_CLIENT'
+
     try {
       setSaving(true)
-      await clientAccessAPI.update(client.id, {
-        accessType: 'FULL_CLIENT',
-        temporaryPassword: null, // Disattiva accesso momentaneo quando si attiva dashboard
+      const updateData: any = {
         projectName: dashboardForm.projectName || null,
         projectDescription: dashboardForm.projectDescription || null,
         projectObjectives: dashboardForm.projectObjectives || null,
@@ -301,7 +301,6 @@ export default function ClientDetailPage() {
         projectBudget: dashboardForm.projectBudget,
         budgetDisplayType: dashboardForm.budgetDisplayType,
         supportHoursIncluded: dashboardForm.supportHoursIncluded,
-        supportHoursUsed: 0,
         driveFolderLink: dashboardForm.driveFolderLink || null,
         driveFolderLinkTitle: dashboardForm.driveFolderLinkTitle || null,
         documentsFolder: dashboardForm.documentsFolder || null,
@@ -310,14 +309,28 @@ export default function ClientDetailPage() {
         assetsFolderTitle: dashboardForm.assetsFolderTitle || null,
         invoiceFolder: dashboardForm.invoiceFolder || null,
         invoiceFolderTitle: dashboardForm.invoiceFolderTitle || null,
-      })
-      toast.success('Dashboard attivata con successo. Accesso momentaneo disattivato.')
+      }
+
+      // Only set these when activating, not when editing
+      if (!isEditing) {
+        updateData.accessType = 'FULL_CLIENT'
+        updateData.temporaryPassword = null // Disattiva accesso momentaneo quando si attiva dashboard
+        updateData.supportHoursUsed = 0
+      }
+
+      await clientAccessAPI.update(client.id, updateData)
+
+      if (isEditing) {
+        toast.success('Impostazioni dashboard aggiornate')
+      } else {
+        toast.success('Dashboard attivata con successo. Accesso momentaneo disattivato.')
+      }
       setShowDashboardDialog(false)
       loadClientData()
       setActiveTab('dashboard')
     } catch (error: any) {
-      console.error('Error activating dashboard:', error)
-      toast.error(error.message || "Errore nell'attivazione della dashboard")
+      console.error('Error saving dashboard:', error)
+      toast.error(error.message || "Errore nel salvataggio")
     } finally {
       setSaving(false)
     }
@@ -771,8 +784,16 @@ export default function ClientDetailPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Informazioni Progetto</CardTitle>
-                    <CardDescription>Gestisci i dettagli del progetto cliente</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Informazioni Progetto</CardTitle>
+                        <CardDescription>Gestisci i dettagli del progetto cliente</CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleActivateDashboard}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifica
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
@@ -837,7 +858,7 @@ export default function ClientDetailPage() {
                             className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
                             <FolderOpen className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium">Cartella Principale</span>
+                            <span className="text-sm font-medium">{(client as any).driveFolderLinkTitle || 'Cartella Principale'}</span>
                           </a>
                         )}
                         {client.documentsFolder && (
@@ -848,7 +869,7 @@ export default function ClientDetailPage() {
                             className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
                             <FolderOpen className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium">Documenti</span>
+                            <span className="text-sm font-medium">{(client as any).documentsFolderTitle || 'Documenti'}</span>
                           </a>
                         )}
                         {client.assetsFolder && (
@@ -859,7 +880,7 @@ export default function ClientDetailPage() {
                             className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
                             <FolderOpen className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium">Assets</span>
+                            <span className="text-sm font-medium">{(client as any).assetsFolderTitle || 'Assets'}</span>
                           </a>
                         )}
                         {client.invoiceFolder && (
@@ -870,7 +891,7 @@ export default function ClientDetailPage() {
                             className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
                           >
                             <FolderOpen className="h-4 w-4 text-blue-600" />
-                            <span className="text-sm font-medium">Fatture</span>
+                            <span className="text-sm font-medium">{(client as any).invoiceFolderTitle || 'Fatture'}</span>
                           </a>
                         )}
                       </div>
@@ -1027,11 +1048,13 @@ export default function ClientDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dashboard Activation Dialog */}
+      {/* Dashboard Activation/Edit Dialog */}
       <Dialog open={showDashboardDialog} onOpenChange={setShowDashboardDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Attiva Dashboard Completa</DialogTitle>
+            <DialogTitle>
+              {client?.accessType === 'FULL_CLIENT' ? 'Modifica Impostazioni Dashboard' : 'Attiva Dashboard Completa'}
+            </DialogTitle>
             <DialogDescription>
               Configura le informazioni della dashboard per il cliente. Tutti i campi sono opzionali.
             </DialogDescription>
@@ -1202,12 +1225,21 @@ export default function ClientDetailPage() {
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Attivazione...
+                  {client?.accessType === 'FULL_CLIENT' ? 'Salvataggio...' : 'Attivazione...'}
                 </>
               ) : (
                 <>
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Attiva Dashboard
+                  {client?.accessType === 'FULL_CLIENT' ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Salva Modifiche
+                    </>
+                  ) : (
+                    <>
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Attiva Dashboard
+                    </>
+                  )}
                 </>
               )}
             </Button>
