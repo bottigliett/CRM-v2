@@ -112,15 +112,19 @@ export default function ClientDetailPage() {
     driveFolderLink: '',
     driveFolderLinkTitle: '',
     driveFolderLinkDescription: '',
+    driveFolderLinkButtonText: '',
     documentsFolder: '',
     documentsFolderTitle: '',
     documentsFolderDescription: '',
+    documentsFolderButtonText: '',
     assetsFolder: '',
     assetsFolderTitle: '',
     assetsFolderDescription: '',
+    assetsFolderButtonText: '',
     invoiceFolder: '',
     invoiceFolderTitle: '',
     invoiceFolderDescription: '',
+    invoiceFolderButtonText: '',
   })
 
   useEffect(() => {
@@ -261,15 +265,19 @@ export default function ClientDetailPage() {
       driveFolderLink: client.driveFolderLink || '',
       driveFolderLinkTitle: (client as any).driveFolderLinkTitle || '',
       driveFolderLinkDescription: (client as any).driveFolderLinkDescription || '',
+      driveFolderLinkButtonText: (client as any).driveFolderLinkButtonText || '',
       documentsFolder: client.documentsFolder || '',
       documentsFolderTitle: (client as any).documentsFolderTitle || '',
       documentsFolderDescription: (client as any).documentsFolderDescription || '',
+      documentsFolderButtonText: (client as any).documentsFolderButtonText || '',
       assetsFolder: client.assetsFolder || '',
       assetsFolderTitle: (client as any).assetsFolderTitle || '',
       assetsFolderDescription: (client as any).assetsFolderDescription || '',
+      assetsFolderButtonText: (client as any).assetsFolderButtonText || '',
       invoiceFolder: client.invoiceFolder || '',
       invoiceFolderTitle: (client as any).invoiceFolderTitle || '',
       invoiceFolderDescription: (client as any).invoiceFolderDescription || '',
+      invoiceFolderButtonText: (client as any).invoiceFolderButtonText || '',
     })
 
     // Open dialog
@@ -285,15 +293,19 @@ export default function ClientDetailPage() {
         driveFolderLink: foldersForm.driveFolderLink || null,
         driveFolderLinkTitle: foldersForm.driveFolderLinkTitle || null,
         driveFolderLinkDescription: foldersForm.driveFolderLinkDescription || null,
+        driveFolderLinkButtonText: foldersForm.driveFolderLinkButtonText || null,
         documentsFolder: foldersForm.documentsFolder || null,
         documentsFolderTitle: foldersForm.documentsFolderTitle || null,
         documentsFolderDescription: foldersForm.documentsFolderDescription || null,
+        documentsFolderButtonText: foldersForm.documentsFolderButtonText || null,
         assetsFolder: foldersForm.assetsFolder || null,
         assetsFolderTitle: foldersForm.assetsFolderTitle || null,
         assetsFolderDescription: foldersForm.assetsFolderDescription || null,
+        assetsFolderButtonText: foldersForm.assetsFolderButtonText || null,
         invoiceFolder: foldersForm.invoiceFolder || null,
         invoiceFolderTitle: foldersForm.invoiceFolderTitle || null,
         invoiceFolderDescription: foldersForm.invoiceFolderDescription || null,
+        invoiceFolderButtonText: foldersForm.invoiceFolderButtonText || null,
       })
       toast.success('Cartelle aggiornate con successo')
       setShowFoldersDialog(false)
@@ -1302,6 +1314,12 @@ export default function ClientDetailPage() {
                 onChange={(e) => setFoldersForm({ ...foldersForm, driveFolderLinkDescription: e.target.value })}
                 className="text-sm"
               />
+              <Input
+                placeholder="Testo bottone (es. Apri in Drive)"
+                value={foldersForm.driveFolderLinkButtonText}
+                onChange={(e) => setFoldersForm({ ...foldersForm, driveFolderLinkButtonText: e.target.value })}
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">
@@ -1322,6 +1340,12 @@ export default function ClientDetailPage() {
                 placeholder="Descrizione (es. Contratti e documentazione)"
                 value={foldersForm.documentsFolderDescription}
                 onChange={(e) => setFoldersForm({ ...foldersForm, documentsFolderDescription: e.target.value })}
+                className="text-sm"
+              />
+              <Input
+                placeholder="Testo bottone (es. Apri in Drive)"
+                value={foldersForm.documentsFolderButtonText}
+                onChange={(e) => setFoldersForm({ ...foldersForm, documentsFolderButtonText: e.target.value })}
                 className="text-sm"
               />
             </div>
@@ -1346,6 +1370,12 @@ export default function ClientDetailPage() {
                 onChange={(e) => setFoldersForm({ ...foldersForm, assetsFolderDescription: e.target.value })}
                 className="text-sm"
               />
+              <Input
+                placeholder="Testo bottone (es. Apri in Drive)"
+                value={foldersForm.assetsFolderButtonText}
+                onChange={(e) => setFoldersForm({ ...foldersForm, assetsFolderButtonText: e.target.value })}
+                className="text-sm"
+              />
             </div>
 
             <div className="space-y-2">
@@ -1366,6 +1396,12 @@ export default function ClientDetailPage() {
                 placeholder="Descrizione (es. Documenti fiscali e fatture)"
                 value={foldersForm.invoiceFolderDescription}
                 onChange={(e) => setFoldersForm({ ...foldersForm, invoiceFolderDescription: e.target.value })}
+                className="text-sm"
+              />
+              <Input
+                placeholder="Testo bottone (es. Apri in Drive)"
+                value={foldersForm.invoiceFolderButtonText}
+                onChange={(e) => setFoldersForm({ ...foldersForm, invoiceFolderButtonText: e.target.value })}
                 className="text-sm"
               />
             </div>

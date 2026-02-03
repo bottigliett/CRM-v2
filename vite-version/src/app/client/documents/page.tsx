@@ -31,6 +31,7 @@ export default function ClientDocumentsPage() {
     {
       name: clientData?.driveFolderLinkTitle || 'Cartella Principale',
       description: clientData?.driveFolderLinkDescription || 'Accedi alla cartella principale del progetto',
+      buttonText: clientData?.driveFolderLinkButtonText || 'Apri in Drive',
       icon: FolderOpen,
       link: clientData?.driveFolderLink,
       color: 'text-blue-500',
@@ -38,6 +39,7 @@ export default function ClientDocumentsPage() {
     {
       name: clientData?.documentsFolderTitle || 'Documenti',
       description: clientData?.documentsFolderDescription || 'Contratti, specifiche e documentazione',
+      buttonText: clientData?.documentsFolderButtonText || 'Apri in Drive',
       icon: FileText,
       link: clientData?.documentsFolder,
       color: 'text-green-500',
@@ -45,6 +47,7 @@ export default function ClientDocumentsPage() {
     {
       name: clientData?.assetsFolderTitle || 'Assets',
       description: clientData?.assetsFolderDescription || 'File grafici, immagini e risorse',
+      buttonText: clientData?.assetsFolderButtonText || 'Apri in Drive',
       icon: Download,
       link: clientData?.assetsFolder,
       color: 'text-purple-500',
@@ -52,6 +55,7 @@ export default function ClientDocumentsPage() {
     {
       name: clientData?.invoiceFolderTitle || 'Fatture',
       description: clientData?.invoiceFolderDescription || 'Documenti fiscali e fatture',
+      buttonText: clientData?.invoiceFolderButtonText || 'Apri in Drive',
       icon: Receipt,
       link: clientData?.invoiceFolder,
       color: 'text-orange-500',
@@ -118,7 +122,7 @@ export default function ClientDocumentsPage() {
                         rel="noopener noreferrer"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        Apri in Drive
+                        {folder.buttonText}
                       </a>
                     </Button>
                   </CardContent>
