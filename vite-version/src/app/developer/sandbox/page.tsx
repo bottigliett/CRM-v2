@@ -22,7 +22,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import api from "@/lib/api"
+import { api } from "@/lib/api"
 import { Code, Terminal, Database, Zap } from "lucide-react"
 
 export default function SandboxPage() {
