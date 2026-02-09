@@ -43,9 +43,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Pencil, Trash2, Info, AlertTriangle, Wrench, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { announcementsAPI, type SystemAnnouncement, type CreateAnnouncementData } from "@/lib/announcements-api"
-import { format } from "date-fns"
-import { it } from "date-fns/locale"
+import { announcementsAPI, type SystemAnnouncement } from "@/lib/announcements-api"
 
 const typeConfig = {
   INFO: { label: "Info", icon: Info, color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" },
@@ -55,8 +53,8 @@ const typeConfig = {
 }
 
 const roleOptions = [
-  { value: "SUPER_ADMIN", label: "Super Admin" },
   { value: "DEVELOPER", label: "Developer" },
+  { value: "SUPER_ADMIN", label: "Super Admin" },
   { value: "ADMIN", label: "Admin" },
   { value: "USER", label: "Utente" },
   { value: "CLIENT", label: "Cliente" },
@@ -72,15 +70,9 @@ export default function AnnouncementsPage() {
   const [saving, setSaving] = useState(false)
 
   // Form state
-  const [formData, setFormData] = useState<CreateAnnouncementData>({
-    title: "",
-    message: "",
-    type: "INFO",
-    priority: 0,
-    targetRoles: null,
-    startsAt: new Date().toISOString().slice(0, 16),
-    endsAt: null,
-  })
+  const [title, setTitle] = useState("")
+  const [message, setMessage] = useState("")
+  const [type, setType] = useState<"INFO" | "WARNING" | "MAINTENANCE" | "CRITICAL">("INFO")
   const [selectedRoles, setSelectedRoles] = useState<string[]>([])
   const [isActive, setIsActive] = useState(true)
 
@@ -99,50 +91,44 @@ export default function AnnouncementsPage() {
     try {
       setLoading(true)
       const data = await announcementsAPI.getAll()
-      setAnnouncements(data)
+      console.log("Loaded announcements:", data)
+      setAnnouncements(data || [])
     } catch (error) {
       console.error("Error loading announcements:", error)
       toast.error("Errore nel caricamento degli annunci")
+      setAnnouncements([])
     } finally {
       setLoading(false)
     }
   }
 
-  const openCreateDialog = () => {
-    setEditingAnnouncement(null)
-    setFormData({
-      title: "",
-      message: "",
-      type: "INFO",
-      priority: 0,
-      targetRoles: null,
-      startsAt: new Date().toISOString().slice(0, 16),
-      endsAt: null,
-    })
+  const resetForm = () => {
+    setTitle("")
+    setMessage("")
+    setType("INFO")
     setSelectedRoles([])
     setIsActive(true)
+  }
+
+  const openCreateDialog = () => {
+    setEditingAnnouncement(null)
+    resetForm()
     setDialogOpen(true)
   }
 
   const openEditDialog = (announcement: SystemAnnouncement) => {
     setEditingAnnouncement(announcement)
-    const targetRoles = announcement.targetRoles ? JSON.parse(announcement.targetRoles) : []
-    setFormData({
-      title: announcement.title,
-      message: announcement.message,
-      type: announcement.type,
-      priority: announcement.priority,
-      targetRoles: targetRoles.length > 0 ? targetRoles : null,
-      startsAt: announcement.startsAt.slice(0, 16),
-      endsAt: announcement.endsAt ? announcement.endsAt.slice(0, 16) : null,
-    })
-    setSelectedRoles(targetRoles)
+    setTitle(announcement.title)
+    setMessage(announcement.message)
+    setType(announcement.type)
+    const roles = announcement.targetRoles ? JSON.parse(announcement.targetRoles) : []
+    setSelectedRoles(roles)
     setIsActive(announcement.isActive)
     setDialogOpen(true)
   }
 
   const handleSave = async () => {
-    if (!formData.title || !formData.message) {
+    if (!title.trim() || !message.trim()) {
       toast.error("Titolo e messaggio sono obbligatori")
       return
     }
@@ -150,7 +136,9 @@ export default function AnnouncementsPage() {
     try {
       setSaving(true)
       const dataToSend = {
-        ...formData,
+        title: title.trim(),
+        message: message.trim(),
+        type,
         targetRoles: selectedRoles.length > 0 ? selectedRoles : null,
       }
 
@@ -166,6 +154,7 @@ export default function AnnouncementsPage() {
       }
 
       setDialogOpen(false)
+      resetForm()
       loadAnnouncements()
     } catch (error) {
       console.error("Error saving announcement:", error)
@@ -207,6 +196,11 @@ export default function AnnouncementsPage() {
     )
   }
 
+  const getRoleLabel = (role: string) => {
+    const option = roleOptions.find(r => r.value === role)
+    return option?.label || role
+  }
+
   return (
     <BaseLayout
       title="Gestione Annunci"
@@ -223,7 +217,7 @@ export default function AnnouncementsPage() {
           <CardHeader>
             <CardTitle>Annunci di Sistema</CardTitle>
             <CardDescription>
-              Gli annunci attivi vengono mostrati a tutti gli utenti nella dashboard
+              Gli annunci attivi vengono mostrati agli utenti nella dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -237,13 +231,11 @@ export default function AnnouncementsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Stato</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Titolo</TableHead>
-                    <TableHead>Target</TableHead>
-                    <TableHead>Periodo</TableHead>
-                    <TableHead>Creato da</TableHead>
-                    <TableHead className="text-right">Azioni</TableHead>
+                    <TableHead className="w-[80px]">Attivo</TableHead>
+                    <TableHead className="w-[120px]">Tipo</TableHead>
+                    <TableHead>Contenuto</TableHead>
+                    <TableHead className="w-[200px]">Destinatari</TableHead>
+                    <TableHead className="w-[100px] text-right">Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -271,43 +263,26 @@ export default function AnnouncementsPage() {
                         <TableCell>
                           <div>
                             <div className="font-medium">{announcement.title}</div>
-                            <div className="text-sm text-muted-foreground truncate max-w-xs">
+                            <div className="text-sm text-muted-foreground line-clamp-2">
                               {announcement.message}
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           {targetRoles.length === 0 ? (
-                            <span className="text-muted-foreground">Tutti</span>
+                            <span className="text-muted-foreground text-sm">Tutti gli utenti</span>
                           ) : (
                             <div className="flex flex-wrap gap-1">
                               {targetRoles.map((role: string) => (
                                 <Badge key={role} variant="outline" className="text-xs">
-                                  {role}
+                                  {getRoleLabel(role)}
                                 </Badge>
                               ))}
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>
-                              Da: {format(new Date(announcement.startsAt), "dd/MM/yyyy HH:mm", { locale: it })}
-                            </div>
-                            {announcement.endsAt && (
-                              <div className="text-muted-foreground">
-                                A: {format(new Date(announcement.endsAt), "dd/MM/yyyy HH:mm", { locale: it })}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {announcement.createdBy.firstName || announcement.createdBy.username}
-                          </span>
-                        </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -352,8 +327,8 @@ export default function AnnouncementsPage() {
               <Label htmlFor="title">Titolo *</Label>
               <Input
                 id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="es. Manutenzione programmata"
               />
             </div>
@@ -362,81 +337,41 @@ export default function AnnouncementsPage() {
               <Label htmlFor="message">Messaggio *</Label>
               <Textarea
                 id="message"
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
                 placeholder="Descrivi il contenuto dell'annuncio..."
-                rows={3}
+                rows={4}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, type: value as CreateAnnouncementData["type"] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(typeConfig).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>
-                        <div className="flex items-center gap-2">
-                          <config.icon className="h-4 w-4" />
-                          {config.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priorità</Label>
-                <Input
-                  id="priority"
-                  type="number"
-                  value={formData.priority}
-                  onChange={(e) =>
-                    setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startsAt">Data inizio *</Label>
-                <Input
-                  id="startsAt"
-                  type="datetime-local"
-                  value={formData.startsAt}
-                  onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endsAt">Data fine (opzionale)</Label>
-                <Input
-                  id="endsAt"
-                  type="datetime-local"
-                  value={formData.endsAt || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endsAt: e.target.value || null })
-                  }
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select
+                value={type}
+                onValueChange={(value) => setType(value as typeof type)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(typeConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <config.icon className="h-4 w-4" />
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Ruoli destinatari</Label>
+              <Label>Destinatari</Label>
               <p className="text-sm text-muted-foreground mb-2">
-                Lascia vuoto per mostrare a tutti
+                Seleziona i ruoli che vedranno l'annuncio. Lascia vuoto per tutti.
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {roleOptions.map((role) => (
                   <div key={role.value} className="flex items-center gap-2">
                     <Checkbox
@@ -453,7 +388,7 @@ export default function AnnouncementsPage() {
             </div>
 
             {editingAnnouncement && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-2 border-t">
                 <Switch checked={isActive} onCheckedChange={setIsActive} />
                 <Label>Annuncio attivo</Label>
               </div>
