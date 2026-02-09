@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { prisma } from '../lib/prisma';
+import prisma from '../config/database';
 import { AuthRequest } from '../middleware/auth';
 
 // Get system statistics (DEVELOPER only)
