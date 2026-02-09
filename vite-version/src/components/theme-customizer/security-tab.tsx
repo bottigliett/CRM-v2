@@ -24,9 +24,10 @@ export function SecurityTab() {
     loadUser()
   }, [])
 
-  // Only show PIN protection for SUPER_ADMIN or users with FINANCE_TRACKER access
+  // Only show PIN protection for SUPER_ADMIN/DEVELOPER or users with FINANCE_TRACKER access
   const hasFinanceAccess =
     currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'DEVELOPER' ||
     currentUser?.permissions?.some((p: any) =>
       p.moduleName === 'FINANCE_TRACKER' && p.hasAccess
     )

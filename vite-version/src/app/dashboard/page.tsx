@@ -103,9 +103,10 @@ export default function DashboardPage() {
   const [leadboardValue, setLeadboardValue] = useState(0)
 
   // Check if user has Finance Tracker access
-  // SUPER_ADMIN always has access, or check permissions for ADMIN
+  // SUPER_ADMIN and DEVELOPER always have access, or check permissions for ADMIN
   const hasFinanceAccess =
     currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'DEVELOPER' ||
     currentUser?.permissions?.some(p =>
       p.moduleName === 'FINANCE_TRACKER' && p.hasAccess
     ) || false
@@ -113,6 +114,7 @@ export default function DashboardPage() {
   // Check if user has Leads access
   const hasLeadsAccess =
     currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'DEVELOPER' ||
     currentUser?.permissions?.some(p =>
       p.moduleName === 'LEADS' && p.hasAccess
     ) || false
@@ -120,6 +122,7 @@ export default function DashboardPage() {
   // Check if user has Contacts/Anagrafica access
   const hasContactsAccess =
     currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'DEVELOPER' ||
     currentUser?.permissions?.some(p =>
       p.moduleName === 'CONTACTS' && p.hasAccess
     ) || false

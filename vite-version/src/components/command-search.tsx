@@ -161,9 +161,9 @@ export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
     // Le impostazioni sono sempre accessibili a tutti gli utenti autenticati
     if (item.group === "Impostazioni") return true
 
-    // Controlla se richiede SUPER_ADMIN
+    // Controlla se richiede SUPER_ADMIN (anche DEVELOPER ha accesso)
     if (item.requiresSuperAdmin) {
-      return user?.role === 'SUPER_ADMIN'
+      return user?.role === 'SUPER_ADMIN' || user?.role === 'DEVELOPER'
     }
 
     // Controlla il permesso del modulo

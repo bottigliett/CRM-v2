@@ -6,8 +6,8 @@ export function usePermissions() {
   const canAccessModule = (moduleName: string): boolean => {
     if (!user) return false
 
-    // SUPER_ADMIN ha sempre tutti i permessi
-    if (user.role === 'SUPER_ADMIN') return true
+    // SUPER_ADMIN e DEVELOPER hanno sempre tutti i permessi
+    if (user.role === 'SUPER_ADMIN' || user.role === 'DEVELOPER') return true
 
     // ADMIN deve avere il permesso specifico
     if (user.role === 'ADMIN') {

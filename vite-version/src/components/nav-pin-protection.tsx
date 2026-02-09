@@ -33,6 +33,7 @@ export function NavPinProtection() {
 
   const hasFinanceAccess =
     currentUser?.role === 'SUPER_ADMIN' ||
+    currentUser?.role === 'DEVELOPER' ||
     currentUser?.permissions?.some((p: any) =>
       p.moduleName === 'FINANCE_TRACKER' && p.hasAccess
     )
