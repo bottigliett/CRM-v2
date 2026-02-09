@@ -73,6 +73,10 @@ const AppearanceSettings = lazy(() => import('@/app/settings/appearance/page'))
 const NotificationSettings = lazy(() => import('@/app/settings/notifications/page'))
 const ConnectionSettings = lazy(() => import('@/app/settings/connections/page'))
 
+// Developer pages
+const DeveloperAnnouncements = lazy(() => import('@/app/developer/announcements/page'))
+const DeveloperSandbox = lazy(() => import('@/app/developer/sandbox/page'))
+
 export interface RouteConfig {
   path: string
   element: React.ReactNode
@@ -172,6 +176,16 @@ export const routes: RouteConfig[] = [
   {
     path: "/users",
     element: <ProtectedRoute><Users /></ProtectedRoute>
+  },
+
+  // Developer Routes (DEVELOPER role only)
+  {
+    path: "/developer/announcements",
+    element: <ProtectedRoute><DeveloperAnnouncements /></ProtectedRoute>
+  },
+  {
+    path: "/developer/sandbox",
+    element: <ProtectedRoute><DeveloperSandbox /></ProtectedRoute>
   },
 
   // Authentication Routes

@@ -50,7 +50,7 @@ const userFormSchema = z.object({
   }).optional().or(z.literal('')),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  role: z.enum(["SUPER_ADMIN", "ADMIN", "USER"], {
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "USER", "DEVELOPER"], {
     message: "Seleziona un ruolo.",
   }),
   isActive: z.boolean().default(true),
@@ -112,6 +112,12 @@ export function UserFormDialog({ onAddUser, editingUser, open: controlledOpen, o
     loadModules()
   }, [])
 
+  // Check if editing a protected user (DEVELOPER role or username "davide")
+  const isProtectedUser = editingUser && (
+    editingUser.role === 'DEVELOPER' ||
+    editingUser.username.toLowerCase() === 'davide'
+  )
+
   // Reset form when editing user changes
   useEffect(() => {
     if (editingUser) {
@@ -123,7 +129,7 @@ export function UserFormDialog({ onAddUser, editingUser, open: controlledOpen, o
         password: "",
         firstName: editingUser.firstName || "",
         lastName: editingUser.lastName || "",
-        role: editingUser.role as "SUPER_ADMIN" | "ADMIN" | "USER",
+        role: editingUser.role as "SUPER_ADMIN" | "ADMIN" | "USER" | "DEVELOPER",
         isActive: editingUser.isActive,
         permissions: permissions,
       })
@@ -337,6 +343,7 @@ export function UserFormDialog({ onAddUser, editingUser, open: controlledOpen, o
                           onValueChange={handleRoleChange}
                           defaultValue={field.value}
                           value={selectedRole}
+                          disabled={isProtectedUser}
                         >
                           <FormControl>
                             <SelectTrigger className="cursor-pointer w-full">
@@ -344,15 +351,21 @@ export function UserFormDialog({ onAddUser, editingUser, open: controlledOpen, o
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            {/* DEVELOPER non è selezionabile - viene mostrato solo se l'utente è già DEVELOPER */}
+                            {selectedRole === 'DEVELOPER' && (
+                              <SelectItem value="DEVELOPER">Developer</SelectItem>
+                            )}
                             <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                             <SelectItem value="ADMIN">Admin</SelectItem>
                             <SelectItem value="USER">Utente</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>
+                          {selectedRole === 'DEVELOPER' && 'Accesso sviluppatore con strumenti di debug'}
                           {selectedRole === 'SUPER_ADMIN' && 'Accesso completo a tutte le funzionalità'}
                           {selectedRole === 'ADMIN' && 'Accesso limitato ai moduli selezionati'}
                           {selectedRole === 'USER' && 'Accesso base di sola lettura'}
+                          {isProtectedUser && <span className="block text-amber-600 mt-1">Il ruolo di questo utente non può essere modificato</span>}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

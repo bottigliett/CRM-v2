@@ -15,6 +15,8 @@ import {
   Timer,
   UserCheck,
   MessageSquare,
+  Megaphone,
+  Code,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -143,6 +145,23 @@ const allNavGroups: NavGroup[] = [
   },
 ]
 
+// Developer-only navigation group
+const developerNavGroup: NavGroup = {
+  label: "Developer",
+  items: [
+    {
+      title: "Annunci",
+      url: "/developer/announcements",
+      icon: Megaphone,
+    },
+    {
+      title: "Sandbox",
+      url: "/developer/sandbox",
+      icon: Code,
+    },
+  ],
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthStore()
   const [unreadTicketCount, setUnreadTicketCount] = React.useState(0)
@@ -192,7 +211,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       })
     }
 
-    // SUPER_ADMIN can see everything
+    // DEVELOPER has full access plus developer tools
+    if (user.role === 'DEVELOPER') {
+      const groups = allNavGroups.map(group => ({
+        ...group,
+        items: addBadgeToItems(group.items),
+      }))
+      // Add developer section
+      groups.push(developerNavGroup)
+      return groups
+    }
+
+    // SUPER_ADMIN can see everything (but not developer tools)
     if (user.role === 'SUPER_ADMIN') {
       return allNavGroups.map(group => ({
         ...group,
