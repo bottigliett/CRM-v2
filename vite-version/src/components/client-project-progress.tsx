@@ -49,7 +49,8 @@ export function ClientProjectProgress() {
     )
   }
 
-  if (!quote || tasks.length === 0) {
+  // Don't show if there are no tasks
+  if (tasks.length === 0) {
     return null
   }
 
@@ -62,9 +63,11 @@ export function ClientProjectProgress() {
               <TrendingUp className="h-5 w-5" />
               Avanzamento Progetto
             </CardTitle>
-            <CardDescription className="mt-1">
-              {quote.title}
-            </CardDescription>
+            {quote && (
+              <CardDescription className="mt-1">
+                {quote.title}
+              </CardDescription>
+            )}
           </div>
           <Badge variant={progress.percentage === 100 ? 'default' : 'secondary'} className="text-lg px-3 py-1">
             {progress.percentage}%
