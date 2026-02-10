@@ -57,7 +57,7 @@ export const developerAPI = {
   // Get system statistics
   getStats: async (): Promise<SystemStats> => {
     const response = await api.get('/developer/stats')
-    return response.data.data
+    return response.data
   },
 
   // Get recent access logs
@@ -67,31 +67,31 @@ export const developerAPI = {
       endpoint += `&action=${action}`
     }
     const response = await api.get(endpoint)
-    return response.data.data
+    return response.data
   },
 
   // Get database info
   getDatabaseInfo: async (): Promise<DatabaseInfo> => {
     const response = await api.get('/developer/database')
-    return response.data.data
+    return response.data
   },
 
   // Get activity history (last 7 days)
   getActivityHistory: async (): Promise<ActivityDay[]> => {
     const response = await api.get('/developer/activity-history')
-    return response.data.data
+    return response.data
   },
 
   // Clean old sessions
   cleanSessions: async (): Promise<{ deletedCount: number; message: string }> => {
     const response = await api.post('/developer/clean-sessions')
-    return { deletedCount: response.data.data.deletedCount, message: response.data.message }
+    return { deletedCount: response.data.deletedCount, message: response.message }
   },
 
   // Clean old access logs
   cleanAccessLogs: async (): Promise<{ deletedCount: number; message: string }> => {
     const response = await api.post('/developer/clean-logs')
-    return { deletedCount: response.data.data.deletedCount, message: response.data.message }
+    return { deletedCount: response.data.deletedCount, message: response.message }
   },
 }
 
