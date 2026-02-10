@@ -5,9 +5,6 @@ import { useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { useAuthStore } from "@/store/auth-store"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -25,14 +22,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,13 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell, Pie, PieChart } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Cell, Pie, PieChart } from "recharts"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
 import { developerAPI, type SystemStats, type AccessLog, type ActivityDay } from "@/lib/developer-api"
 import {
-  Code,
-  Terminal,
   Zap,
   Users,
   CheckSquare,
@@ -57,12 +43,10 @@ import {
   Activity,
   RefreshCw,
   Trash2,
-  Play,
   Clock,
   BarChart3,
   Database,
   Server,
-  Cpu,
   HardDrive,
   TrendingUp,
   Shield,
@@ -70,24 +54,6 @@ import {
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { it } from "date-fns/locale"
-
-// Comandi predefiniti per API Tester
-const presetCommands = [
-  { label: "Utenti", method: "GET", endpoint: "/users", body: "" },
-  { label: "Utente corrente", method: "GET", endpoint: "/auth/me", body: "" },
-  { label: "Contatti", method: "GET", endpoint: "/contacts", body: "" },
-  { label: "Task", method: "GET", endpoint: "/tasks", body: "" },
-  { label: "Eventi", method: "GET", endpoint: "/events", body: "" },
-  { label: "Ticket", method: "GET", endpoint: "/tickets", body: "" },
-  { label: "Preventivi", method: "GET", endpoint: "/quotes", body: "" },
-  { label: "Fatture", method: "GET", endpoint: "/invoices", body: "" },
-  { label: "Progetti", method: "GET", endpoint: "/projects", body: "" },
-  { label: "Transazioni", method: "GET", endpoint: "/transactions", body: "" },
-  { label: "Annunci", method: "GET", endpoint: "/announcements", body: "" },
-  { label: "Notifiche", method: "GET", endpoint: "/notifications", body: "" },
-  { label: "Client Access", method: "GET", endpoint: "/client-access", body: "" },
-  { label: "Moduli disponibili", method: "GET", endpoint: "/modules", body: "" },
-]
 
 const chartConfig = {
   logins: { label: "Login", color: "hsl(var(--foreground))" },
@@ -99,11 +65,6 @@ const chartConfig = {
 export default function SandboxPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const [apiEndpoint, setApiEndpoint] = useState("")
-  const [apiMethod, setApiMethod] = useState("GET")
-  const [apiBody, setApiBody] = useState("")
-  const [apiResponse, setApiResponse] = useState("")
-  const [loading, setLoading] = useState(false)
 
   // Stats
   const [stats, setStats] = useState<SystemStats | null>(null)
@@ -181,53 +142,6 @@ export default function SandboxPage() {
     loadAccessLogs(logFilter)
   }
 
-  const testApiCall = async () => {
-    if (!apiEndpoint) {
-      toast.error("Inserisci un endpoint")
-      return
-    }
-
-    try {
-      setLoading(true)
-      setApiResponse("Loading...")
-
-      let response
-      const endpoint = apiEndpoint.startsWith("/") ? apiEndpoint : `/${apiEndpoint}`
-
-      switch (apiMethod) {
-        case "GET":
-          response = await api.get(endpoint)
-          break
-        case "POST":
-          response = await api.post(endpoint, apiBody ? JSON.parse(apiBody) : {})
-          break
-        case "PUT":
-          response = await api.put(endpoint, apiBody ? JSON.parse(apiBody) : {})
-          break
-        case "DELETE":
-          response = await api.delete(endpoint)
-          break
-        default:
-          response = await api.get(endpoint)
-      }
-
-      setApiResponse(JSON.stringify(response, null, 2))
-      toast.success("Richiesta completata")
-    } catch (error: any) {
-      const errorData = error.response?.data || error.message
-      setApiResponse(JSON.stringify(errorData, null, 2))
-      toast.error("Errore nella richiesta")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const applyPreset = (preset: typeof presetCommands[0]) => {
-    setApiMethod(preset.method)
-    setApiEndpoint(preset.endpoint)
-    setApiBody(preset.body)
-  }
-
   const handleCleanSessions = async () => {
     try {
       const result = await developerAPI.cleanSessions()
@@ -303,7 +217,7 @@ export default function SandboxPage() {
     >
       <div className="px-4 lg:px-6 space-y-6">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <BarChart3 className="mr-2 h-4 w-4" />
               Dashboard
@@ -311,10 +225,6 @@ export default function SandboxPage() {
             <TabsTrigger value="logs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Activity className="mr-2 h-4 w-4" />
               Activity
-            </TabsTrigger>
-            <TabsTrigger value="api" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Terminal className="mr-2 h-4 w-4" />
-              Console
             </TabsTrigger>
             <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Zap className="mr-2 h-4 w-4" />
@@ -642,73 +552,6 @@ export default function SandboxPage() {
                     </div>
                   </ScrollArea>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* API TESTER TAB */}
-          <TabsContent value="api" className="space-y-4 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Terminal className="h-5 w-5" />
-                  API Console
-                </CardTitle>
-                <CardDescription>
-                  Esegui richieste API direttamente dalla dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Quick Commands</Label>
-                  <div className="flex flex-wrap gap-1">
-                    {presetCommands.map((preset, idx) => (
-                      <Button key={idx} variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyPreset(preset)}>
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <select
-                    value={apiMethod}
-                    onChange={(e) => setApiMethod(e.target.value)}
-                    className="w-24 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                  >
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                  </select>
-                  <Input
-                    value={apiEndpoint}
-                    onChange={(e) => setApiEndpoint(e.target.value)}
-                    placeholder="/endpoint"
-                    className="flex-1 font-mono"
-                  />
-                  <Button onClick={testApiCall} disabled={loading}>
-                    <Play className="mr-2 h-4 w-4" />
-                    {loading ? "..." : "Run"}
-                  </Button>
-                </div>
-
-                {(apiMethod === "POST" || apiMethod === "PUT") && (
-                  <Textarea
-                    value={apiBody}
-                    onChange={(e) => setApiBody(e.target.value)}
-                    placeholder='{"key": "value"}'
-                    rows={4}
-                    className="font-mono text-sm"
-                  />
-                )}
-
-                <div>
-                  <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Response</Label>
-                  <pre className="p-4 bg-zinc-950 text-green-400 rounded-lg overflow-auto max-h-96 text-sm font-mono border">
-                    {apiResponse || "// Output will appear here"}
-                  </pre>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
