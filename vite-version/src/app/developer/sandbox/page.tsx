@@ -275,15 +275,15 @@ export default function SandboxPage() {
     }
   }
 
-  // Prepare pie chart data
+  // Prepare pie chart data (grayscale)
   const pieData = stats ? [
-    { name: "Contatti", value: stats.contacts.total, color: pieColors[0] },
-    { name: "Task", value: stats.tasks.total, color: pieColors[1] },
-    { name: "Ticket", value: stats.tickets.total, color: pieColors[2] },
-    { name: "Eventi", value: stats.events.total, color: pieColors[3] },
-    { name: "Preventivi", value: stats.quotes.total, color: pieColors[4] },
-    { name: "Fatture", value: stats.invoices.total, color: pieColors[5] },
-    { name: "Progetti", value: stats.projects.total, color: pieColors[6] },
+    { name: "Contatti", value: stats.contacts.total, color: "hsl(var(--foreground))" },
+    { name: "Task", value: stats.tasks.total, color: "hsl(var(--foreground) / 0.8)" },
+    { name: "Ticket", value: stats.tickets.total, color: "hsl(var(--foreground) / 0.6)" },
+    { name: "Eventi", value: stats.events.total, color: "hsl(var(--foreground) / 0.4)" },
+    { name: "Preventivi", value: stats.quotes.total, color: "hsl(var(--muted-foreground))" },
+    { name: "Fatture", value: stats.invoices.total, color: "hsl(var(--muted-foreground) / 0.7)" },
+    { name: "Progetti", value: stats.projects.total, color: "hsl(var(--muted-foreground) / 0.5)" },
   ].filter(d => d.value > 0) : []
 
   const totalRecords = pieData.reduce((acc, d) => acc + d.value, 0)
