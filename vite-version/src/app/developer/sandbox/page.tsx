@@ -148,9 +148,10 @@ export default function SandboxPage() {
     try {
       setHistoryLoading(true)
       const data = await developerAPI.getActivityHistory()
-      setActivityHistory(data)
+      setActivityHistory(data || [])
     } catch (error) {
       console.error("Error loading activity history:", error)
+      setActivityHistory([])
     } finally {
       setHistoryLoading(false)
     }
@@ -160,9 +161,10 @@ export default function SandboxPage() {
     try {
       setLogsLoading(true)
       const data = await developerAPI.getAccessLogs(50, action === "ALL" ? undefined : action)
-      setAccessLogs(data)
+      setAccessLogs(data || [])
     } catch (error) {
       console.error("Error loading access logs:", error)
+      setAccessLogs([])
     } finally {
       setLogsLoading(false)
     }
