@@ -90,13 +90,11 @@ const presetCommands = [
 ]
 
 const chartConfig = {
-  logins: { label: "Login", color: "#3b82f6" },
-  tasks: { label: "Task", color: "#22c55e" },
-  tickets: { label: "Ticket", color: "#ef4444" },
-  events: { label: "Eventi", color: "#f59e0b" },
+  logins: { label: "Login", color: "hsl(var(--foreground))" },
+  tasks: { label: "Task", color: "hsl(var(--muted-foreground))" },
+  tickets: { label: "Ticket", color: "hsl(var(--foreground) / 0.5)" },
+  events: { label: "Eventi", color: "hsl(var(--muted-foreground) / 0.5)" },
 }
-
-const pieColors = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"]
 
 export default function SandboxPage() {
   const navigate = useNavigate()
@@ -450,27 +448,13 @@ export default function SandboxPage() {
                       ) : (
                         <ChartContainer config={chartConfig} className="h-[250px] w-full">
                           <AreaChart data={activityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="colorLogins" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
-                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
                             <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                             <ChartTooltip content={<ChartTooltipContent />} />
-                            <Area type="monotone" dataKey="logins" stroke="#3b82f6" fill="url(#colorLogins)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="tasks" stroke="#22c55e" fill="url(#colorTasks)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="tickets" stroke="#ef4444" fill="url(#colorTickets)" strokeWidth={2} />
+                            <Area type="monotone" dataKey="logins" stroke="currentColor" fill="currentColor" fillOpacity={0.1} strokeWidth={2} />
+                            <Area type="monotone" dataKey="tasks" stroke="currentColor" fill="currentColor" fillOpacity={0.05} strokeWidth={1.5} strokeDasharray="4 4" />
+                            <Area type="monotone" dataKey="tickets" stroke="currentColor" fill="none" strokeWidth={1} strokeDasharray="2 2" />
                           </AreaChart>
                         </ChartContainer>
                       )}
