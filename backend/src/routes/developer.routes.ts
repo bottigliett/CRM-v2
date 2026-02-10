@@ -4,6 +4,7 @@ import {
   getSystemStats,
   getRecentAccessLogs,
   getDatabaseInfo,
+  getActivityHistory,
   cleanOldSessions,
   cleanOldAccessLogs,
 } from '../controllers/developer.controller';
@@ -21,6 +22,9 @@ router.get('/access-logs', getRecentAccessLogs);
 
 // GET /api/developer/database - Info database
 router.get('/database', getDatabaseInfo);
+
+// GET /api/developer/activity-history - Storico attività ultimi 7 giorni
+router.get('/activity-history', getActivityHistory);
 
 // POST /api/developer/clean-sessions - Pulizia sessioni scadute
 router.post('/clean-sessions', cleanOldSessions);

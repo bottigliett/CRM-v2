@@ -44,6 +44,15 @@ export interface DatabaseInfo {
   nodeEnv: string
 }
 
+export interface ActivityDay {
+  date: string
+  day: string
+  logins: number
+  tasks: number
+  tickets: number
+  events: number
+}
+
 export const developerAPI = {
   // Get system statistics
   getStats: async (): Promise<SystemStats> => {
@@ -64,6 +73,12 @@ export const developerAPI = {
   // Get database info
   getDatabaseInfo: async (): Promise<DatabaseInfo> => {
     const response = await api.get('/developer/database')
+    return response.data
+  },
+
+  // Get activity history (last 7 days)
+  getActivityHistory: async (): Promise<ActivityDay[]> => {
+    const response = await api.get('/developer/activity-history')
     return response.data
   },
 

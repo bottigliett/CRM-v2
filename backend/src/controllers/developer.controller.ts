@@ -303,6 +303,81 @@ export const cleanOldSessions = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Get activity history (last 7 days) - DEVELOPER only
+export const getActivityHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Utente non autenticato',
+      });
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+    });
+
+    if (!currentUser || currentUser.role !== 'DEVELOPER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accesso riservato ai Developer',
+      });
+    }
+
+    // Last 7 days
+    const days = 7;
+    const result = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      const [logins, tasks, tickets, events] = await Promise.all([
+        prisma.accessLog.count({
+          where: {
+            action: 'LOGIN',
+            status: 'SUCCESS',
+            createdAt: { gte: date, lt: nextDate },
+          },
+        }),
+        prisma.task.count({
+          where: { createdAt: { gte: date, lt: nextDate } },
+        }),
+        prisma.ticket.count({
+          where: { createdAt: { gte: date, lt: nextDate } },
+        }),
+        prisma.event.count({
+          where: { createdAt: { gte: date, lt: nextDate } },
+        }),
+      ]);
+
+      result.push({
+        date: date.toISOString().split('T')[0],
+        day: date.toLocaleDateString('it-IT', { weekday: 'short' }),
+        logins,
+        tasks,
+        tickets,
+        events,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error('Errore durante il recupero activity history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Errore durante il recupero activity history',
+    });
+  }
+};
+
 // Clean old access logs (DEVELOPER only)
 export const cleanOldAccessLogs = async (req: AuthRequest, res: Response) => {
   try {

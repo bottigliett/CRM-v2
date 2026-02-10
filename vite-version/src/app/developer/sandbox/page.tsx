@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Card,
@@ -38,9 +39,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell, Pie, PieChart } from "recharts"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
-import { developerAPI, type SystemStats, type AccessLog } from "@/lib/developer-api"
+import { developerAPI, type SystemStats, type AccessLog, type ActivityDay } from "@/lib/developer-api"
 import {
   Code,
   Terminal,
@@ -58,6 +61,12 @@ import {
   Clock,
   BarChart3,
   Database,
+  Server,
+  Cpu,
+  HardDrive,
+  TrendingUp,
+  Shield,
+  CircleDot,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { it } from "date-fns/locale"
@@ -80,6 +89,15 @@ const presetCommands = [
   { label: "Moduli disponibili", method: "GET", endpoint: "/modules", body: "" },
 ]
 
+const chartConfig = {
+  logins: { label: "Login", color: "#3b82f6" },
+  tasks: { label: "Task", color: "#22c55e" },
+  tickets: { label: "Ticket", color: "#ef4444" },
+  events: { label: "Eventi", color: "#f59e0b" },
+}
+
+const pieColors = ["#3b82f6", "#22c55e", "#ef4444", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"]
+
 export default function SandboxPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
@@ -92,6 +110,10 @@ export default function SandboxPage() {
   // Stats
   const [stats, setStats] = useState<SystemStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
+
+  // Activity History
+  const [activityHistory, setActivityHistory] = useState<ActivityDay[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
 
   // Access Logs
   const [accessLogs, setAccessLogs] = useState<AccessLog[]>([])
@@ -108,6 +130,7 @@ export default function SandboxPage() {
   // Load initial data
   useEffect(() => {
     loadStats()
+    loadActivityHistory()
     loadAccessLogs()
   }, [])
 
@@ -118,9 +141,20 @@ export default function SandboxPage() {
       setStats(data)
     } catch (error) {
       console.error("Error loading stats:", error)
-      toast.error("Errore nel caricamento statistiche")
     } finally {
       setStatsLoading(false)
+    }
+  }
+
+  const loadActivityHistory = async () => {
+    try {
+      setHistoryLoading(true)
+      const data = await developerAPI.getActivityHistory()
+      setActivityHistory(data)
+    } catch (error) {
+      console.error("Error loading activity history:", error)
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -131,7 +165,6 @@ export default function SandboxPage() {
       setAccessLogs(data)
     } catch (error) {
       console.error("Error loading access logs:", error)
-      toast.error("Errore nel caricamento logs")
     } finally {
       setLogsLoading(false)
     }
@@ -140,6 +173,12 @@ export default function SandboxPage() {
   const handleLogFilterChange = (value: string) => {
     setLogFilter(value)
     loadAccessLogs(value)
+  }
+
+  const refreshAll = () => {
+    loadStats()
+    loadActivityHistory()
+    loadAccessLogs(logFilter)
   }
 
   const testApiCall = async () => {
@@ -213,9 +252,9 @@ export default function SandboxPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "SUCCESS":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Success</Badge>
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Success</Badge>
       case "FAILED":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Failed</Badge>
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Failed</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -224,223 +263,344 @@ export default function SandboxPage() {
   const getActionBadge = (action: string) => {
     switch (action) {
       case "LOGIN":
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">Login</Badge>
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Login</Badge>
       case "LOGOUT":
-        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300">Logout</Badge>
+        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">Logout</Badge>
       case "USER_CREATED":
-        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Utente creato</Badge>
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Utente creato</Badge>
       case "USER_DELETED":
-        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Utente eliminato</Badge>
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Utente eliminato</Badge>
       case "USER_UPDATED":
-        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Utente modificato</Badge>
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Utente modificato</Badge>
       default:
         return <Badge variant="outline">{action}</Badge>
     }
   }
 
+  // Prepare pie chart data
+  const pieData = stats ? [
+    { name: "Contatti", value: stats.contacts.total, color: pieColors[0] },
+    { name: "Task", value: stats.tasks.total, color: pieColors[1] },
+    { name: "Ticket", value: stats.tickets.total, color: pieColors[2] },
+    { name: "Eventi", value: stats.events.total, color: pieColors[3] },
+    { name: "Preventivi", value: stats.quotes.total, color: pieColors[4] },
+    { name: "Fatture", value: stats.invoices.total, color: pieColors[5] },
+    { name: "Progetti", value: stats.projects.total, color: pieColors[6] },
+  ].filter(d => d.value > 0) : []
+
+  const totalRecords = pieData.reduce((acc, d) => acc + d.value, 0)
+
   return (
     <BaseLayout
-      title="Developer Sandbox"
-      description="Strumenti di sviluppo, statistiche e monitoring"
+      title="Developer Console"
+      description="Sistema di monitoraggio e gestione avanzata"
+      headerAction={
+        <Button variant="outline" size="sm" onClick={refreshAll}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Aggiorna tutto
+        </Button>
+      }
     >
       <div className="px-4 lg:px-6 space-y-6">
-        <Tabs defaultValue="stats" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="stats">
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
+            <TabsTrigger value="dashboard" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <BarChart3 className="mr-2 h-4 w-4" />
-              Statistiche
+              Dashboard
             </TabsTrigger>
-            <TabsTrigger value="logs">
+            <TabsTrigger value="logs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Activity className="mr-2 h-4 w-4" />
-              Access Logs
+              Activity
             </TabsTrigger>
-            <TabsTrigger value="api">
+            <TabsTrigger value="api" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Terminal className="mr-2 h-4 w-4" />
-              API Tester
+              Console
             </TabsTrigger>
-            <TabsTrigger value="tools">
+            <TabsTrigger value="tools" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Zap className="mr-2 h-4 w-4" />
               Tools
             </TabsTrigger>
           </TabsList>
 
-          {/* STATISTICHE TAB */}
-          <TabsContent value="stats" className="space-y-4">
-            <div className="flex justify-end">
-              <Button variant="outline" size="sm" onClick={loadStats} disabled={statsLoading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
-                Aggiorna
-              </Button>
+          {/* DASHBOARD TAB */}
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
+            {/* Status Bar */}
+            <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-medium">Sistema Online</span>
+              </div>
+              <div className="h-4 w-px bg-border" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Server className="h-4 w-4" />
+                <span>{import.meta.env.VITE_API_URL || "localhost"}</span>
+              </div>
+              <div className="h-4 w-px bg-border" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4 text-green-500" />
+                <span>JWT Auth</span>
+              </div>
+              <div className="ml-auto text-xs text-muted-foreground">
+                Ultimo aggiornamento: {new Date().toLocaleTimeString("it-IT")}
+              </div>
             </div>
 
+            {/* Quick Stats Row */}
             {statsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Caricamento statistiche...</div>
-            ) : stats ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Users className="h-4 w-4 text-blue-500" />
-                      Utenti
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.users.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.users.active} attivi</p>
-                  </CardContent>
-                </Card>
+              <div className="text-center py-8 text-muted-foreground">Caricamento...</div>
+            ) : stats && (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Utenti</p>
+                          <p className="text-2xl font-bold text-blue-500">{stats.users.total}</p>
+                          <p className="text-xs text-muted-foreground">{stats.users.active} attivi</p>
+                        </div>
+                        <Users className="h-8 w-8 text-blue-500/50" />
+                      </div>
+                      <Progress value={(stats.users.active / stats.users.total) * 100} className="mt-2 h-1" />
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Users className="h-4 w-4 text-purple-500" />
-                      Contatti
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.contacts.total}</div>
-                  </CardContent>
-                </Card>
+                  <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Task</p>
+                          <p className="text-2xl font-bold text-green-500">{stats.tasks.total}</p>
+                          <p className="text-xs text-muted-foreground">{stats.tasks.open} aperti</p>
+                        </div>
+                        <CheckSquare className="h-8 w-8 text-green-500/50" />
+                      </div>
+                      <Progress value={stats.tasks.total > 0 ? ((stats.tasks.total - stats.tasks.open) / stats.tasks.total) * 100 : 0} className="mt-2 h-1" />
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <CheckSquare className="h-4 w-4 text-green-500" />
-                      Task
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.tasks.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.tasks.open} aperti · {stats.tasks.todayNew} oggi</p>
-                  </CardContent>
-                </Card>
+                  <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Ticket</p>
+                          <p className="text-2xl font-bold text-red-500">{stats.tickets.total}</p>
+                          <p className="text-xs text-muted-foreground">{stats.tickets.open} aperti</p>
+                        </div>
+                        <Ticket className="h-8 w-8 text-red-500/50" />
+                      </div>
+                      <Progress value={stats.tickets.total > 0 ? ((stats.tickets.total - stats.tickets.open) / stats.tickets.total) * 100 : 0} className="mt-2 h-1" />
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-orange-500" />
-                      Eventi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.events.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.events.upcoming} futuri</p>
-                  </CardContent>
-                </Card>
+                  <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Eventi</p>
+                          <p className="text-2xl font-bold text-orange-500">{stats.events.total}</p>
+                          <p className="text-xs text-muted-foreground">{stats.events.upcoming} futuri</p>
+                        </div>
+                        <Calendar className="h-8 w-8 text-orange-500/50" />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Ticket className="h-4 w-4 text-red-500" />
-                      Ticket
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.tickets.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.tickets.open} aperti · {stats.tickets.todayNew} oggi</p>
-                  </CardContent>
-                </Card>
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Contatti</p>
+                          <p className="text-2xl font-bold text-purple-500">{stats.contacts.total}</p>
+                        </div>
+                        <Users className="h-8 w-8 text-purple-500/50" />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-cyan-500" />
-                      Preventivi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.quotes.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.quotes.pending} in attesa</p>
-                  </CardContent>
-                </Card>
+                  <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Login Oggi</p>
+                          <p className="text-2xl font-bold text-cyan-500">{stats.accessLogs.todayLogins}</p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-cyan-500/50" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-yellow-500" />
-                      Fatture
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.invoices.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.invoices.unpaid} non pagate</p>
-                  </CardContent>
-                </Card>
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Activity Chart */}
+                  <Card className="lg:col-span-2">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-primary" />
+                        Attività Ultimi 7 Giorni
+                      </CardTitle>
+                      <CardDescription>Login, task, ticket ed eventi creati</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {historyLoading ? (
+                        <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                          Caricamento grafico...
+                        </div>
+                      ) : (
+                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                          <AreaChart data={activityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorLogins" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                            <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                            <Area type="monotone" dataKey="logins" stroke="#3b82f6" fill="url(#colorLogins)" strokeWidth={2} />
+                            <Area type="monotone" dataKey="tasks" stroke="#22c55e" fill="url(#colorTasks)" strokeWidth={2} />
+                            <Area type="monotone" dataKey="tickets" stroke="#ef4444" fill="url(#colorTickets)" strokeWidth={2} />
+                          </AreaChart>
+                        </ChartContainer>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <FolderKanban className="h-4 w-4 text-indigo-500" />
-                      Progetti
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.projects.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.projects.active} attivi</p>
-                  </CardContent>
-                </Card>
+                  {/* Pie Chart */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Database className="h-5 w-5 text-primary" />
+                        Distribuzione Dati
+                      </CardTitle>
+                      <CardDescription>{totalRecords.toLocaleString()} record totali</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={2}
+                            dataKey="value"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </PieChart>
+                      </ChartContainer>
+                      <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                        {pieData.slice(0, 6).map((entry, index) => (
+                          <div key={index} className="flex items-center gap-1">
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            <span className="text-muted-foreground">{entry.name}: {entry.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Users className="h-4 w-4 text-teal-500" />
-                      Client Access
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.clientAccess.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.clientAccess.active} attivi</p>
-                  </CardContent>
-                </Card>
+                {/* Additional Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-yellow-500/10">
+                          <FileText className="h-5 w-5 text-yellow-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Fatture</p>
+                          <p className="text-xl font-bold">{stats.invoices.total}</p>
+                          <p className="text-xs text-yellow-500">{stats.invoices.unpaid} da pagare</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Database className="h-4 w-4 text-pink-500" />
-                      Transazioni
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.transactions.total}</div>
-                  </CardContent>
-                </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-indigo-500/10">
+                          <FolderKanban className="h-5 w-5 text-indigo-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Progetti</p>
+                          <p className="text-xl font-bold">{stats.projects.total}</p>
+                          <p className="text-xs text-indigo-500">{stats.projects.active} attivi</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-gray-500" />
-                      Access Logs
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.accessLogs.total}</div>
-                    <p className="text-xs text-muted-foreground">{stats.accessLogs.todayLogins} login oggi</p>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">Nessuna statistica disponibile</div>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-teal-500/10">
+                          <Users className="h-5 w-5 text-teal-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Client Access</p>
+                          <p className="text-xl font-bold">{stats.clientAccess.total}</p>
+                          <p className="text-xs text-teal-500">{stats.clientAccess.active} attivi</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-pink-500/10">
+                          <HardDrive className="h-5 w-5 text-pink-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Access Logs</p>
+                          <p className="text-xl font-bold">{stats.accessLogs.total.toLocaleString()}</p>
+                          <p className="text-xs text-pink-500">{stats.transactions.total} transazioni</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
             )}
           </TabsContent>
 
           {/* ACCESS LOGS TAB */}
-          <TabsContent value="logs" className="space-y-4">
+          <TabsContent value="logs" className="space-y-4 mt-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Activity className="h-5 w-5" />
-                      Ultimi Access Logs
+                      Activity Feed
                     </CardTitle>
                     <CardDescription>
-                      Log degli accessi e delle azioni degli utenti
+                      Monitoraggio in tempo reale delle attività
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Select value={logFilter} onValueChange={handleLogFilterChange}>
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filtra per azione" />
+                        <SelectValue placeholder="Filtra" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">Tutti</SelectItem>
@@ -451,7 +611,7 @@ export default function SandboxPage() {
                         <SelectItem value="USER_DELETED">Utente eliminato</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="sm" onClick={() => loadAccessLogs(logFilter)} disabled={logsLoading}>
+                    <Button variant="outline" size="icon" onClick={() => loadAccessLogs(logFilter)} disabled={logsLoading}>
                       <RefreshCw className={`h-4 w-4 ${logsLoading ? 'animate-spin' : ''}`} />
                     </Button>
                   </div>
@@ -459,51 +619,37 @@ export default function SandboxPage() {
               </CardHeader>
               <CardContent>
                 {logsLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">Caricamento logs...</div>
+                  <div className="text-center py-8 text-muted-foreground">Caricamento...</div>
                 ) : accessLogs.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">Nessun log trovato</div>
                 ) : (
-                  <ScrollArea className="h-[500px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[180px]">Data</TableHead>
-                          <TableHead>Utente</TableHead>
-                          <TableHead>Azione</TableHead>
-                          <TableHead>Stato</TableHead>
-                          <TableHead>IP</TableHead>
-                          <TableHead>Dettagli</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {accessLogs.map((log) => (
-                          <TableRow key={log.id}>
-                            <TableCell className="font-mono text-xs">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: it })}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {log.user ? (
-                                <div>
-                                  <div className="font-medium">{log.user.username}</div>
-                                  <div className="text-xs text-muted-foreground">{log.user.role}</div>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">{log.username || "-"}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{getActionBadge(log.action)}</TableCell>
-                            <TableCell>{getStatusBadge(log.status)}</TableCell>
-                            <TableCell className="font-mono text-xs">{log.ipAddress || "-"}</TableCell>
-                            <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                              {log.details || "-"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <ScrollArea className="h-[600px]">
+                    <div className="space-y-2">
+                      {accessLogs.map((log) => (
+                        <div key={log.id} className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                          <div className="flex-shrink-0">
+                            <CircleDot className={`h-4 w-4 ${log.status === 'SUCCESS' ? 'text-green-500' : 'text-red-500'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {log.user?.username || log.username || "Sistema"}
+                              </span>
+                              {getActionBadge(log.action)}
+                              {getStatusBadge(log.status)}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {log.details && <span className="mr-2">{log.details}</span>}
+                              <span className="font-mono">{log.ipAddress || "-"}</span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3 inline mr-1" />
+                            {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: it })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </ScrollArea>
                 )}
               </CardContent>
@@ -511,83 +657,66 @@ export default function SandboxPage() {
           </TabsContent>
 
           {/* API TESTER TAB */}
-          <TabsContent value="api" className="space-y-4">
+          <TabsContent value="api" className="space-y-4 mt-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Code className="h-5 w-5" />
-                  API Tester
+                  <Terminal className="h-5 w-5" />
+                  API Console
                 </CardTitle>
                 <CardDescription>
-                  Testa le API del backend direttamente dalla dashboard
+                  Esegui richieste API direttamente dalla dashboard
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Preset Commands */}
                 <div>
-                  <Label className="mb-2 block">Comandi Rapidi</Label>
-                  <div className="flex flex-wrap gap-2">
+                  <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Quick Commands</Label>
+                  <div className="flex flex-wrap gap-1">
                     {presetCommands.map((preset, idx) => (
-                      <Button
-                        key={idx}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => applyPreset(preset)}
-                      >
+                      <Button key={idx} variant="outline" size="sm" className="h-7 text-xs" onClick={() => applyPreset(preset)}>
                         {preset.label}
                       </Button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-4">
-                  <div className="w-32">
-                    <Label>Metodo</Label>
-                    <select
-                      value={apiMethod}
-                      onChange={(e) => setApiMethod(e.target.value)}
-                      className="w-full mt-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="GET">GET</option>
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="DELETE">DELETE</option>
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <Label>Endpoint</Label>
-                    <Input
-                      value={apiEndpoint}
-                      onChange={(e) => setApiEndpoint(e.target.value)}
-                      placeholder="/users"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={testApiCall} disabled={loading}>
-                      <Play className="mr-2 h-4 w-4" />
-                      {loading ? "..." : "Esegui"}
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <select
+                    value={apiMethod}
+                    onChange={(e) => setApiMethod(e.target.value)}
+                    className="w-24 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                  </select>
+                  <Input
+                    value={apiEndpoint}
+                    onChange={(e) => setApiEndpoint(e.target.value)}
+                    placeholder="/endpoint"
+                    className="flex-1 font-mono"
+                  />
+                  <Button onClick={testApiCall} disabled={loading}>
+                    <Play className="mr-2 h-4 w-4" />
+                    {loading ? "..." : "Run"}
+                  </Button>
                 </div>
 
                 {(apiMethod === "POST" || apiMethod === "PUT") && (
-                  <div>
-                    <Label>Body (JSON)</Label>
-                    <Textarea
-                      value={apiBody}
-                      onChange={(e) => setApiBody(e.target.value)}
-                      placeholder='{"key": "value"}'
-                      rows={4}
-                      className="mt-1 font-mono text-sm"
-                    />
-                  </div>
+                  <Textarea
+                    value={apiBody}
+                    onChange={(e) => setApiBody(e.target.value)}
+                    placeholder='{"key": "value"}'
+                    rows={4}
+                    className="font-mono text-sm"
+                  />
                 )}
 
                 <div>
-                  <Label>Response</Label>
-                  <pre className="mt-1 p-4 bg-muted rounded-lg overflow-auto max-h-96 text-sm font-mono">
-                    {apiResponse || "Nessuna risposta"}
+                  <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Response</Label>
+                  <pre className="p-4 bg-zinc-950 text-green-400 rounded-lg overflow-auto max-h-96 text-sm font-mono border">
+                    {apiResponse || "// Output will appear here"}
                   </pre>
                 </div>
               </CardContent>
@@ -595,148 +724,72 @@ export default function SandboxPage() {
           </TabsContent>
 
           {/* TOOLS TAB */}
-          <TabsContent value="tools" className="space-y-4">
+          <TabsContent value="tools" className="space-y-4 mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Quick Tools</CardTitle>
-                  <CardDescription>
-                    Strumenti rapidi per il debug
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    Quick Actions
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        localStorage.clear()
-                        toast.success("LocalStorage svuotato")
-                      }}
-                    >
-                      Clear LocalStorage
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        sessionStorage.clear()
-                        toast.success("SessionStorage svuotato")
-                      }}
-                    >
-                      Clear SessionStorage
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        console.clear()
-                        toast.success("Console svuotata")
-                      }}
-                    >
-                      Clear Console
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        window.location.reload()
-                      }}
-                    >
-                      Reload Page
-                    </Button>
-                  </div>
-
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-medium mb-2">Console Log</p>
-                    <div className="flex gap-2">
-                      <Input
-                        id="consoleLog"
-                        placeholder="Messaggio da loggare..."
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            const input = e.target as HTMLInputElement
-                            console.log("[Sandbox]", input.value)
-                            toast.success("Loggato in console")
-                            input.value = ""
-                          }
-                        }}
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const input = document.getElementById("consoleLog") as HTMLInputElement
-                          if (input?.value) {
-                            console.log("[Sandbox]", input.value)
-                            toast.success("Loggato in console")
-                            input.value = ""
-                          }
-                        }}
-                      >
-                        Log
-                      </Button>
-                    </div>
-                  </div>
+                <CardContent className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" onClick={() => { localStorage.clear(); toast.success("LocalStorage cleared") }}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear LocalStorage
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" onClick={() => { sessionStorage.clear(); toast.success("SessionStorage cleared") }}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear SessionStorage
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" onClick={() => { console.clear(); toast.success("Console cleared") }}>
+                    <Terminal className="mr-2 h-4 w-4" /> Clear Console
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" onClick={() => window.location.reload()}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Reload Page
+                  </Button>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Database Maintenance</CardTitle>
-                  <CardDescription>
-                    Pulizia e manutenzione database
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Database Cleanup
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={handleCleanSessions}
-                      className="justify-start"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Pulisci sessioni scadute
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleCleanLogs}
-                      className="justify-start"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Pulisci access logs (30+ giorni)
-                    </Button>
-                  </div>
+                <CardContent className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" onClick={handleCleanSessions}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Pulisci sessioni scadute
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" onClick={handleCleanLogs}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Pulisci logs (30+ giorni)
+                  </Button>
                 </CardContent>
               </Card>
 
               <Card className="md:col-span-2">
                 <CardHeader>
-                  <CardTitle>System Info</CardTitle>
-                  <CardDescription>
-                    Informazioni sull'ambiente
-                  </CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    System Info
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Environment</p>
-                      <p className="text-sm text-muted-foreground">
-                        {import.meta.env.MODE}
-                      </p>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase">Environment</p>
+                      <p className="font-mono font-medium">{import.meta.env.MODE}</p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">API URL</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {import.meta.env.VITE_API_URL || "Non configurato"}
-                      </p>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase">API URL</p>
+                      <p className="font-mono font-medium truncate">{import.meta.env.VITE_API_URL || "localhost"}</p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Browser</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {navigator.userAgent.match(/Chrome|Firefox|Safari|Edge/)?.[0] || "Unknown"}
-                      </p>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase">Browser</p>
+                      <p className="font-mono font-medium">{navigator.userAgent.match(/Chrome|Firefox|Safari|Edge/)?.[0] || "Unknown"}</p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Screen</p>
-                      <p className="text-sm text-muted-foreground">
-                        {window.innerWidth} x {window.innerHeight}
-                      </p>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-xs text-muted-foreground uppercase">Resolution</p>
+                      <p className="font-mono font-medium">{window.innerWidth} x {window.innerHeight}</p>
                     </div>
                   </div>
                 </CardContent>
