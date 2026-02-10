@@ -277,15 +277,15 @@ export default function SandboxPage() {
     }
   }
 
-  // Prepare pie chart data (grayscale)
+  // Prepare pie chart data
   const pieData = stats ? [
-    { name: "Contatti", value: stats.contacts.total, color: "hsl(var(--foreground))" },
-    { name: "Task", value: stats.tasks.total, color: "hsl(var(--foreground) / 0.8)" },
-    { name: "Ticket", value: stats.tickets.total, color: "hsl(var(--foreground) / 0.6)" },
-    { name: "Eventi", value: stats.events.total, color: "hsl(var(--foreground) / 0.4)" },
-    { name: "Preventivi", value: stats.quotes.total, color: "hsl(var(--muted-foreground))" },
-    { name: "Fatture", value: stats.invoices.total, color: "hsl(var(--muted-foreground) / 0.7)" },
-    { name: "Progetti", value: stats.projects.total, color: "hsl(var(--muted-foreground) / 0.5)" },
+    { name: "Contatti", value: stats.contacts.total, color: "#3b82f6" },
+    { name: "Task", value: stats.tasks.total, color: "#22c55e" },
+    { name: "Ticket", value: stats.tickets.total, color: "#ef4444" },
+    { name: "Eventi", value: stats.events.total, color: "#f59e0b" },
+    { name: "Preventivi", value: stats.quotes.total, color: "#8b5cf6" },
+    { name: "Fatture", value: stats.invoices.total, color: "#ec4899" },
+    { name: "Progetti", value: stats.projects.total, color: "#06b6d4" },
   ].filter(d => d.value > 0) : []
 
   const totalRecords = pieData.reduce((acc, d) => acc + d.value, 0)
@@ -351,81 +351,81 @@ export default function SandboxPage() {
             ) : stats && (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Utenti</p>
-                          <p className="text-2xl font-bold text-blue-500">{stats.users.total}</p>
+                          <p className="text-2xl font-bold">{stats.users.total}</p>
                           <p className="text-xs text-muted-foreground">{stats.users.active} attivi</p>
                         </div>
-                        <Users className="h-8 w-8 text-blue-500/50" />
+                        <Users className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                       <Progress value={(stats.users.active / stats.users.total) * 100} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Task</p>
-                          <p className="text-2xl font-bold text-green-500">{stats.tasks.total}</p>
+                          <p className="text-2xl font-bold">{stats.tasks.total}</p>
                           <p className="text-xs text-muted-foreground">{stats.tasks.open} aperti</p>
                         </div>
-                        <CheckSquare className="h-8 w-8 text-green-500/50" />
+                        <CheckSquare className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                       <Progress value={stats.tasks.total > 0 ? ((stats.tasks.total - stats.tasks.open) / stats.tasks.total) * 100 : 0} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Ticket</p>
-                          <p className="text-2xl font-bold text-red-500">{stats.tickets.total}</p>
+                          <p className="text-2xl font-bold">{stats.tickets.total}</p>
                           <p className="text-xs text-muted-foreground">{stats.tickets.open} aperti</p>
                         </div>
-                        <Ticket className="h-8 w-8 text-red-500/50" />
+                        <Ticket className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                       <Progress value={stats.tickets.total > 0 ? ((stats.tickets.total - stats.tickets.open) / stats.tickets.total) * 100 : 0} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Eventi</p>
-                          <p className="text-2xl font-bold text-orange-500">{stats.events.total}</p>
+                          <p className="text-2xl font-bold">{stats.events.total}</p>
                           <p className="text-xs text-muted-foreground">{stats.events.upcoming} futuri</p>
                         </div>
-                        <Calendar className="h-8 w-8 text-orange-500/50" />
+                        <Calendar className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Contatti</p>
-                          <p className="text-2xl font-bold text-purple-500">{stats.contacts.total}</p>
+                          <p className="text-2xl font-bold">{stats.contacts.total}</p>
                         </div>
-                        <Users className="h-8 w-8 text-purple-500/50" />
+                        <Users className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">Login Oggi</p>
-                          <p className="text-2xl font-bold text-cyan-500">{stats.accessLogs.todayLogins}</p>
+                          <p className="text-2xl font-bold">{stats.accessLogs.todayLogins}</p>
                         </div>
-                        <TrendingUp className="h-8 w-8 text-cyan-500/50" />
+                        <TrendingUp className="h-8 w-8 text-muted-foreground/50" />
                       </div>
                     </CardContent>
                   </Card>
@@ -512,13 +512,13 @@ export default function SandboxPage() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-yellow-500/10">
-                          <FileText className="h-5 w-5 text-yellow-500" />
+                        <div className="p-2 rounded-lg bg-muted">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fatture</p>
                           <p className="text-xl font-bold">{stats.invoices.total}</p>
-                          <p className="text-xs text-yellow-500">{stats.invoices.unpaid} da pagare</p>
+                          <p className="text-xs text-muted-foreground">{stats.invoices.unpaid} da pagare</p>
                         </div>
                       </div>
                     </CardContent>
@@ -527,13 +527,13 @@ export default function SandboxPage() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-indigo-500/10">
-                          <FolderKanban className="h-5 w-5 text-indigo-500" />
+                        <div className="p-2 rounded-lg bg-muted">
+                          <FolderKanban className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Progetti</p>
                           <p className="text-xl font-bold">{stats.projects.total}</p>
-                          <p className="text-xs text-indigo-500">{stats.projects.active} attivi</p>
+                          <p className="text-xs text-muted-foreground">{stats.projects.active} attivi</p>
                         </div>
                       </div>
                     </CardContent>
@@ -542,13 +542,13 @@ export default function SandboxPage() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-teal-500/10">
-                          <Users className="h-5 w-5 text-teal-500" />
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Users className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Client Access</p>
                           <p className="text-xl font-bold">{stats.clientAccess.total}</p>
-                          <p className="text-xs text-teal-500">{stats.clientAccess.active} attivi</p>
+                          <p className="text-xs text-muted-foreground">{stats.clientAccess.active} attivi</p>
                         </div>
                       </div>
                     </CardContent>
@@ -557,13 +557,13 @@ export default function SandboxPage() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-pink-500/10">
-                          <HardDrive className="h-5 w-5 text-pink-500" />
+                        <div className="p-2 rounded-lg bg-muted">
+                          <HardDrive className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Access Logs</p>
                           <p className="text-xl font-bold">{stats.accessLogs.total.toLocaleString()}</p>
-                          <p className="text-xs text-pink-500">{stats.transactions.total} transazioni</p>
+                          <p className="text-xs text-muted-foreground">{stats.transactions.total} transazioni</p>
                         </div>
                       </div>
                     </CardContent>
