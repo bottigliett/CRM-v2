@@ -574,7 +574,7 @@ export default function SandboxPage() {
                     <Trash2 className="mr-2 h-4 w-4" /> Clear SessionStorage
                   </Button>
                   <Button variant="outline" className="w-full justify-start" onClick={() => { console.clear(); toast.success("Console cleared") }}>
-                    <Terminal className="mr-2 h-4 w-4" /> Clear Console
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear Console
                   </Button>
                   <Button variant="outline" className="w-full justify-start" onClick={() => window.location.reload()}>
                     <RefreshCw className="mr-2 h-4 w-4" /> Reload Page
