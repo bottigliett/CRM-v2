@@ -445,6 +445,10 @@ export default function SandboxPage() {
                         <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                           Caricamento grafico...
                         </div>
+                      ) : !activityHistory || activityHistory.length === 0 ? (
+                        <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                          Nessun dato disponibile
+                        </div>
                       ) : (
                         <ChartContainer config={chartConfig} className="h-[250px] w-full">
                           <AreaChart data={activityHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
