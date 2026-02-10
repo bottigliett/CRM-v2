@@ -18,7 +18,7 @@ export const getClientProjectTasks = async (req: ClientAuthRequest, res: Respons
     }
 
     const contactId = req.client.contactId;
-    const clientAccessId = req.client.id;
+    const clientAccessId = req.client.clientAccessId;
 
     // First, try to find tasks from an accepted quote
     const quote = await prisma.quote.findFirst({
