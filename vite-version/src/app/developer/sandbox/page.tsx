@@ -34,12 +34,6 @@ import { toast } from "sonner"
 import { developerAPI, type SystemStats, type AccessLog, type ActivityDay } from "@/lib/developer-api"
 import {
   Zap,
-  Users,
-  CheckSquare,
-  Calendar,
-  Ticket,
-  FileText,
-  FolderKanban,
   Activity,
   RefreshCw,
   Trash2,
@@ -47,8 +41,6 @@ import {
   BarChart3,
   Database,
   Server,
-  HardDrive,
-  TrendingUp,
   Shield,
   CircleDot,
 } from "lucide-react"
@@ -263,80 +255,50 @@ export default function SandboxPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Utenti</p>
-                          <p className="text-2xl font-bold">{stats.users.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.users.active} attivi</p>
-                        </div>
-                        <Users className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Utenti</p>
+                      <p className="text-2xl font-bold">{stats.users.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.users.active} attivi</p>
                       <Progress value={(stats.users.active / stats.users.total) * 100} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Task</p>
-                          <p className="text-2xl font-bold">{stats.tasks.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.tasks.open} aperti</p>
-                        </div>
-                        <CheckSquare className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Task</p>
+                      <p className="text-2xl font-bold">{stats.tasks.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.tasks.open} aperti</p>
                       <Progress value={stats.tasks.total > 0 ? ((stats.tasks.total - stats.tasks.open) / stats.tasks.total) * 100 : 0} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Ticket</p>
-                          <p className="text-2xl font-bold">{stats.tickets.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.tickets.open} aperti</p>
-                        </div>
-                        <Ticket className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Ticket</p>
+                      <p className="text-2xl font-bold">{stats.tickets.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.tickets.open} aperti</p>
                       <Progress value={stats.tickets.total > 0 ? ((stats.tickets.total - stats.tickets.open) / stats.tickets.total) * 100 : 0} className="mt-2 h-1" />
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Eventi</p>
-                          <p className="text-2xl font-bold">{stats.events.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.events.upcoming} futuri</p>
-                        </div>
-                        <Calendar className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Eventi</p>
+                      <p className="text-2xl font-bold">{stats.events.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.events.upcoming} futuri</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Contatti</p>
-                          <p className="text-2xl font-bold">{stats.contacts.total}</p>
-                        </div>
-                        <Users className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Contatti</p>
+                      <p className="text-2xl font-bold">{stats.contacts.total}</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wider">Login Oggi</p>
-                          <p className="text-2xl font-bold">{stats.accessLogs.todayLogins}</p>
-                        </div>
-                        <TrendingUp className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Login Oggi</p>
+                      <p className="text-2xl font-bold">{stats.accessLogs.todayLogins}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -421,61 +383,33 @@ export default function SandboxPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-muted">
-                          <FileText className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Fatture</p>
-                          <p className="text-xl font-bold">{stats.invoices.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.invoices.unpaid} da pagare</p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Fatture</p>
+                      <p className="text-2xl font-bold">{stats.invoices.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.invoices.unpaid} da pagare</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-muted">
-                          <FolderKanban className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Progetti</p>
-                          <p className="text-xl font-bold">{stats.projects.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.projects.active} attivi</p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Progetti</p>
+                      <p className="text-2xl font-bold">{stats.projects.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.projects.active} attivi</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-muted">
-                          <Users className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Client Access</p>
-                          <p className="text-xl font-bold">{stats.clientAccess.total}</p>
-                          <p className="text-xs text-muted-foreground">{stats.clientAccess.active} attivi</p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Client Access</p>
+                      <p className="text-2xl font-bold">{stats.clientAccess.total}</p>
+                      <p className="text-xs text-muted-foreground">{stats.clientAccess.active} attivi</p>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-muted">
-                          <HardDrive className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Access Logs</p>
-                          <p className="text-xl font-bold">{stats.accessLogs.total.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">{stats.transactions.total} transazioni</p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Access Logs</p>
+                      <p className="text-2xl font-bold">{stats.accessLogs.total.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{stats.transactions.total} transazioni</p>
                     </CardContent>
                   </Card>
                 </div>
