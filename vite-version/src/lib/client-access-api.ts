@@ -85,6 +85,24 @@ export interface UpgradeToFullClientData {
   bespokeDetails?: any;
 }
 
+export interface ClientTask {
+  id: number;
+  clientAccessId: number;
+  title: string;
+  description: string | null;
+  isCompleted: boolean;
+  completedAt: string | null;
+  completedBy: number | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  completedByUser?: {
+    id: number;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
+}
+
 export interface ClientAccessListResponse {
   success: boolean;
   data: ClientAccess[];
@@ -197,5 +215,50 @@ export const clientAccessAPI = {
    */
   async generatePreviewToken(id: number): Promise<{ success: boolean; data: { token: string; expiresIn: number } }> {
     return await api.post(`/client-access/${id}/preview-token`);
+  },
+
+  // ========================
+  // Client Project Tasks API
+  // ========================
+
+  /**
+   * Get all tasks for a client (without quote)
+   */
+  async getTasks(clientId: number): Promise<{
+    success: boolean;
+    data: {
+      tasks: ClientTask[];
+      progress: { completed: number; total: number; percentage: number };
+    };
+  }> {
+    return await api.get(`/client-access/${clientId}/tasks`);
+  },
+
+  /**
+   * Create a new task for a client
+   */
+  async createTask(clientId: number, data: { title: string; description?: string }): Promise<{ success: boolean; data: ClientTask }> {
+    return await api.post(`/client-access/${clientId}/tasks`, data);
+  },
+
+  /**
+   * Toggle task completion
+   */
+  async toggleTask(clientId: number, taskId: number): Promise<{ success: boolean; data: ClientTask }> {
+    return await api.patch(`/client-access/${clientId}/tasks/${taskId}/toggle`, {});
+  },
+
+  /**
+   * Update a task
+   */
+  async updateTask(clientId: number, taskId: number, data: { title?: string; description?: string }): Promise<{ success: boolean; data: ClientTask }> {
+    return await api.put(`/client-access/${clientId}/tasks/${taskId}`, data);
+  },
+
+  /**
+   * Delete a task
+   */
+  async deleteTask(clientId: number, taskId: number): Promise<{ success: boolean; message: string }> {
+    return await api.delete(`/client-access/${clientId}/tasks/${taskId}`);
   },
 };

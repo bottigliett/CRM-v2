@@ -65,6 +65,7 @@ model User {
   createdInvoices        Invoice[]           @relation("InvoiceCreator") // Invoices created by this user
   createdProjects        Project[]           @relation("ProjectCreator") // Projects created by this user
   completedProjectTasks  ProjectTask[]       @relation("TaskCompletedBy") // Project tasks completed by this user
+  completedClientTasks   ClientProjectTask[] @relation("ClientTaskCompletedBy") // Client project tasks completed by this user
   ticketMessages         TicketMessage[]     // Messages sent by this user
   createdAnnouncements   SystemAnnouncement[] @relation("AnnouncementCreator") // Announcements created by this user
 
@@ -918,6 +919,7 @@ model ClientAccess {
   tickets            Ticket[]
   ticketMessages     TicketMessage[]
   activityLogs       ClientActivityLog[]
+  clientProjectTasks ClientProjectTask[]
 
   @@index([contactId])
   @@index([username])
@@ -1061,6 +1063,30 @@ model ProjectTask {
   @@index([quoteId, order])
   @@index([isCompleted])
   @@map("project_tasks")
+}
+
+// Task di progetto per clienti senza preventivo
+model ClientProjectTask {
+  id              Int       @id @default(autoincrement())
+  clientAccessId  Int       @map("client_access_id")
+  title           String
+  description     String?   @db.Text
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     DateTime? @map("completed_at")
+  completedBy     Int?      @map("completed_by")
+  order           Int       @default(0)
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  clientAccess    ClientAccess @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+  completedByUser User?        @relation("ClientTaskCompletedBy", fields: [completedBy], references: [id], onDelete: SetNull)
+
+  @@index([clientAccessId])
+  @@index([clientAccessId, order])
+  @@index([isCompleted])
+  @@map("client_project_tasks")
 }
 
 // ===================================

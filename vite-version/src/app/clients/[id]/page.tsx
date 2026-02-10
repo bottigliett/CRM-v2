@@ -30,6 +30,7 @@ import {
 import { clientAccessAPI, type ClientAccess } from "@/lib/client-access-api"
 import { quotesAPI, type Quote } from "@/lib/quotes-api"
 import { ProjectTaskList } from "@/components/project-task-list"
+import { ClientTaskList } from "@/components/client-task-list"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
@@ -955,29 +956,7 @@ export default function ClientDetailPage() {
                 {client.linkedQuoteId ? (
                   <ProjectTaskList quoteId={client.linkedQuoteId} />
                 ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5" />
-                        Avanzamento Progetto
-                      </CardTitle>
-                      <CardDescription>
-                        Traccia l'avanzamento del progetto con task e milestone
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-8">
-                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Collega un preventivo per gestire le task del progetto
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => setActiveTab('preventivo')}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Vai ai Preventivi
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ClientTaskList clientId={client.id} />
                 )}
               </>
             ) : (
