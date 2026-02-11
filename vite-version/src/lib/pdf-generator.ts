@@ -5,6 +5,7 @@ interface InvoicePDFData {
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string;
+  paymentDays: number;
   clientName: string;
   clientAddress?: string;
   clientPIva?: string;
@@ -24,6 +25,12 @@ interface InvoicePDFData {
     quantity: string;
     unitPrice: string;
   }>;
+  // Payment entity info
+  paymentBeneficiary?: string;
+  paymentIban?: string;
+  paymentBank?: string;
+  paymentBic?: string;
+  paymentSdi?: string;
 }
 
 export async function generateInvoicePDF(invoiceId: number, data: InvoicePDFData): Promise<void> {
@@ -470,12 +477,12 @@ function getInvoiceHTML(data: InvoicePDFData): string {
             <div class="payment-section">
                 <h3 class="payment-title">Informazioni&nbsp;sul&nbsp;pagamento</h3>
                 <div class="payment-info">
-                    <span class="payment-label">[Scadenze]</span><span class="payment-value date">${data.dueDate}:</span>&nbsp;<span class="payment-value subtotal">${data.total}&nbsp;EUR</span><br>
-                    <span class="payment-label">[Banca]</span><span class="payment-value">REVOLUT&nbsp;BANK&nbsp;UAB</span><br>
-                    <span class="payment-label">[IBAN]</span><span class="payment-value">LT95&nbsp;3250&nbsp;0482&nbsp;6617&nbsp;5203</span><br>
-                    <span class="payment-label">[Beneficiario]</span><span class="payment-value">STEFANO&nbsp;COSTATO&nbsp;E&nbsp;DAVIDE&nbsp;MARANGONI</span><br>
-                    <span class="payment-label">[BIC/Swift]</span><span class="payment-value">REVOLT21</span><br>
-                    <span class="payment-label">[TAX&nbsp;ID]</span><span class="payment-value">JI3TXCE</span>
+                    <span class="payment-label">[Scadenze]</span><span class="payment-value date">${data.paymentDays === 0 ? 'Immediato' : data.dueDate}:</span>&nbsp;<span class="payment-value subtotal">${data.total}&nbsp;EUR</span><br>
+                    <span class="payment-label">[Banca]</span><span class="payment-value">${(data.paymentBank || 'REVOLUT BANK UAB').replace(/ /g, '&nbsp;')}</span><br>
+                    <span class="payment-label">[IBAN]</span><span class="payment-value">${(data.paymentIban || 'LT95 3250 0482 6617 5203').replace(/ /g, '&nbsp;')}</span><br>
+                    <span class="payment-label">[Beneficiario]</span><span class="payment-value">${(data.paymentBeneficiary || 'STEFANO COSTATO E DAVIDE MARANGONI').replace(/ /g, '&nbsp;')}</span><br>
+                    ${data.paymentBic ? `<span class="payment-label">[BIC/Swift]</span><span class="payment-value">${data.paymentBic}</span><br>` : ''}
+                    ${data.paymentSdi ? `<span class="payment-label">[SDI]</span><span class="payment-value">${data.paymentSdi}</span>` : ''}
                 </div>
             </div>
 

@@ -538,6 +538,8 @@ export function InvoiceDialog({ open, onOpenChange, onSuccess, onInvoicePaid, in
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="0">Immediato</SelectItem>
+                        <SelectItem value="7">7 giorni</SelectItem>
                         <SelectItem value="15">15 giorni</SelectItem>
                         <SelectItem value="30">30 giorni</SelectItem>
                         <SelectItem value="60">60 giorni</SelectItem>

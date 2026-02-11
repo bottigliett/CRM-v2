@@ -210,7 +210,7 @@ tbody td:nth-child(4){
         </div>
         <div class="meta-row">
           <div>Scadenza</div>
-          <div class="meta-value">{{paymentDays}} giorni</div>
+          <div class="meta-value">{{#if paymentDaysImmediate}}Immediato{{else}}{{paymentDays}} giorni{{/if}}</div>
         </div>
       </div>
     </header>
@@ -270,7 +270,7 @@ tbody td:nth-child(4){
 
     <h2 class="section-title">Informazioni per il pagamento</h2>
     <div class="kv">
-      <div>Scadenze</div><div class="v">{{dueDate}}: {{total}} EUR</div>
+      <div>Scadenze</div><div class="v">{{#if paymentDaysImmediate}}Immediato{{else}}{{dueDate}}{{/if}}: {{total}} EUR</div>
       <div>Beneficiario</div><div class="v">{{paymentBeneficiary}}</div>
       <div>IBAN</div><div class="v">{{paymentIban}}</div>
       <div>Banca</div><div class="v">{{paymentBank}}</div>
