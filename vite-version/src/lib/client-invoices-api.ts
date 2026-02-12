@@ -111,9 +111,11 @@ class ClientInvoicesAPI {
       clientPIva?: string;
       clientCF?: string;
       subject: string;
-      description: string;
-      quantity: string;
-      unitPrice: string;
+      services?: Array<{
+        description: string;
+        quantity: string;
+        unitPrice: string;
+      }>;
       subtotal: string;
       vatPercentage: string;
       vatAmount: string;
