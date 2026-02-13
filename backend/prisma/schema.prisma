@@ -68,6 +68,11 @@ model User {
   completedClientTasks   ClientProjectTask[] @relation("ClientTaskCompletedBy") // Client project tasks completed by this user
   ticketMessages         TicketMessage[]     // Messages sent by this user
   createdAnnouncements   SystemAnnouncement[] @relation("AnnouncementCreator") // Announcements created by this user
+  assignedOrganizations  Organization[]      @relation("OrgAssigned")
+  assignedHelpDeskTickets HelpDeskTicket[]   @relation("HelpDeskAssigned")
+  assignedServiceContracts ServiceContract[] @relation("ServiceContractAssigned")
+  assignedVtQuotes       VtQuote[]           @relation("VtQuoteAssigned")
+  assignedSalesOrders    SalesOrder[]        @relation("SalesOrderAssigned")
 
   @@map("users")
 }
@@ -221,6 +226,9 @@ model Contact {
   clientAccess      ClientAccess?        // Client access credentials (if client)
   quotes            Quote[]              // Quotes for this contact
   tickets           Ticket[]             // Support tickets for this contact
+  helpDeskTickets   HelpDeskTicket[]     // VTiger helpdesk tickets
+  vtQuotes          VtQuote[]            // VTiger quotes
+  salesOrders       SalesOrder[]         // VTiger sales orders
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1411,4 +1419,220 @@ enum AnnouncementType {
   WARNING     // Yellow - attention needed
   MAINTENANCE // Orange - scheduled maintenance
   CRITICAL    // Red - urgent/breaking
+}
+
+// ===================================
+// VTIGER MODULES
+// ===================================
+
+model Organization {
+  id              Int      @id @default(autoincrement())
+  name            String   // accountname
+  vatNumber       String?  @map("vat_number")
+  uniqueCode      String?  @map("unique_code") // SDI
+  pec             String?
+  isActive        Boolean  @default(true) @map("is_active")
+  code            String?
+  denomination    String?
+  phone           String?
+  otherPhone      String?  @map("other_phone")
+  mobile          String?
+  fax             String?
+  email           String?
+  employees       Int?
+  industry        String?
+  accountType     String?  @map("account_type")
+  devices         String?  // JSON multipicklist
+  parentId        Int?     @map("parent_id")
+  nasInfo         String?  @map("nas_info")
+  shareholders    String?
+  nasContract     String?  @map("nas_contract")
+  legalRep        String?  @map("legal_rep")
+  secretary       String?
+  assignedToId    Int?     @map("assigned_to_id")
+  priceList       String?  @map("price_list")
+  billStreet      String?  @map("bill_street")
+  billCity        String?  @map("bill_city")
+  billState       String?  @map("bill_state")
+  billCode        String?  @map("bill_code")
+  billCountry     String?  @map("bill_country")
+  shipStreet      String?  @map("ship_street")
+  shipCity        String?  @map("ship_city")
+  shipState       String?  @map("ship_state")
+  shipCode        String?  @map("ship_code")
+  shipCountry     String?  @map("ship_country")
+  bankName        String?  @map("bank_name")
+  iban            String?
+  description     String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  parent          Organization?       @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children        Organization[]      @relation("OrgHierarchy")
+  assignedTo      User?               @relation("OrgAssigned", fields: [assignedToId], references: [id])
+  helpDeskTickets HelpDeskTicket[]
+  serviceContracts ServiceContract[]
+  salesOrders     SalesOrder[]
+  vtQuotes        VtQuote[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([assignedToId])
+  @@map("organizations")
+}
+
+model HelpDeskTicket {
+  id              Int      @id @default(autoincrement())
+  ticketNumber    String   @unique @map("ticket_number")
+  title           String
+  status          String   @default("Aperto")
+  priority        String?
+  callType        String?  @map("call_type")
+  ticketOrigin    String?  @map("ticket_origin")
+  category        String?
+  organizationId  Int?     @map("organization_id")
+  contactId       Int?     @map("contact_id")
+  assignedToId    Int?     @map("assigned_to_id")
+  description     String?  @db.Text
+  solution        String?  @db.Text
+  days            Float?
+  hours           Float?
+  keywords        String?  // JSON array
+  technicianName  String?  @map("technician_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  contact         Contact?      @relation(fields: [contactId], references: [id])
+  assignedTo      User?         @relation("HelpDeskAssigned", fields: [assignedToId], references: [id])
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([assignedToId])
+  @@map("help_desk_tickets")
+}
+
+model ServiceContract {
+  id                Int      @id @default(autoincrement())
+  contractNumber    String   @unique @map("contract_number")
+  subject           String?
+  contractType      String?  @map("contract_type") // JSON multipicklist
+  status            String   @default("Attivo")
+  frequency         String?
+  contractValue     Float?   @map("contract_value")
+  startDate         DateTime? @map("start_date")
+  dueDate           DateTime? @map("due_date")
+  nextInvoiceDate   DateTime? @map("next_invoice_date")
+  organizationId    Int?     @map("organization_id")
+  assignedToId      Int?     @map("assigned_to_id")
+  isConsultecno     Boolean  @default(false) @map("is_consultecno")
+  isPaid            Boolean  @default(false) @map("is_paid")
+  invoiceRef        String?  @map("invoice_ref")
+  trackingUnit      String?  @map("tracking_unit")
+  totalUnits        Float?   @map("total_units")
+  usedUnits         Float?   @default(0) @map("used_units")
+  priority          String?
+  description       String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  assignedTo        User?         @relation("ServiceContractAssigned", fields: [assignedToId], references: [id])
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([assignedToId])
+  @@map("service_contracts")
+}
+
+model VtQuote {
+  id              Int      @id @default(autoincrement())
+  quoteNumber     String   @unique @map("quote_number")
+  subject         String
+  organizationId  Int?     @map("organization_id")
+  contactId       Int?     @map("contact_id")
+  assignedToId    Int?     @map("assigned_to_id")
+  stage           String   @default("Creato")
+  validUntil      DateTime? @map("valid_until")
+  billStreet      String?  @map("bill_street")
+  billPoBox       String?  @map("bill_po_box")
+  billCity        String?  @map("bill_city")
+  billState       String?  @map("bill_state")
+  billCode        String?  @map("bill_code")
+  billCountry     String?  @map("bill_country")
+  shipStreet      String?  @map("ship_street")
+  shipPoBox       String?  @map("ship_po_box")
+  shipCity        String?  @map("ship_city")
+  shipState       String?  @map("ship_state")
+  shipCode        String?  @map("ship_code")
+  shipCountry     String?  @map("ship_country")
+  termsConditions String?  @db.Text @map("terms_conditions")
+  description     String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  contact         Contact?      @relation(fields: [contactId], references: [id])
+  assignedTo      User?         @relation("VtQuoteAssigned", fields: [assignedToId], references: [id])
+  salesOrders     SalesOrder[]
+
+  @@index([stage])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([assignedToId])
+  @@map("vt_quotes")
+}
+
+model SalesOrder {
+  id                Int      @id @default(autoincrement())
+  orderNumber       String   @unique @map("order_number")
+  subject           String
+  organizationId    Int?     @map("organization_id")
+  contactId         Int?     @map("contact_id")
+  quoteId           Int?     @map("quote_id")
+  assignedToId      Int?     @map("assigned_to_id")
+  customerNumber    String?  @map("customer_number")
+  purchaseOrder     String?  @map("purchase_order")
+  invoiceStatus     String?  @map("invoice_status")
+  dueDate           DateTime? @map("due_date")
+  status            String   @default("Creato")
+  salesCommission   Float?   @map("sales_commission")
+  carrier           String?
+  exciseDuty        Float?   @map("excise_duty")
+  consultecnoContract String? @map("consultecno_contract")
+  opening           String?
+  enableRecurring   Boolean  @default(false) @map("enable_recurring")
+  recurringFreq     String?  @map("recurring_freq")
+  startPeriod       DateTime? @map("start_period")
+  endPeriod         DateTime? @map("end_period")
+  paymentDuration   String?  @map("payment_duration")
+  billStreet        String?  @map("bill_street")
+  billPoBox         String?  @map("bill_po_box")
+  billCity          String?  @map("bill_city")
+  billState         String?  @map("bill_state")
+  billCode          String?  @map("bill_code")
+  billCountry       String?  @map("bill_country")
+  shipStreet        String?  @map("ship_street")
+  shipPoBox         String?  @map("ship_po_box")
+  shipCity          String?  @map("ship_city")
+  shipState         String?  @map("ship_state")
+  shipCode          String?  @map("ship_code")
+  shipCountry       String?  @map("ship_country")
+  termsConditions   String?  @db.Text @map("terms_conditions")
+  description       String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  contact           Contact?      @relation(fields: [contactId], references: [id])
+  quote             VtQuote?      @relation(fields: [quoteId], references: [id])
+  assignedTo        User?         @relation("SalesOrderAssigned", fields: [assignedToId], references: [id])
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([quoteId])
+  @@index([assignedToId])
+  @@map("sales_orders")
 }

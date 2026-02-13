@@ -32,6 +32,11 @@ import clientProjectTaskRoutes from './routes/client-project-task.routes';
 import announcementRoutes, { clientAnnouncementRouter } from './routes/announcement.routes';
 import developerRoutes from './routes/developer.routes';
 import paymentEntityRoutes from './routes/payment-entity.routes';
+import organizationRoutes from './routes/organization.routes';
+import helpdeskRoutes from './routes/helpdesk.routes';
+import serviceContractRoutes from './routes/service-contract.routes';
+import vtQuoteRoutes from './routes/vt-quote.routes';
+import salesOrderRoutes from './routes/sales-order.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { initializeUploadsDirectory } from './utils/file-upload';
 
@@ -99,6 +104,11 @@ app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/developer', developerRoutes);
 app.use('/api/payment-entities', paymentEntityRoutes);
+app.use('/api/organizations', organizationRoutes);
+app.use('/api/helpdesk', helpdeskRoutes);
+app.use('/api/service-contracts', serviceContractRoutes);
+app.use('/api/vt-quotes', vtQuoteRoutes);
+app.use('/api/sales-orders', salesOrderRoutes);
 
 // Client-specific routes (require client authentication)
 app.use('/api/client/tickets', clientTicketRouter);

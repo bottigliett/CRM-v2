@@ -33,6 +33,13 @@ const ProjectDetail = lazy(() => import('@/app/projects/[id]/page'))
 // On Duty page
 const OnDuty = lazy(() => import('@/app/on-duty/page'))
 
+// VTiger module pages
+const Organizations = lazy(() => import('@/app/organizations/page'))
+const HelpDesk = lazy(() => import('@/app/helpdesk/page'))
+const ServiceContracts = lazy(() => import('@/app/service-contracts/page'))
+const VtQuotes = lazy(() => import('@/app/vt-quotes/page'))
+const SalesOrders = lazy(() => import('@/app/sales-orders/page'))
+
 // Auth pages
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
 const SignIn2 = lazy(() => import('@/app/auth/sign-in-2/page'))
@@ -170,6 +177,28 @@ export const routes: RouteConfig[] = [
   {
     path: "/on-duty",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="on_duty"><OnDuty /></ModuleProtectedRoute></ProtectedRoute>
+  },
+
+  // VTiger Module Routes
+  {
+    path: "/organizations",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="organizations"><Organizations /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/helpdesk",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="helpdesk"><HelpDesk /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/service-contracts",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="service_contracts"><ServiceContracts /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/vt-quotes",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="vt_quotes"><VtQuotes /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/sales-orders",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="sales_orders"><SalesOrders /></ModuleProtectedRoute></ProtectedRoute>
   },
 
   // Amministrazione (Users page remains SUPER_ADMIN only - no module permission)

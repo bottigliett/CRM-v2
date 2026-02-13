@@ -17,6 +17,10 @@ import {
   MessageSquare,
   Megaphone,
   Code,
+  Building2,
+  Headset,
+  FileSignature,
+  ShoppingCart,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -96,6 +100,18 @@ const allNavGroups: NavGroup[] = [
         icon: MessageSquare,
         moduleName: "tickets",
       },
+      {
+        title: "Organizzazioni",
+        url: "/organizations",
+        icon: Building2,
+        moduleName: "organizations",
+      },
+      {
+        title: "Assistenza Clienti",
+        url: "/helpdesk",
+        icon: Headset,
+        moduleName: "helpdesk",
+      },
     ],
   },
   {
@@ -130,6 +146,24 @@ const allNavGroups: NavGroup[] = [
         url: "/invoices",
         icon: FileText,
         moduleName: "invoices",
+      },
+      {
+        title: "Contratti",
+        url: "/service-contracts",
+        icon: FileSignature,
+        moduleName: "service_contracts",
+      },
+      {
+        title: "Preventivi VT",
+        url: "/vt-quotes",
+        icon: FileText,
+        moduleName: "vt_quotes",
+      },
+      {
+        title: "Ordini",
+        url: "/sales-orders",
+        icon: ShoppingCart,
+        moduleName: "sales_orders",
       },
     ],
   },
