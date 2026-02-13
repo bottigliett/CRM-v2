@@ -1,0 +1,38 @@
+COMANDI DA ESEGUIRE SUL SERVER PER VERIFICARE IL PROBLEMA
+==========================================================
+
+1. Connettiti al server:
+   ssh root@185.229.236.196
+   Password: ceE2DS43PK
+
+2. Verifica i log del backend:
+   pm2 logs crm-backend --lines 100 --nostream
+
+3. Verifica il codice COMPILATO del backend:
+   cd /var/www/crm-dashboard/backend
+   grep -n "taxRate" dist/controllers/quote.controller.js | head -15
+
+4. Verifica il codice SORGENTE del backend:
+   grep -n "taxRate = 0" src/controllers/quote.controller.ts
+
+5. Verifica quali file JS sono stati generati nel frontend:
+   cd /var/www/crm-dashboard/vite-version/dist/assets
+   ls -lh *.js | grep -E "(quotes-api|client-auth|index-)" | head -20
+
+6. Verifica contenuto del nuovo index.html:
+   cd /var/www/crm-dashboard/vite-version/dist
+   cat index.html
+
+7. Forza clear della cache nginx:
+   sudo systemctl reload nginx
+
+8. Se serve, ricompila SOLO il backend:
+   cd /var/www/crm-dashboard/backend
+   npx tsc --force
+   pm2 restart crm-backend
+   pm2 logs crm-backend --lines 20
+
+IMPORTANTE:
+- Copia qui l'output del comando al punto 2 (log del backend)
+- Copia qui l'output del comando al punto 3 (codice compilato)
+- Così posso vedere esattamente quale errore sta dando
