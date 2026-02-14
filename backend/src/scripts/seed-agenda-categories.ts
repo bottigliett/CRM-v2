@@ -1,15 +1,14 @@
 import prisma from '../config/database';
 
 const categories = [
-  { name: 'Meeting', color: '#fe4303' },
-  { name: 'Formazione', color: '#8b5cf6' },
-  { name: 'Marketing', color: '#f59e0b' },
-  { name: 'Appuntamenti clienti', color: '#ffdb59' },
-  { name: 'Call/Chiamate', color: '#b40450' },
-  { name: 'Viaggi/Vacanze', color: '#1b8eff' },
-  { name: 'Altro', color: '#6b7280' },
-  { name: 'Interno', color: '#3b82f6' },
-  { name: 'Sviluppo', color: '#3bf7b8' },
+  { name: 'Eventi', color: '#3b82f6' },
+  { name: 'Da fare', color: '#ef4444' },
+  { name: 'Opportunità', color: '#10b981' },
+  { name: 'Data fine supporto', color: '#f59e0b' },
+  { name: 'Compleanno', color: '#ec4899' },
+  { name: 'Fatture', color: '#8b5cf6' },
+  { name: 'Progetti', color: '#06b6d4' },
+  { name: 'Project Task', color: '#f97316' },
 ];
 
 async function seedAgendaCategories() {

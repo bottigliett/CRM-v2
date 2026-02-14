@@ -1,14 +1,14 @@
 import prisma from '../config/database';
 
 const defaultCategories = [
-  { name: 'Riunione', color: '#3b82f6', icon: 'Users' },
-  { name: 'Appuntamento Cliente', color: '#10b981', icon: 'Briefcase' },
-  { name: 'Chiamata', color: '#f59e0b', icon: 'Phone' },
-  { name: 'Deadline', color: '#ef4444', icon: 'AlertCircle' },
-  { name: 'Evento Aziendale', color: '#8b5cf6', icon: 'Building' },
-  { name: 'Formazione', color: '#06b6d4', icon: 'GraduationCap' },
-  { name: 'Personale', color: '#ec4899', icon: 'User' },
-  { name: 'Altro', color: '#6b7280', icon: 'Calendar' },
+  { name: 'Eventi', color: '#3b82f6', icon: 'Calendar' },
+  { name: 'Da fare', color: '#ef4444', icon: 'CheckCircle' },
+  { name: 'Opportunità', color: '#10b981', icon: 'TrendingUp' },
+  { name: 'Data fine supporto', color: '#f59e0b', icon: 'AlertCircle' },
+  { name: 'Compleanno', color: '#ec4899', icon: 'Cake' },
+  { name: 'Fatture', color: '#8b5cf6', icon: 'FileText' },
+  { name: 'Progetti', color: '#06b6d4', icon: 'Briefcase' },
+  { name: 'Project Task', color: '#f97316', icon: 'ClipboardList' },
 ];
 
 async function seedEventCategories() {
