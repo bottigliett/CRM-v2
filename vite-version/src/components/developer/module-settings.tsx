@@ -8,11 +8,33 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useModuleSettingsStore } from "@/store/module-settings-store"
-import { Settings2, Eye, EyeOff, RefreshCw } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Settings2, Eye, EyeOff, RefreshCw, ExternalLink } from "lucide-react"
+
+// Map module names to their routes
+const moduleRoutes: Record<string, string> = {
+  dashboard: "/dashboard",
+  on_duty: "/on-duty",
+  lead_board: "/lead-board",
+  contacts: "/contacts",
+  clients: "/clients",
+  tickets: "/tickets",
+  organizations: "/organizations",
+  helpdesk: "/helpdesk",
+  calendar: "/calendar",
+  tasks: "/tasks",
+  projects: "/projects",
+  finance: "/finance",
+  invoices: "/invoices",
+  service_contracts: "/service-contracts",
+  vt_quotes: "/vt-quotes",
+  sales_orders: "/sales-orders",
+}
 
 export function ModuleSettings() {
   const { modules, isLoading, fetchModules, toggleModule } = useModuleSettingsStore()
   const [updating, setUpdating] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchModules()
@@ -107,11 +129,24 @@ export function ModuleSettings() {
                   )}
                 </div>
               </div>
-              <Switch
-                checked={module.isEnabled}
-                onCheckedChange={() => handleToggle(module.moduleName, module.isEnabled)}
-                disabled={updating === module.moduleName}
-              />
+              <div className="flex items-center gap-2">
+                {moduleRoutes[module.moduleName] && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(moduleRoutes[module.moduleName])}
+                    title={`Apri ${module.label}`}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Apri
+                  </Button>
+                )}
+                <Switch
+                  checked={module.isEnabled}
+                  onCheckedChange={() => handleToggle(module.moduleName, module.isEnabled)}
+                  disabled={updating === module.moduleName}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -119,8 +154,8 @@ export function ModuleSettings() {
 
         <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
           <p className="text-sm text-muted-foreground">
-            <strong>Nota:</strong> Tu come Developer puoi sempre vedere tutte le pagine, anche quelle disabilitate.
-            Gli altri utenti (SUPER_ADMIN, ADMIN) non vedranno le pagine disabilitate nella sidebar.
+            <strong>Nota:</strong> Le pagine disabilitate non appaiono nella sidebar per nessun ruolo.
+            Come Developer puoi comunque accedervi tramite il bottone "Apri" qui sopra o navigando direttamente all'URL.
           </p>
         </div>
       </CardContent>

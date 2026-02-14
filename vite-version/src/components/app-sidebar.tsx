@@ -236,8 +236,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Helper: Check if module is globally enabled
   const isModuleGloballyEnabled = (moduleName?: string) => {
     if (!moduleName) return true
-    // DEVELOPER always sees all modules
-    if (user?.role === 'DEVELOPER') return true
     // If enabledModules not loaded yet, show all (graceful degradation)
     if (enabledModules.length === 0) return true
     return enabledModules.includes(moduleName)
@@ -269,13 +267,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return items.filter(item => isModuleGloballyEnabled(item.moduleName))
     }
 
-    // DEVELOPER has full access plus developer tools
+    // DEVELOPER has full access plus developer tools, but respects global visibility
     if (user.role === 'DEVELOPER') {
       const groups = allNavGroups.map(group => ({
         ...group,
-        items: addBadgeToItems(group.items),
-      }))
-      // Add developer section
+        items: addBadgeToItems(filterByGlobalVisibility(group.items)),
+      })).filter(group => group.items.length > 0)
+      // Add developer section (always visible)
       groups.push(developerNavGroup)
       return groups
     }
