@@ -44,6 +44,12 @@ import {
   Shield,
   CircleDot,
   Settings2,
+  Building2,
+  Headset,
+  FileSignature,
+  FileText,
+  ShoppingCart,
+  ExternalLink,
 } from "lucide-react"
 import { ModuleSettings } from "@/components/developer/module-settings"
 import { formatDistanceToNow } from "date-fns"
@@ -536,6 +542,35 @@ export default function SandboxPage() {
                   <Button variant="outline" className="w-full justify-start" onClick={handleCleanLogs}>
                     <Trash2 className="mr-2 h-4 w-4" /> Pulisci logs (30+ giorni)
                   </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    VTiger Modules
+                  </CardTitle>
+                  <CardDescription>Accesso rapido ai moduli VTiger (visibili anche se nascosti dalla sidebar)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <Button variant="outline" className="justify-start" onClick={() => navigate("/organizations")}>
+                      <Building2 className="mr-2 h-4 w-4" /> Organizzazioni
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => navigate("/helpdesk")}>
+                      <Headset className="mr-2 h-4 w-4" /> Assistenza Clienti
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => navigate("/service-contracts")}>
+                      <FileSignature className="mr-2 h-4 w-4" /> Contratti
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => navigate("/vt-quotes")}>
+                      <FileText className="mr-2 h-4 w-4" /> Preventivi VT
+                    </Button>
+                    <Button variant="outline" className="justify-start" onClick={() => navigate("/sales-orders")}>
+                      <ShoppingCart className="mr-2 h-4 w-4" /> Ordini
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
