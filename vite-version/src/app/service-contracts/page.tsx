@@ -158,56 +158,83 @@ export default function ServiceContractsPage() {
   const formatCurrency = (v: number | null) => v != null ? `€ ${v.toLocaleString("it-IT", { minimumFractionDigits: 2 })}` : "-"
 
   const renderForm = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Soggetto</Label><Input value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })} /></div>
-        <div>
-          <Label>Stato</Label>
-          <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>Tipo contratto</Label><Input value={formData.contractType} onChange={e => setFormData({ ...formData, contractType: e.target.value })} placeholder="AT98, Hosting, ..." /></div>
-        <div>
-          <Label>Frequenza</Label>
-          <Select value={formData.frequency} onValueChange={v => setFormData({ ...formData, frequency: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{FREQUENCIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>Valore (EUR)</Label><Input type="number" step="0.01" value={formData.contractValue} onChange={e => setFormData({ ...formData, contractValue: e.target.value })} /></div>
-        <div>
-          <Label>Organizzazione</Label>
-          <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>Data inizio</Label><Input type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
-        <div><Label>Scadenza</Label><Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} /></div>
-        <div><Label>Prossima fattura</Label><Input type="date" value={formData.nextInvoiceDate} onChange={e => setFormData({ ...formData, nextInvoiceDate: e.target.value })} /></div>
-        <div><Label>Rif. Fattura</Label><Input value={formData.invoiceRef} onChange={e => setFormData({ ...formData, invoiceRef: e.target.value })} /></div>
-        <div>
-          <Label>Unità tracking</Label>
-          <Select value={formData.trackingUnit} onValueChange={v => setFormData({ ...formData, trackingUnit: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{TRACKING_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>Unità totali</Label><Input type="number" value={formData.totalUnits} onChange={e => setFormData({ ...formData, totalUnits: e.target.value })} /></div>
-        <div><Label>Unità usate</Label><Input type="number" value={formData.usedUnits} onChange={e => setFormData({ ...formData, usedUnits: e.target.value })} /></div>
-        <div className="flex items-center gap-4 pt-6">
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={formData.isConsultecno} onChange={e => setFormData({ ...formData, isConsultecno: e.target.checked })} id="isConsultecno" />
-            <Label htmlFor="isConsultecno">Consultecno</Label>
+    <div className="space-y-5">
+      <div>
+        <Label>Soggetto</Label>
+        <Input value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })} />
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Contratto</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Stato</Label>
+            <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" checked={formData.isPaid} onChange={e => setFormData({ ...formData, isPaid: e.target.checked })} id="isPaid" />
-            <Label htmlFor="isPaid">Pagato</Label>
+          <div><Label>Tipo contratto</Label><Input value={formData.contractType} onChange={e => setFormData({ ...formData, contractType: e.target.value })} placeholder="AT98, Hosting, ..." /></div>
+          <div>
+            <Label>Frequenza</Label>
+            <Select value={formData.frequency} onValueChange={v => setFormData({ ...formData, frequency: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{FREQUENCIES.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
         </div>
       </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Economica</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div><Label>Valore (EUR)</Label><Input type="number" step="0.01" value={formData.contractValue} onChange={e => setFormData({ ...formData, contractValue: e.target.value })} /></div>
+          <div>
+            <Label>Organizzazione</Label>
+            <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Rif. Fattura</Label><Input value={formData.invoiceRef} onChange={e => setFormData({ ...formData, invoiceRef: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Date</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div><Label>Data inizio</Label><Input type="date" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} /></div>
+          <div><Label>Scadenza</Label><Input type="date" value={formData.dueDate} onChange={e => setFormData({ ...formData, dueDate: e.target.value })} /></div>
+          <div><Label>Prossima fattura</Label><Input type="date" value={formData.nextInvoiceDate} onChange={e => setFormData({ ...formData, nextInvoiceDate: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Tracking</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Unità tracking</Label>
+            <Select value={formData.trackingUnit} onValueChange={v => setFormData({ ...formData, trackingUnit: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{TRACKING_UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>Unità totali</Label><Input type="number" value={formData.totalUnits} onChange={e => setFormData({ ...formData, totalUnits: e.target.value })} /></div>
+          <div><Label>Unità usate</Label><Input type="number" value={formData.usedUnits} onChange={e => setFormData({ ...formData, usedUnits: e.target.value })} /></div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 pt-2">
+        <div className="flex items-center gap-2">
+          <input type="checkbox" checked={formData.isConsultecno} onChange={e => setFormData({ ...formData, isConsultecno: e.target.checked })} id="isConsultecno" />
+          <Label htmlFor="isConsultecno">Consultecno</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="checkbox" checked={formData.isPaid} onChange={e => setFormData({ ...formData, isPaid: e.target.checked })} id="isPaid" />
+          <Label htmlFor="isPaid">Pagato</Label>
+        </div>
+      </div>
+
       <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} /></div>
     </div>
   )

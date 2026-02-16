@@ -152,55 +152,75 @@ export default function HelpDeskPage() {
   }
 
   const renderForm = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div><Label>Titolo *</Label><Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
-        <div>
-          <Label>Stato</Label>
-          <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Priorità</Label>
-          <Select value={formData.priority} onValueChange={v => setFormData({ ...formData, priority: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Tipo chiamata</Label>
-          <Select value={formData.callType} onValueChange={v => setFormData({ ...formData, callType: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Origine</Label>
-          <Select value={formData.ticketOrigin} onValueChange={v => setFormData({ ...formData, ticketOrigin: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{ORIGINS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Categoria</Label>
-          <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Organizzazione</Label>
-          <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div><Label>Tecnico</Label><Input value={formData.technicianName} onChange={e => setFormData({ ...formData, technicianName: e.target.value })} /></div>
-        <div><Label>Giorni</Label><Input type="number" step="0.5" value={formData.days} onChange={e => setFormData({ ...formData, days: e.target.value })} /></div>
-        <div><Label>Ore</Label><Input type="number" step="0.25" value={formData.hours} onChange={e => setFormData({ ...formData, hours: e.target.value })} /></div>
+    <div className="space-y-5">
+      <div>
+        <Label>Titolo *</Label>
+        <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
       </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Info principali</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Stato</Label>
+            <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Priorità</Label>
+            <Select value={formData.priority} onValueChange={v => setFormData({ ...formData, priority: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Tipo chiamata</Label>
+            <Select value={formData.callType} onValueChange={v => setFormData({ ...formData, callType: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Contesto</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Origine</Label>
+            <Select value={formData.ticketOrigin} onValueChange={v => setFormData({ ...formData, ticketOrigin: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{ORIGINS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Categoria</Label>
+            <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Organizzazione</Label>
+            <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-muted-foreground mb-2">Lavoro</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div><Label>Tecnico</Label><Input value={formData.technicianName} onChange={e => setFormData({ ...formData, technicianName: e.target.value })} /></div>
+          <div><Label>Giorni</Label><Input type="number" step="0.5" value={formData.days} onChange={e => setFormData({ ...formData, days: e.target.value })} /></div>
+          <div><Label>Ore</Label><Input type="number" step="0.25" value={formData.hours} onChange={e => setFormData({ ...formData, hours: e.target.value })} /></div>
+        </div>
+      </div>
+
       <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} /></div>
       <div><Label>Soluzione</Label><Textarea value={formData.solution} onChange={e => setFormData({ ...formData, solution: e.target.value })} rows={3} /></div>
     </div>
