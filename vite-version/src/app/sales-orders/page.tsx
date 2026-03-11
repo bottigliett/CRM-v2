@@ -31,6 +31,20 @@ import { salesOrdersAPI, type SalesOrder } from "@/lib/sales-orders-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { TablePagination } from "@/components/ui/table-pagination"
+import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
+
+const COLUMNS: ToggleColumnDef[] = [
+  { id: "orderNumber", label: "Numero" },
+  { id: "subject", label: "Oggetto" },
+  { id: "organization", label: "Organizzazione" },
+  { id: "contact", label: "Contatto" },
+  { id: "status", label: "Stato" },
+  { id: "invoiceStatus", label: "Fatturazione" },
+  { id: "dueDate", label: "Scadenza" },
+  { id: "quote", label: "Preventivo" },
+  { id: "assignedTo", label: "Assegnato a" },
+]
 
 const STATUSES = ["Creato", "Approvato", "Cancellato", "Installazione Programmata", "Fatturazione", "Consegnato"]
 const INVOICE_STATUSES = ["Da Fatturare", "Non Fatturato", "Fatturato", "Parzialmente Fatturato"]
@@ -68,6 +82,11 @@ export default function SalesOrdersPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
+  const [limit, setLimit] = useState(20)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -85,7 +104,7 @@ export default function SalesOrdersPage() {
     try {
       setLoading(true)
       const response = await salesOrdersAPI.getAll({
-        page, limit: 20, search: searchQuery,
+        page, limit, search: searchQuery,
         status: statusFilter || undefined,
         invoiceStatus: invoiceStatusFilter || undefined,
       })
@@ -98,7 +117,7 @@ export default function SalesOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, invoiceStatusFilter])
+  }, [searchQuery, statusFilter, invoiceStatusFilter, limit])
 
   useEffect(() => {
     const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
@@ -292,46 +311,47 @@ export default function SalesOrdersPage() {
             <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stato fattura" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti</SelectItem>{INVOICE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
+          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Numero</TableHead>
-                <TableHead>Oggetto</TableHead>
-                <TableHead>Organizzazione</TableHead>
-                <TableHead>Contatto</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead>Fatturazione</TableHead>
-                <TableHead>Scadenza</TableHead>
-                <TableHead>Preventivo</TableHead>
-                <TableHead>Assegnato a</TableHead>
+                {isColVisible("orderNumber") && <TableHead>Numero</TableHead>}
+                {isColVisible("subject") && <TableHead>Oggetto</TableHead>}
+                {isColVisible("organization") && <TableHead>Organizzazione</TableHead>}
+                {isColVisible("contact") && <TableHead>Contatto</TableHead>}
+                {isColVisible("status") && <TableHead>Stato</TableHead>}
+                {isColVisible("invoiceStatus") && <TableHead>Fatturazione</TableHead>}
+                {isColVisible("dueDate") && <TableHead>Scadenza</TableHead>}
+                {isColVisible("quote") && <TableHead>Preventivo</TableHead>}
+                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Nessun ordine trovato</TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun ordine trovato</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>
-                  <TableCell className="font-medium">{item.subject}</TableCell>
-                  <TableCell>{item.organization?.name || "-"}</TableCell>
-                  <TableCell>{item.contact?.name || "-"}</TableCell>
-                  <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>
-                  <TableCell>{item.invoiceStatus || "-"}</TableCell>
-                  <TableCell>{formatDate(item.dueDate)}</TableCell>
-                  <TableCell>
+                  {isColVisible("orderNumber") && <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>}
+                  {isColVisible("subject") && <TableCell className="font-medium">{item.subject}</TableCell>}
+                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
+                  {isColVisible("contact") && <TableCell>{item.contact?.name || "-"}</TableCell>}
+                  {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
+                  {isColVisible("invoiceStatus") && <TableCell>{item.invoiceStatus || "-"}</TableCell>}
+                  {isColVisible("dueDate") && <TableCell>{formatDate(item.dueDate)}</TableCell>}
+                  {isColVisible("quote") && <TableCell>
                     {item.quote ? (
                       <Button variant="link" size="sm" className="p-0 h-auto" onClick={e => { e.stopPropagation(); navigate("/vt-quotes") }}>
                         {item.quote.quoteNumber}
                       </Button>
                     ) : "-"}
-                  </TableCell>
-                  <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
+                  </TableCell>}
+                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -348,15 +368,14 @@ export default function SalesOrdersPage() {
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Pagina {currentPage} di {totalPages} ({totalCount} risultati)</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => loadData(currentPage - 1)}>Precedente</Button>
-              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => loadData(currentPage + 1)}>Successivo</Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          limit={limit}
+          onPageChange={(page) => loadData(page)}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
+        />
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">

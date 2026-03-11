@@ -29,6 +29,19 @@ import {
 } from "lucide-react"
 import { organizationsAPI, type Organization } from "@/lib/organizations-api"
 import { toast } from "sonner"
+import { TablePagination } from "@/components/ui/table-pagination"
+import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
+
+const COLUMNS: ToggleColumnDef[] = [
+  { id: "name", label: "Nome" },
+  { id: "vatNumber", label: "P.IVA" },
+  { id: "accountType", label: "Tipo" },
+  { id: "industry", label: "Settore" },
+  { id: "phone", label: "Telefono" },
+  { id: "email", label: "Email" },
+  { id: "isActive", label: "Stato" },
+  { id: "assignedTo", label: "Assegnato a" },
+]
 
 const INDUSTRIES = ["Tecnologia", "Edilizia", "Commercio", "Servizi", "Manifattura", "Sanità", "Istruzione", "Altro"]
 const ACCOUNT_TYPES = ["NO Contratto", "SI Contratto"]
@@ -55,6 +68,14 @@ export default function OrganizationsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
+  const [limit, setLimit] = useState(20)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+
+  const toggleColumn = (columnId: string) => {
+    setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+  }
+  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -67,7 +88,7 @@ export default function OrganizationsPage() {
     try {
       setLoading(true)
       const response = await organizationsAPI.getAll({
-        page, limit: 20, search: searchQuery,
+        page, limit, search: searchQuery,
         industry: industryFilter || undefined,
         accountType: accountTypeFilter || undefined,
         isActive: isActiveFilter || undefined,
@@ -81,7 +102,7 @@ export default function OrganizationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, industryFilter, accountTypeFilter, isActiveFilter])
+  }, [searchQuery, industryFilter, accountTypeFilter, isActiveFilter, limit])
 
   useEffect(() => {
     const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
@@ -268,42 +289,43 @@ export default function OrganizationsPage() {
               <SelectItem value="false">Non attivi</SelectItem>
             </SelectContent>
           </Select>
+          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>P.IVA</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Settore</TableHead>
-                <TableHead>Telefono</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead>Assegnato a</TableHead>
+                {isColVisible("name") && <TableHead>Nome</TableHead>}
+                {isColVisible("vatNumber") && <TableHead>P.IVA</TableHead>}
+                {isColVisible("accountType") && <TableHead>Tipo</TableHead>}
+                {isColVisible("industry") && <TableHead>Settore</TableHead>}
+                {isColVisible("phone") && <TableHead>Telefono</TableHead>}
+                {isColVisible("email") && <TableHead>Email</TableHead>}
+                {isColVisible("isActive") && <TableHead>Stato</TableHead>}
+                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.vatNumber || "-"}</TableCell>
-                  <TableCell>{item.accountType || "-"}</TableCell>
-                  <TableCell>{item.industry || "-"}</TableCell>
-                  <TableCell>{item.phone || "-"}</TableCell>
-                  <TableCell>{item.email || "-"}</TableCell>
-                  <TableCell>
+                  {isColVisible("name") && <TableCell className="font-medium">{item.name}</TableCell>}
+                  {isColVisible("vatNumber") && <TableCell>{item.vatNumber || "-"}</TableCell>}
+                  {isColVisible("accountType") && <TableCell>{item.accountType || "-"}</TableCell>}
+                  {isColVisible("industry") && <TableCell>{item.industry || "-"}</TableCell>}
+                  {isColVisible("phone") && <TableCell>{item.phone || "-"}</TableCell>}
+                  {isColVisible("email") && <TableCell>{item.email || "-"}</TableCell>}
+                  {isColVisible("isActive") && <TableCell>
                     <Badge variant={item.isActive ? "default" : "secondary"}>
                       {item.isActive ? "Attivo" : "Non attivo"}
                     </Badge>
-                  </TableCell>
-                  <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
+                  </TableCell>}
+                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -320,15 +342,14 @@ export default function OrganizationsPage() {
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Pagina {currentPage} di {totalPages} ({totalCount} risultati)</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => loadData(currentPage - 1)}>Precedente</Button>
-              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => loadData(currentPage + 1)}>Successivo</Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          limit={limit}
+          onPageChange={(page) => loadData(page)}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
+        />
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

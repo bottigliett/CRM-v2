@@ -30,6 +30,18 @@ import {
 import { vtQuotesAPI, type VtQuote } from "@/lib/vt-quotes-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { toast } from "sonner"
+import { TablePagination } from "@/components/ui/table-pagination"
+import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
+
+const COLUMNS: ToggleColumnDef[] = [
+  { id: "quoteNumber", label: "Numero" },
+  { id: "subject", label: "Oggetto" },
+  { id: "organization", label: "Organizzazione" },
+  { id: "contact", label: "Contatto" },
+  { id: "stage", label: "Stadio" },
+  { id: "validUntil", label: "Valido fino a" },
+  { id: "assignedTo", label: "Assegnato a" },
+]
 
 const STAGES = ["Creato", "Consegnato", "Revisionato", "Scaduto", "Accettato", "Rifiutato", "Annullato"]
 const STAGE_COLORS: Record<string, string> = {
@@ -58,6 +70,11 @@ export default function VtQuotesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
+  const [limit, setLimit] = useState(20)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -75,7 +92,7 @@ export default function VtQuotesPage() {
     try {
       setLoading(true)
       const response = await vtQuotesAPI.getAll({
-        page, limit: 20, search: searchQuery,
+        page, limit, search: searchQuery,
         stage: stageFilter || undefined,
       })
       setItems(response.data.quotes)
@@ -87,7 +104,7 @@ export default function VtQuotesPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, stageFilter])
+  }, [searchQuery, stageFilter, limit])
 
   useEffect(() => {
     const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
@@ -227,36 +244,37 @@ export default function VtQuotesPage() {
             <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stadio" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti gli stadi</SelectItem>{STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
+          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Numero</TableHead>
-                <TableHead>Oggetto</TableHead>
-                <TableHead>Organizzazione</TableHead>
-                <TableHead>Contatto</TableHead>
-                <TableHead>Stadio</TableHead>
-                <TableHead>Valido fino a</TableHead>
-                <TableHead>Assegnato a</TableHead>
+                {isColVisible("quoteNumber") && <TableHead>Numero</TableHead>}
+                {isColVisible("subject") && <TableHead>Oggetto</TableHead>}
+                {isColVisible("organization") && <TableHead>Organizzazione</TableHead>}
+                {isColVisible("contact") && <TableHead>Contatto</TableHead>}
+                {isColVisible("stage") && <TableHead>Stadio</TableHead>}
+                {isColVisible("validUntil") && <TableHead>Valido fino a</TableHead>}
+                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nessun preventivo trovato</TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun preventivo trovato</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  <TableCell className="font-mono text-sm">{item.quoteNumber}</TableCell>
-                  <TableCell className="font-medium">{item.subject}</TableCell>
-                  <TableCell>{item.organization?.name || "-"}</TableCell>
-                  <TableCell>{item.contact?.name || "-"}</TableCell>
-                  <TableCell><Badge className={STAGE_COLORS[item.stage] || ""}>{item.stage}</Badge></TableCell>
-                  <TableCell>{formatDate(item.validUntil)}</TableCell>
-                  <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
+                  {isColVisible("quoteNumber") && <TableCell className="font-mono text-sm">{item.quoteNumber}</TableCell>}
+                  {isColVisible("subject") && <TableCell className="font-medium">{item.subject}</TableCell>}
+                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
+                  {isColVisible("contact") && <TableCell>{item.contact?.name || "-"}</TableCell>}
+                  {isColVisible("stage") && <TableCell><Badge className={STAGE_COLORS[item.stage] || ""}>{item.stage}</Badge></TableCell>}
+                  {isColVisible("validUntil") && <TableCell>{formatDate(item.validUntil)}</TableCell>}
+                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -273,15 +291,14 @@ export default function VtQuotesPage() {
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Pagina {currentPage} di {totalPages} ({totalCount} risultati)</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => loadData(currentPage - 1)}>Precedente</Button>
-              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => loadData(currentPage + 1)}>Successivo</Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          limit={limit}
+          onPageChange={(page) => loadData(page)}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
+        />
 
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">

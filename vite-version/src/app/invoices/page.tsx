@@ -55,6 +55,7 @@ import { TaxReserveDialog } from "./components/tax-reserve-dialog"
 import { AlertDialogCustom } from "@/components/ui/alert-dialog-custom"
 import { PaymentEntitySettings } from "@/components/payment-entity-settings"
 import { generateInvoicePDF } from "@/lib/pdf-generator"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 export default function InvoicesPage() {
   const { isProtectionEnabled, isUnlocked } = usePinProtection()
@@ -539,56 +540,15 @@ export default function InvoicesPage() {
                   </Table>
                 </div>
 
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Mostrando {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} di {pagination.total} fatture
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pagination.page === 1}
-                      onClick={() => handlePageChange(pagination.page - 1)}
-                    >
-                      Precedente
-                    </Button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (pagination.page <= 3) {
-                          pageNum = i + 1;
-                        } else if (pagination.page >= pagination.totalPages - 2) {
-                          pageNum = pagination.totalPages - 4 + i;
-                        } else {
-                          pageNum = pagination.page - 2 + i;
-                        }
-
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={pagination.page === pageNum ? "default" : "outline"}
-                            size="sm"
-                            className="w-8 h-8 p-0"
-                            onClick={() => handlePageChange(pageNum)}
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pagination.page === pagination.totalPages}
-                      onClick={() => handlePageChange(pagination.page + 1)}
-                    >
-                      Successivo
-                    </Button>
-                  </div>
+                <div className="mt-4">
+                  <TablePagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    totalCount={pagination.total}
+                    limit={pagination.limit}
+                    onPageChange={handlePageChange}
+                    onLimitChange={(newLimit) => setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }))}
+                  />
                 </div>
               </>
             )}

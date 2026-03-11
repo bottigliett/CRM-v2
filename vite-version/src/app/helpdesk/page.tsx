@@ -29,6 +29,19 @@ import {
 import { helpdeskAPI, type HelpDeskTicket } from "@/lib/helpdesk-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { toast } from "sonner"
+import { TablePagination } from "@/components/ui/table-pagination"
+import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
+
+const COLUMNS: ToggleColumnDef[] = [
+  { id: "ticketNumber", label: "Numero" },
+  { id: "title", label: "Titolo" },
+  { id: "status", label: "Stato" },
+  { id: "priority", label: "Priorità" },
+  { id: "callType", label: "Tipo" },
+  { id: "ticketOrigin", label: "Origine" },
+  { id: "organization", label: "Organizzazione" },
+  { id: "hours", label: "Durata" },
+]
 
 const STATUSES = ["Aperto", "In Corso", "In attesa risposta", "Chiuso"]
 const PRIORITIES = ["Bloccante", "Principale", "Secondario"]
@@ -61,6 +74,11 @@ export default function HelpDeskPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
+  const [limit, setLimit] = useState(20)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -78,7 +96,7 @@ export default function HelpDeskPage() {
     try {
       setLoading(true)
       const response = await helpdeskAPI.getAll({
-        page, limit: 20, search: searchQuery,
+        page, limit, search: searchQuery,
         status: statusFilter || undefined,
         priority: priorityFilter || undefined,
         callType: callTypeFilter || undefined,
@@ -93,7 +111,7 @@ export default function HelpDeskPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, priorityFilter, callTypeFilter, originFilter])
+  }, [searchQuery, statusFilter, priorityFilter, callTypeFilter, originFilter, limit])
 
   useEffect(() => {
     const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
@@ -256,38 +274,39 @@ export default function HelpDeskPage() {
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti i tipi</SelectItem>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
+          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Numero</TableHead>
-                <TableHead>Titolo</TableHead>
-                <TableHead>Stato</TableHead>
-                <TableHead>Priorità</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Origine</TableHead>
-                <TableHead>Organizzazione</TableHead>
-                <TableHead>Durata</TableHead>
+                {isColVisible("ticketNumber") && <TableHead>Numero</TableHead>}
+                {isColVisible("title") && <TableHead>Titolo</TableHead>}
+                {isColVisible("status") && <TableHead>Stato</TableHead>}
+                {isColVisible("priority") && <TableHead>Priorità</TableHead>}
+                {isColVisible("callType") && <TableHead>Tipo</TableHead>}
+                {isColVisible("ticketOrigin") && <TableHead>Origine</TableHead>}
+                {isColVisible("organization") && <TableHead>Organizzazione</TableHead>}
+                {isColVisible("hours") && <TableHead>Durata</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
+                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  <TableCell className="font-mono text-sm">{item.ticketNumber}</TableCell>
-                  <TableCell className="font-medium">{item.title}</TableCell>
-                  <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>
-                  <TableCell>{item.priority || "-"}</TableCell>
-                  <TableCell>{item.callType || "-"}</TableCell>
-                  <TableCell>{item.ticketOrigin || "-"}</TableCell>
-                  <TableCell>{item.organization?.name || "-"}</TableCell>
-                  <TableCell>{item.hours ? `${item.hours}h` : "-"}</TableCell>
+                  {isColVisible("ticketNumber") && <TableCell className="font-mono text-sm">{item.ticketNumber}</TableCell>}
+                  {isColVisible("title") && <TableCell className="font-medium">{item.title}</TableCell>}
+                  {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
+                  {isColVisible("priority") && <TableCell>{item.priority || "-"}</TableCell>}
+                  {isColVisible("callType") && <TableCell>{item.callType || "-"}</TableCell>}
+                  {isColVisible("ticketOrigin") && <TableCell>{item.ticketOrigin || "-"}</TableCell>}
+                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
+                  {isColVisible("hours") && <TableCell>{item.hours ? `${item.hours}h` : "-"}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -304,15 +323,14 @@ export default function HelpDeskPage() {
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Pagina {currentPage} di {totalPages} ({totalCount} risultati)</p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => loadData(currentPage - 1)}>Precedente</Button>
-              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => loadData(currentPage + 1)}>Successivo</Button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          limit={limit}
+          onPageChange={(page) => loadData(page)}
+          onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
+        />
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

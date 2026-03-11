@@ -68,6 +68,7 @@ import {
   Legend,
 } from "recharts"
 import { TransactionDialog } from "./components/transaction-dialog"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 export default function FinancePage() {
   const { isProtectionEnabled, isUnlocked } = usePinProtection()
@@ -180,7 +181,7 @@ export default function FinancePage() {
     }
 
     loadTransactions()
-  }, [pagination.page, selectedYear, selectedMonth, selectedPeriod])
+  }, [pagination.page, pagination.limit, selectedYear, selectedMonth, selectedPeriod])
 
   // Load monthly trend data
   useEffect(() => {
@@ -961,28 +962,15 @@ export default function FinancePage() {
                 </Table>
               </div>
 
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} di {pagination.total} transazioni
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pagination.page === 1}
-                    onClick={() => handlePageChange(pagination.page - 1)}
-                  >
-                    Precedente
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pagination.page === pagination.totalPages}
-                    onClick={() => handlePageChange(pagination.page + 1)}
-                  >
-                    Successivo
-                  </Button>
-                </div>
+              <div className="mt-4">
+                <TablePagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  totalCount={pagination.total}
+                  limit={pagination.limit}
+                  onPageChange={handlePageChange}
+                  onLimitChange={(newLimit) => setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }))}
+                />
               </div>
             </>
           )}

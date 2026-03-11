@@ -71,6 +71,18 @@ import { contactsAPI, type Contact, type CreateContactData } from "@/lib/contact
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd"
+import { TablePagination } from "@/components/ui/table-pagination"
+import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
+
+const CONTACT_COLUMNS: ToggleColumnDef[] = [
+  { id: "name", label: "Nome" },
+  { id: "type", label: "Tipo" },
+  { id: "email", label: "Email" },
+  { id: "phone", label: "Telefono" },
+  { id: "city", label: "Città" },
+  { id: "tags", label: "Tag" },
+  { id: "status", label: "Stato" },
+]
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -87,6 +99,9 @@ export default function ContactsPage() {
   const [totalClients, setTotalClients] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [pageLimit, setPageLimit] = useState(50)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -664,16 +679,7 @@ export default function ContactsPage() {
               {/* View Mode Toggle and Page Limit */}
               <div className="flex gap-2 items-center">
                 {viewMode === 'table' && (
-                  <Select value={pageLimit.toString()} onValueChange={(val) => setPageLimit(parseInt(val))}>
-                    <SelectTrigger className="w-[130px] h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="50">Carica 50</SelectItem>
-                      <SelectItem value="100">Carica 100</SelectItem>
-                      <SelectItem value="500">Carica 500</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <ColumnToggle columns={CONTACT_COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
                 )}
                 <Button
                   variant={viewMode === 'table' ? 'default' : 'outline'}
@@ -713,12 +719,12 @@ export default function ContactsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Contatto</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Telefono</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead>Stato</TableHead>
+                      {isColVisible("name") && <TableHead>Contatto</TableHead>}
+                      {isColVisible("type") && <TableHead>Tipo</TableHead>}
+                      {isColVisible("email") && <TableHead>Email</TableHead>}
+                      {isColVisible("phone") && <TableHead>Telefono</TableHead>}
+                      {isColVisible("tags") && <TableHead>Tags</TableHead>}
+                      {isColVisible("status") && <TableHead>Stato</TableHead>}
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -738,7 +744,7 @@ export default function ContactsPage() {
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => openPreviewDialog(contact)}
                         >
-                          <TableCell>
+                          {isColVisible("name") && <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-9 w-9">
                                 <AvatarFallback className="bg-muted">
@@ -754,14 +760,14 @@ export default function ContactsPage() {
                                 )}
                               </div>
                             </div>
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isColVisible("type") && <TableCell>
                             <div className="flex items-center gap-2">
                               <TypeIcon className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">{getTypeLabel(contact.type)}</span>
                             </div>
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isColVisible("email") && <TableCell>
                             {contact.email ? (
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Mail className="h-3.5 w-3.5" />
@@ -770,8 +776,8 @@ export default function ContactsPage() {
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
                             )}
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isColVisible("phone") && <TableCell>
                             {contact.phone || contact.mobile ? (
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Phone className="h-3.5 w-3.5" />
@@ -780,8 +786,8 @@ export default function ContactsPage() {
                             ) : (
                               <span className="text-sm text-muted-foreground">-</span>
                             )}
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isColVisible("tags") && <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {contact.tags.map((tagObj) => (
                                 <Badge key={tagObj.id} variant="secondary" className="text-xs">
@@ -789,12 +795,12 @@ export default function ContactsPage() {
                                 </Badge>
                               ))}
                             </div>
-                          </TableCell>
-                          <TableCell>
+                          </TableCell>}
+                          {isColVisible("status") && <TableCell>
                             <Badge variant={getStatusColor(contact.status)}>
                               {contact.status || "N/A"}
                             </Badge>
-                          </TableCell>
+                          </TableCell>}
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1074,87 +1080,19 @@ export default function ContactsPage() {
               </DragDropContext>
             )}
 
-            {/* Load More and Pagination - Only for table view */}
+            {/* Pagination - Only for table view */}
             {viewMode === 'table' && !loading && contacts.length > 0 && (
-              <div className="space-y-4">
-                {/* Load More Button */}
-                {hasMore && (
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={loadMore}
-                      disabled={loadingMore}
-                      variant="outline"
-                      className="cursor-pointer"
-                    >
-                      {loadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {loadingMore ? 'Caricamento...' : 'Carica altro'}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Pagination Controls */}
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Mostrando {contacts.length} di {totalContacts} contatti
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                        loadContacts(1)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      Prima
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                        loadContacts(currentPage - 1)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      Precedente
-                    </Button>
-                    <div className="flex items-center gap-1 text-sm px-3">
-                      <span className="text-muted-foreground">Pagina</span>
-                      <span className="font-medium">{currentPage}</span>
-                      <span className="text-muted-foreground">di</span>
-                      <span className="font-medium">{totalPages}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                        loadContacts(currentPage + 1)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      Successivo
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
-                        loadContacts(totalPages)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      Ultima
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalContacts}
+                limit={pageLimit}
+                onPageChange={(page) => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  loadContacts(page)
+                }}
+                onLimitChange={(newLimit) => { setPageLimit(newLimit); setCurrentPage(1) }}
+              />
             )}
           </CardContent>
         </Card>
