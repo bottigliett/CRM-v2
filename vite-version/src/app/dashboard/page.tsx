@@ -128,11 +128,11 @@ export default function DashboardPage() {
   }, [])
 
   const statCards = [
-    { label: 'Organizzazioni', value: stats.organizations, icon: Building2, path: '/organizations', color: 'text-blue-600' },
-    { label: 'Ticket', value: stats.tickets, icon: Headset, path: '/helpdesk', color: 'text-orange-600' },
-    { label: 'Contratti Attivi', value: stats.activeContracts, subtitle: stats.contractsValue != null ? `€ ${stats.contractsValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : undefined, icon: FileCheck, path: '/service-contracts', color: 'text-green-600' },
-    { label: 'Preventivi', value: stats.quotes, icon: FileText, path: '/vt-quotes', color: 'text-purple-600' },
-    { label: 'Ordini', value: stats.orders, icon: ShoppingCart, path: '/sales-orders', color: 'text-red-600' },
+    { label: 'Organizzazioni', value: stats.organizations, icon: Building2, path: '/organizations' },
+    { label: 'Ticket', value: stats.tickets, icon: Headset, path: '/helpdesk' },
+    { label: 'Contratti Attivi', value: stats.activeContracts, subtitle: stats.contractsValue != null ? `€ ${stats.contractsValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : undefined, icon: FileCheck, path: '/service-contracts' },
+    { label: 'Preventivi', value: stats.quotes, icon: FileText, path: '/vt-quotes' },
+    { label: 'Ordini', value: stats.orders, icon: ShoppingCart, path: '/sales-orders' },
   ]
 
   return (
@@ -167,14 +167,14 @@ export default function DashboardPage() {
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <Icon className={`h-8 w-8 ${card.color} shrink-0`} />
+                    <Icon className="h-8 w-8 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
                       <p className="text-xs text-muted-foreground truncate">{card.label}</p>
                       {isLoadingStats ? (
                         <Loader2 className="h-4 w-4 animate-spin mt-1" />
                       ) : (
                         <>
-                          <p className="text-2xl font-bold">{card.value ?? '—'}</p>
+                          <p className="text-2xl font-bold">{card.value ?? 0}</p>
                           {card.subtitle && (
                             <p className="text-xs text-muted-foreground">{card.subtitle}</p>
                           )}
