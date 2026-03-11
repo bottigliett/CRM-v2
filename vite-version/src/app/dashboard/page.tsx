@@ -7,31 +7,32 @@ import { Badge } from "@/components/ui/badge"
 import {
   Clock,
   Calendar as CalendarIcon,
-  Building2,
-  Headset,
-  FileCheck,
-  FileText,
-  ShoppingCart,
   Loader2,
 } from "lucide-react"
 import { eventsAPI, type Event } from "@/lib/events-api"
 import { api, type User } from "@/lib/api"
-import { organizationsAPI } from "@/lib/organizations-api"
-import { helpdeskAPI } from "@/lib/helpdesk-api"
-import { serviceContractsAPI } from "@/lib/service-contracts-api"
-import { vtQuotesAPI } from "@/lib/vt-quotes-api"
-import { salesOrdersAPI } from "@/lib/sales-orders-api"
 import { format, addDays, endOfDay } from "date-fns"
 import { it } from "date-fns/locale"
 import { toast } from "sonner"
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+
 interface DashboardStats {
-  organizations: number | null
-  tickets: number | null
-  activeContracts: number | null
-  contractsValue: number | null
-  quotes: number | null
-  orders: number | null
+  organizations: { total: number; thisMonth: number }
+  tickets: { total: number; open: number; thisMonth: number }
+  contracts: { active: number; totalValue: number; thisMonth: number }
+  quotes: { total: number; thisMonth: number }
+  orders: { total: number; thisMonth: number }
+}
+
+async function fetchDashboardStats(): Promise<DashboardStats> {
+  const token = localStorage.getItem('auth_token')
+  const res = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  if (!res.ok) throw new Error('Errore nel caricamento delle statistiche')
+  const json = await res.json()
+  return json.data
 }
 
 export default function DashboardPage() {
@@ -39,17 +40,9 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(true)
-  const [stats, setStats] = useState<DashboardStats>({
-    organizations: null,
-    tickets: null,
-    activeContracts: null,
-    contractsValue: null,
-    quotes: null,
-    orders: null,
-  })
+  const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
 
-  // Load current user
   useEffect(() => {
     async function loadCurrentUser() {
       try {
@@ -60,11 +53,9 @@ export default function DashboardPage() {
         toast.error('Errore nel caricamento dei dati utente')
       }
     }
-
     loadCurrentUser()
   }, [])
 
-  // Load upcoming events for next 7 days
   useEffect(() => {
     async function loadUpcomingEvents() {
       try {
@@ -92,48 +83,56 @@ export default function DashboardPage() {
         setIsLoadingEvents(false)
       }
     }
-
     loadUpcomingEvents()
   }, [])
 
-  // Load VTiger stats
   useEffect(() => {
     async function loadStats() {
       try {
         setIsLoadingStats(true)
-        const [orgsRes, ticketsRes, contractsRes, quotesRes, ordersRes] = await Promise.allSettled([
-          organizationsAPI.getAll({ limit: 1 }),
-          helpdeskAPI.getAll({ limit: 1 }),
-          serviceContractsAPI.getAll({ limit: 1, includeStats: 'true' }),
-          vtQuotesAPI.getAll({ limit: 1 }),
-          salesOrdersAPI.getAll({ limit: 1 }),
-        ])
-
-        setStats({
-          organizations: orgsRes.status === 'fulfilled' ? orgsRes.value.pagination?.total ?? null : null,
-          tickets: ticketsRes.status === 'fulfilled' ? ticketsRes.value.pagination?.total ?? null : null,
-          activeContracts: contractsRes.status === 'fulfilled' ? contractsRes.value.statistics?.activeCount ?? contractsRes.value.pagination?.total ?? null : null,
-          contractsValue: contractsRes.status === 'fulfilled' ? contractsRes.value.statistics?.totalValue ?? null : null,
-          quotes: quotesRes.status === 'fulfilled' ? quotesRes.value.pagination?.total ?? null : null,
-          orders: ordersRes.status === 'fulfilled' ? ordersRes.value.pagination?.total ?? null : null,
-        })
+        const data = await fetchDashboardStats()
+        setStats(data)
       } catch (error) {
         console.error('Failed to load stats:', error)
       } finally {
         setIsLoadingStats(false)
       }
     }
-
     loadStats()
   }, [])
 
-  const statCards = [
-    { label: 'Organizzazioni', value: stats.organizations, icon: Building2, path: '/organizations' },
-    { label: 'Ticket', value: stats.tickets, icon: Headset, path: '/helpdesk' },
-    { label: 'Contratti Attivi', value: stats.activeContracts, subtitle: stats.contractsValue != null ? `€ ${stats.contractsValue.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : undefined, icon: FileCheck, path: '/service-contracts' },
-    { label: 'Preventivi', value: stats.quotes, icon: FileText, path: '/vt-quotes' },
-    { label: 'Ordini', value: stats.orders, icon: ShoppingCart, path: '/sales-orders' },
-  ]
+  const statCards = stats ? [
+    {
+      label: 'Organizzazioni',
+      value: stats.organizations.total,
+      detail: `+${stats.organizations.thisMonth} questo mese`,
+      path: '/organizations',
+    },
+    {
+      label: 'Ticket',
+      value: stats.tickets.total,
+      detail: `${stats.tickets.open} aperti`,
+      path: '/helpdesk',
+    },
+    {
+      label: 'Contratti Attivi',
+      value: stats.contracts.active,
+      detail: `${stats.contracts.totalValue.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}`,
+      path: '/service-contracts',
+    },
+    {
+      label: 'Preventivi',
+      value: stats.quotes.total,
+      detail: `+${stats.quotes.thisMonth} questo mese`,
+      path: '/vt-quotes',
+    },
+    {
+      label: 'Ordini',
+      value: stats.orders.total,
+      detail: `+${stats.orders.thisMonth} questo mese`,
+      path: '/sales-orders',
+    },
+  ] : []
 
   return (
     <BaseLayout>
@@ -157,35 +156,33 @@ export default function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {statCards.map((card) => {
-            const Icon = card.icon
-            return (
+          {isLoadingStats ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="h-3 w-20 bg-muted rounded" />
+                    <div className="h-8 w-12 bg-muted rounded" />
+                    <div className="h-3 w-24 bg-muted rounded" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            statCards.map((card) => (
               <Card
                 key={card.path}
                 className="cursor-pointer hover:bg-accent/50 transition-colors"
                 onClick={() => navigate(card.path)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-8 w-8 text-muted-foreground shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-muted-foreground truncate">{card.label}</p>
-                      {isLoadingStats ? (
-                        <Loader2 className="h-4 w-4 animate-spin mt-1" />
-                      ) : (
-                        <>
-                          <p className="text-2xl font-bold">{card.value ?? 0}</p>
-                          {card.subtitle && (
-                            <p className="text-xs text-muted-foreground">{card.subtitle}</p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">{card.label}</p>
+                  <p className="text-2xl font-bold mt-1">{card.value}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{card.detail}</p>
                 </CardContent>
               </Card>
-            )
-          })}
+            ))
+          )}
         </div>
 
         {/* Upcoming Events - Full Width */}
