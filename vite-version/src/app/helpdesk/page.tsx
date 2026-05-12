@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback } from "react"
+import { useLocation } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,6 +64,7 @@ const emptyForm: any = {
 }
 
 export default function HelpDeskPage() {
+  const location = useLocation()
   const [items, setItems] = useState<HelpDeskTicket[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -91,6 +93,17 @@ export default function HelpDeskPage() {
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 }).then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.name })))).catch(() => {})
   }, [])
+
+  // Apri il dialog "Nuovo Ticket" pre-compilato se navigato dal widget chiamata
+  useEffect(() => {
+    const state = location.state as { openCreate?: boolean; prefill?: Partial<typeof emptyForm> } | null
+    if (state?.openCreate) {
+      setFormData({ ...emptyForm, ...(state.prefill ?? {}) })
+      setIsCreateOpen(true)
+      // Pulisci lo state per evitare riaperture al refresh
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   const loadData = useCallback(async (page = 1) => {
     try {

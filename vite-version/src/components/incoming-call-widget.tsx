@@ -48,56 +48,40 @@ export function IncomingCallWidget() {
   }
 
   const openTicket = async (call: PendingCall) => {
-    // Rimuovi subito dalla UI
     setCalls(prev => prev.filter(c => c.id !== call.id))
 
+    // Cerca contatto per numero (best-effort)
+    let contact: any = null
     try {
-      // 1. Cerca contatto per numero
-      const searchRes = await fetch(
+      const res = await fetch(
         `/api/contacts?search=${encodeURIComponent(call.number)}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } }
       )
-      const searchBody = await searchRes.json()
-      const contacts: any[] = searchBody?.data?.contacts ?? []
-      const contact = contacts[0] ?? null
+      const body = await res.json()
+      contact = body?.data?.contacts?.[0] ?? null
+    } catch {}
 
-      // 2. Crea ticket helpdesk
-      const ticketPayload: Record<string, any> = {
-        title: `Chiamata da ${call.number}`,
-        status: 'Aperto',
-        priority: 'Media',
-        callType: 'Telefonata in entrata',
-        ticketOrigin: 'Telefono',
-      }
-      if (contact?.id)             ticketPayload.contactId      = contact.id
-      if (contact?.organizationId) ticketPayload.organizationId = contact.organizationId
-
-      const ticketRes = await fetch('/api/helpdesk', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-        body: JSON.stringify(ticketPayload),
-      })
-      const ticketBody = await ticketRes.json()
-      const ticketId = ticketBody?.data?.id
-
-      // 3. Elimina la chiamata pendente
+    // Elimina la chiamata pendente
+    try {
       await fetch(`/api/incoming-call/${call.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
       })
+    } catch {}
 
-      if (ticketId) {
-        navigate(`/helpdesk/${ticketId}`)
-      } else {
-        toast.error('Ticket creato ma ID non ricevuto')
-        navigate('/helpdesk')
-      }
-    } catch (err) {
-      toast.error('Errore nella creazione del ticket')
-    }
+    // Naviga su /helpdesk con i dati pre-compilati nel state
+    navigate('/helpdesk', {
+      state: {
+        openCreate: true,
+        prefill: {
+          title: `Chiamata da ${call.number}`,
+          status: 'Aperto',
+          ticketOrigin: 'Telefono',
+          contactId: contact?.id?.toString() ?? '',
+          organizationId: contact?.organizationId?.toString() ?? '',
+        },
+      },
+    })
   }
 
   if (calls.length === 0) return null
