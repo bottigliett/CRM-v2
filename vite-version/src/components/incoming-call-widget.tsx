@@ -12,22 +12,19 @@ interface PendingCall {
 
 const POLL_INTERVAL = 3000
 
-/** Produce varianti del numero da provare per la ricerca (strip prefissi internazionali) */
-function phoneVariants(raw: string): string[] {
-  const clean = raw.replace(/[\s\-\(\)\.]/g, '')
-  const variants = new Set<string>([clean])
-  // +39XXXXXXXXX  → XXXXXXXXX  e  39XXXXXXXXX
-  if (clean.startsWith('+39')) {
-    variants.add(clean.slice(3))   // local
-    variants.add(clean.slice(1))   // 39...
-  } else if (clean.startsWith('39') && clean.length > 10) {
-    variants.add(clean.slice(2))   // strip 39
-  }
-  // +44, +33, … → strip +
-  if (clean.startsWith('+')) {
-    variants.add(clean.slice(1))
-  }
-  return Array.from(variants)
+/**
+ * Normalizza un numero di telefono: rimuove tutto tranne le cifre
+ * e restituisce le ultime 9 (sufficienti per unicità italiana).
+ */
+function normPhone(raw: string): string {
+  return raw.replace(/\D/g, '').slice(-9)
+}
+
+/** Confronta il numero chiamante con uno dei campi telefono di un'org. */
+function phoneMatches(incoming: string, ...stored: (string | null | undefined)[]): boolean {
+  const norm = normPhone(incoming)
+  if (!norm) return false
+  return stored.some(s => s && normPhone(s) === norm)
 }
 
 export function IncomingCallWidget() {
@@ -66,24 +63,28 @@ export function IncomingCallWidget() {
     setCalls(prev => prev.filter(c => c.id !== call.id))
 
     const authHeader = { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
-    const variants = phoneVariants(call.number)
 
-    // Cerca contatto e organizzazione in parallelo su tutte le varianti del numero
-    let contact: any = null
-    let organization: any = null
+    // Ricerca contatto e tutte le organizzazioni in parallelo
+    const [contactRes, orgsRes] = await Promise.allSettled([
+      fetch(`/api/contacts?search=${encodeURIComponent(call.number)}`, { headers: authHeader })
+        .then(r => r.json()),
+      fetch('/api/organizations?limit=1000', { headers: authHeader })
+        .then(r => r.json()),
+    ])
 
-    await Promise.all(variants.map(async (num) => {
-      if (contact && organization) return
-      try {
-        const [cRes, oRes] = await Promise.all([
-          fetch(`/api/contacts?search=${encodeURIComponent(num)}`, { headers: authHeader }),
-          fetch(`/api/organizations?search=${encodeURIComponent(num)}&limit=5`, { headers: authHeader }),
-        ])
-        const [cBody, oBody] = await Promise.all([cRes.json(), oRes.json()])
-        if (!contact) contact = cBody?.data?.contacts?.[0] ?? null
-        if (!organization) organization = oBody?.data?.organizations?.[0] ?? null
-      } catch {}
-    }))
+    const contact = contactRes.status === 'fulfilled'
+      ? contactRes.value?.data?.contacts?.[0] ?? null
+      : null
+
+    // Matching client-side: normalizza e confronta le ultime 9 cifre
+    // controlla phone, mobile e otherPhone
+    const allOrgs: any[] = orgsRes.status === 'fulfilled'
+      ? orgsRes.value?.data?.organizations ?? []
+      : []
+
+    const matchedOrg = allOrgs.find((o: any) =>
+      phoneMatches(call.number, o.phone, o.mobile, o.otherPhone)
+    ) ?? null
 
     // Elimina la chiamata pendente
     try {
@@ -93,12 +94,6 @@ export function IncomingCallWidget() {
       })
     } catch {}
 
-    // Determina l'organizzazione: preferisci quella trovata dal numero,
-    // altrimenti usa quella del contatto
-    const orgId = organization?.id?.toString()
-      ?? contact?.organizationId?.toString()
-      ?? ''
-
     navigate('/helpdesk', {
       state: {
         openCreate: true,
@@ -107,7 +102,7 @@ export function IncomingCallWidget() {
           status: 'Aperto',
           ticketOrigin: 'Telefono',
           contactId: contact?.id?.toString() ?? '',
-          organizationId: orgId,
+          organizationId: matchedOrg?.id?.toString() ?? '',
         },
       },
     })
