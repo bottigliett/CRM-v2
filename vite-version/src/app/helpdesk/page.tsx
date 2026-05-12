@@ -26,7 +26,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, Headset,
+  ChevronsUpDown, Check,
 } from "lucide-react"
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 import { helpdeskAPI, type HelpDeskTicket } from "@/lib/helpdesk-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { toast } from "sonner"
@@ -89,6 +95,7 @@ export default function HelpDeskPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState<any>({ ...emptyForm })
   const [orgs, setOrgs] = useState<{ id: number; name: string }[]>([])
+  const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
 
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 }).then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.name })))).catch(() => {})
@@ -138,6 +145,7 @@ export default function HelpDeskPage() {
       await helpdeskAPI.create(formData)
       toast.success("Ticket creato con successo!")
       setIsCreateOpen(false)
+      setOrgPopoverOpen(false)
       setFormData({ ...emptyForm })
       loadData()
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
@@ -150,6 +158,7 @@ export default function HelpDeskPage() {
       await helpdeskAPI.update(selected.id, formData)
       toast.success("Ticket aggiornato!")
       setIsEditOpen(false)
+      setOrgPopoverOpen(false)
       setSelected(null)
       setFormData({ ...emptyForm })
       loadData()
@@ -235,10 +244,50 @@ export default function HelpDeskPage() {
           </div>
           <div>
             <Label>Organizzazione</Label>
-            <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={orgPopoverOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {formData.organizationId
+                      ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? 'Seleziona...'
+                      : 'Seleziona...'}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Cerca organizzazione..." />
+                  <CommandList>
+                    <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="__none__"
+                        onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", !formData.organizationId ? "opacity-100" : "opacity-0")} />
+                        <span className="text-muted-foreground italic">Nessuna</span>
+                      </CommandItem>
+                      {orgs.map(o => (
+                        <CommandItem
+                          key={o.id}
+                          value={o.name}
+                          onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
+                          {o.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>

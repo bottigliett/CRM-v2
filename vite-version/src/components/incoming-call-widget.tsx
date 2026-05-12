@@ -3,7 +3,6 @@ import { Phone, PhoneOff, PhoneIncoming } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { api } from '@/lib/api'
-import { toast } from 'sonner'
 
 interface PendingCall {
   id: string
@@ -11,7 +10,25 @@ interface PendingCall {
   receivedAt: string
 }
 
-const POLL_INTERVAL = 3000 // 3 secondi
+const POLL_INTERVAL = 3000
+
+/** Produce varianti del numero da provare per la ricerca (strip prefissi internazionali) */
+function phoneVariants(raw: string): string[] {
+  const clean = raw.replace(/[\s\-\(\)\.]/g, '')
+  const variants = new Set<string>([clean])
+  // +39XXXXXXXXX  → XXXXXXXXX  e  39XXXXXXXXX
+  if (clean.startsWith('+39')) {
+    variants.add(clean.slice(3))   // local
+    variants.add(clean.slice(1))   // 39...
+  } else if (clean.startsWith('39') && clean.length > 10) {
+    variants.add(clean.slice(2))   // strip 39
+  }
+  // +44, +33, … → strip +
+  if (clean.startsWith('+')) {
+    variants.add(clean.slice(1))
+  }
+  return Array.from(variants)
+}
 
 export function IncomingCallWidget() {
   const [calls, setCalls] = useState<PendingCall[]>([])
@@ -26,9 +43,7 @@ export function IncomingCallWidget() {
       if (!res.ok) return
       const body = await res.json()
       setCalls(body.data ?? [])
-    } catch {
-      // silenzio – non vogliamo toast di errore ogni 3s
-    }
+    } catch {}
   }, [])
 
   useEffect(() => {
@@ -50,26 +65,40 @@ export function IncomingCallWidget() {
   const openTicket = async (call: PendingCall) => {
     setCalls(prev => prev.filter(c => c.id !== call.id))
 
-    // Cerca contatto per numero (best-effort)
+    const authHeader = { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
+    const variants = phoneVariants(call.number)
+
+    // Cerca contatto e organizzazione in parallelo su tutte le varianti del numero
     let contact: any = null
-    try {
-      const res = await fetch(
-        `/api/contacts?search=${encodeURIComponent(call.number)}`,
-        { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` } }
-      )
-      const body = await res.json()
-      contact = body?.data?.contacts?.[0] ?? null
-    } catch {}
+    let organization: any = null
+
+    await Promise.all(variants.map(async (num) => {
+      if (contact && organization) return
+      try {
+        const [cRes, oRes] = await Promise.all([
+          fetch(`/api/contacts?search=${encodeURIComponent(num)}`, { headers: authHeader }),
+          fetch(`/api/organizations?search=${encodeURIComponent(num)}&limit=5`, { headers: authHeader }),
+        ])
+        const [cBody, oBody] = await Promise.all([cRes.json(), oRes.json()])
+        if (!contact) contact = cBody?.data?.contacts?.[0] ?? null
+        if (!organization) organization = oBody?.data?.organizations?.[0] ?? null
+      } catch {}
+    }))
 
     // Elimina la chiamata pendente
     try {
       await fetch(`/api/incoming-call/${call.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+        headers: authHeader,
       })
     } catch {}
 
-    // Naviga su /helpdesk con i dati pre-compilati nel state
+    // Determina l'organizzazione: preferisci quella trovata dal numero,
+    // altrimenti usa quella del contatto
+    const orgId = organization?.id?.toString()
+      ?? contact?.organizationId?.toString()
+      ?? ''
+
     navigate('/helpdesk', {
       state: {
         openCreate: true,
@@ -78,7 +107,7 @@ export function IncomingCallWidget() {
           status: 'Aperto',
           ticketOrigin: 'Telefono',
           contactId: contact?.id?.toString() ?? '',
-          organizationId: contact?.organizationId?.toString() ?? '',
+          organizationId: orgId,
         },
       },
     })
@@ -93,7 +122,6 @@ export function IncomingCallWidget() {
           key={call.id}
           className="pointer-events-auto flex items-center gap-4 rounded-2xl border border-green-500/30 bg-background/95 backdrop-blur shadow-2xl px-5 py-4 w-[340px] animate-in slide-in-from-bottom-4 duration-300"
         >
-          {/* Icona pulsante */}
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-500">
             <PhoneIncoming className="h-5 w-5 animate-pulse" />
           </div>
