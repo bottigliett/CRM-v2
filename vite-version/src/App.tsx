@@ -10,6 +10,7 @@ import { initGTM } from '@/utils/analytics'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth-store'
 import { useModuleSettingsStore } from '@/store/module-settings-store'
+import { IncomingCallWidget } from '@/components/incoming-call-widget'
 
 // Get basename from environment (for deployment) or use empty string for development
 const basename = import.meta.env.VITE_BASENAME || ''
@@ -51,6 +52,7 @@ function App() {
             <Router basename={basename}>
               <ThemeSettingsLoader />
               <AppRouter />
+              <IncomingCallWidget />
               <Toaster />
             </Router>
           </SidebarConfigProvider>
