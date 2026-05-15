@@ -64,9 +64,8 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const emptyForm: any = {
-  title: "", status: "Aperto", priority: "", callType: "", ticketOrigin: "", category: "",
-  organizationId: "", contactId: "", assignedToId: "", description: "", solution: "",
-  days: "", hours: "", keywords: "", technicianName: "",
+  title: "", status: "Aperto", callType: "", ticketOrigin: "",
+  organizationId: "", description: "",
 }
 
 export default function HelpDeskPage() {
@@ -180,13 +179,10 @@ export default function HelpDeskPage() {
   const openEdit = (item: HelpDeskTicket) => {
     setSelected(item)
     setFormData({
-      title: item.title, status: item.status, priority: item.priority || "",
+      title: item.title, status: item.status,
       callType: item.callType || "", ticketOrigin: item.ticketOrigin || "",
-      category: item.category || "", organizationId: item.organizationId?.toString() || "",
-      contactId: item.contactId?.toString() || "", assignedToId: item.assignedToId?.toString() || "",
-      description: item.description || "", solution: item.solution || "",
-      days: item.days?.toString() || "", hours: item.hours?.toString() || "",
-      keywords: item.keywords || "", technicianName: item.technicianName || "",
+      organizationId: item.organizationId?.toString() || "",
+      description: item.description || "",
     })
     setIsEditOpen(true)
   }
@@ -198,111 +194,78 @@ export default function HelpDeskPage() {
         <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
       </div>
 
-      <div>
-        <p className="text-sm font-medium text-muted-foreground mb-2">Info principali</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label>Stato</Label>
-            <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Priorità</Label>
-            <Select value={formData.priority} onValueChange={v => setFormData({ ...formData, priority: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Tipo chiamata</Label>
-            <Select value={formData.callType} onValueChange={v => setFormData({ ...formData, callType: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Stato</Label>
+          <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-medium text-muted-foreground mb-2">Contesto</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label>Origine</Label>
-            <Select value={formData.ticketOrigin} onValueChange={v => setFormData({ ...formData, ticketOrigin: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{ORIGINS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Categoria</Label>
-            <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Organizzazione</Label>
-            <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={orgPopoverOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  <span className="truncate">
-                    {formData.organizationId
-                      ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? 'Seleziona...'
-                      : 'Seleziona...'}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Cerca organizzazione..." />
-                  <CommandList>
-                    <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
-                    <CommandGroup>
+        <div>
+          <Label>Tipo Chiamata</Label>
+          <Select value={formData.callType} onValueChange={v => setFormData({ ...formData, callType: v })}>
+            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+            <SelectContent>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Origine</Label>
+          <Select value={formData.ticketOrigin} onValueChange={v => setFormData({ ...formData, ticketOrigin: v })}>
+            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+            <SelectContent>{ORIGINS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Organizzazione</Label>
+          <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={orgPopoverOpen}
+                className="w-full justify-between font-normal"
+              >
+                <span className="truncate">
+                  {formData.organizationId
+                    ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? 'Seleziona...'
+                    : 'Seleziona...'}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Cerca organizzazione..." />
+                <CommandList>
+                  <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__none__"
+                      onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", !formData.organizationId ? "opacity-100" : "opacity-0")} />
+                      <span className="text-muted-foreground italic">Nessuna</span>
+                    </CommandItem>
+                    {orgs.map(o => (
                       <CommandItem
-                        value="__none__"
-                        onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}
+                        key={o.id}
+                        value={o.name}
+                        onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}
                       >
-                        <Check className={cn("mr-2 h-4 w-4", !formData.organizationId ? "opacity-100" : "opacity-0")} />
-                        <span className="text-muted-foreground italic">Nessuna</span>
+                        <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
+                        {o.name}
                       </CommandItem>
-                      {orgs.map(o => (
-                        <CommandItem
-                          key={o.id}
-                          value={o.name}
-                          onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
-                          {o.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-sm font-medium text-muted-foreground mb-2">Lavoro</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div><Label>Tecnico</Label><Input value={formData.technicianName} onChange={e => setFormData({ ...formData, technicianName: e.target.value })} /></div>
-          <div><Label>Giorni</Label><Input type="number" step="0.5" value={formData.days} onChange={e => setFormData({ ...formData, days: e.target.value })} /></div>
-          <div><Label>Ore</Label><Input type="number" step="0.25" value={formData.hours} onChange={e => setFormData({ ...formData, hours: e.target.value })} /></div>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
       <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} /></div>
-      <div><Label>Soluzione</Label><Textarea value={formData.solution} onChange={e => setFormData({ ...formData, solution: e.target.value })} rows={3} /></div>
     </div>
   )
 
@@ -328,12 +291,8 @@ export default function HelpDeskPage() {
             <SelectTrigger className="w-[180px]"><SelectValue placeholder="Stato" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti gli stati</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
-          <Select value={priorityFilter} onValueChange={v => { setPriorityFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Priorità" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutte le priorità</SelectItem>{PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-          </Select>
           <Select value={callTypeFilter} onValueChange={v => { setCallTypeFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo Chiamata" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti i tipi</SelectItem>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
           <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
@@ -427,20 +386,16 @@ export default function HelpDeskPage() {
             </DialogHeader>
             {selected && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="font-medium">Data:</span> {new Date(selected.createdAt).toLocaleDateString("it-IT")}</div>
                   <div><span className="font-medium">Stato:</span> <Badge className={STATUS_COLORS[selected.status] || ""}>{selected.status}</Badge></div>
-                  <div><span className="font-medium">Priorità:</span> {selected.priority || "-"}</div>
-                  <div><span className="font-medium">Tipo:</span> {selected.callType || "-"}</div>
+                  <div><span className="font-medium">Codice Ufficio:</span> {selected.organization?.code || "-"}</div>
+                  <div><span className="font-medium">Denominazione Uff.:</span> {selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium">Tipo Chiamata:</span> {selected.callType || "-"}</div>
                   <div><span className="font-medium">Origine:</span> {selected.ticketOrigin || "-"}</div>
-                  <div><span className="font-medium">Categoria:</span> {selected.category || "-"}</div>
-                  <div><span className="font-medium">Organizzazione:</span> {selected.organization?.name || "-"}</div>
-                  <div><span className="font-medium">Contatto:</span> {selected.contact?.name || "-"}</div>
-                  <div><span className="font-medium">Tecnico:</span> {selected.technicianName || "-"}</div>
-                  <div><span className="font-medium">Giorni:</span> {selected.days || "-"}</div>
-                  <div><span className="font-medium">Ore:</span> {selected.hours || "-"}</div>
+                  {selected.assignedTo && <div><span className="font-medium">Assegnato a:</span> {`${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username}</div>}
                 </div>
                 {selected.description && <div><span className="font-medium text-sm">Descrizione:</span><p className="text-sm mt-1 whitespace-pre-wrap bg-muted p-3 rounded">{selected.description}</p></div>}
-                {selected.solution && <div><span className="font-medium text-sm">Soluzione:</span><p className="text-sm mt-1 whitespace-pre-wrap bg-green-50 dark:bg-green-950 p-3 rounded">{selected.solution}</p></div>}
               </div>
             )}
             <DialogFooter>

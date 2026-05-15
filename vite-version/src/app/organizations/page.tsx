@@ -44,14 +44,13 @@ const INDUSTRIES = ["Immobiliare", "Creditizio"]
 const ACCOUNT_TYPES = ["NO Contratto", "SI Contratto"]
 
 const emptyForm = {
-  name: "", vatNumber: "", uniqueCode: "", pec: "", isActive: true, code: "",
-  denomination: "", phone: "", mobile: "", email: "",
-  industry: "", accountType: "", devices: "", parentId: "",
-  nasInfo: "", shareholders: "", nasContract: "", legalRep: "", coordinator: "",
-  assignedToId: "", priceList: "",
+  name: "", denomination: "", code: "", vatNumber: "", uniqueCode: "", pec: "",
+  email: "", phone: "", mobile: "", industry: "", accountType: "", isActive: true,
+  devices: "", nasInfo: "", nasContract: "", legalRep: "", coordinator: "",
+  shareholders: "", description: "",
   billStreet: "", billCity: "", billState: "", billCode: "", billCountry: "",
   shipStreet: "", shipCity: "", shipState: "", shipCode: "", shipCountry: "",
-  bankName: "", iban: "", description: "",
+  bankName: "", iban: "",
 }
 
 export default function OrganizationsPage() {
@@ -146,51 +145,36 @@ export default function OrganizationsPage() {
   const openEdit = (item: Organization) => {
     setSelected(item)
     setFormData({
-      name: item.name || "", vatNumber: item.vatNumber || "", uniqueCode: item.uniqueCode || "",
-      pec: item.pec || "", isActive: item.isActive, code: item.code || "",
-      denomination: item.denomination || "", phone: item.phone || "",
-      mobile: item.mobile || "", email: item.email || "",
-      industry: item.industry || "",
-      accountType: item.accountType || "", devices: item.devices || "",
-      parentId: item.parentId?.toString() || "", nasInfo: item.nasInfo || "",
-      shareholders: item.shareholders || "", nasContract: item.nasContract || "",
-      legalRep: item.legalRep || "", coordinator: item.coordinator || "",
-      assignedToId: item.assignedToId?.toString() || "", priceList: item.priceList || "",
+      name: item.name || "", denomination: item.denomination || "", code: item.code || "",
+      vatNumber: item.vatNumber || "", uniqueCode: item.uniqueCode || "",
+      pec: item.pec || "", email: item.email || "", phone: item.phone || "",
+      mobile: item.mobile || "", industry: item.industry || "",
+      accountType: item.accountType || "", isActive: item.isActive,
+      devices: item.devices || "", nasInfo: item.nasInfo || "",
+      nasContract: item.nasContract || "", legalRep: item.legalRep || "",
+      coordinator: item.coordinator || "", shareholders: item.shareholders || "",
+      description: item.description || "",
       billStreet: item.billStreet || "", billCity: item.billCity || "",
       billState: item.billState || "", billCode: item.billCode || "", billCountry: item.billCountry || "",
       shipStreet: item.shipStreet || "", shipCity: item.shipCity || "",
       shipState: item.shipState || "", shipCode: item.shipCode || "", shipCountry: item.shipCountry || "",
-      bankName: item.bankName || "", iban: item.iban || "", description: item.description || "",
+      bankName: item.bankName || "", iban: item.iban || "",
     })
     setIsEditOpen(true)
   }
 
   const renderForm = () => (
     <Tabs defaultValue="generale" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="generale">Generale</TabsTrigger>
         <TabsTrigger value="indirizzi">Indirizzi</TabsTrigger>
-        <TabsTrigger value="banca">Banca</TabsTrigger>
-        <TabsTrigger value="altro">Altro</TabsTrigger>
+        <TabsTrigger value="dettagli">Dettagli</TabsTrigger>
       </TabsList>
       <TabsContent value="generale" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Nome Organizzazione *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-          <div><Label>P.IVA</Label><Input value={formData.vatNumber} onChange={e => setFormData({ ...formData, vatNumber: e.target.value })} /></div>
-          <div><Label>Codice Univoco (SDI)</Label><Input value={formData.uniqueCode} onChange={e => setFormData({ ...formData, uniqueCode: e.target.value })} /></div>
-          <div><Label>PEC</Label><Input value={formData.pec} onChange={e => setFormData({ ...formData, pec: e.target.value })} /></div>
-          <div><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
-          <div><Label>Telefono</Label><Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} /></div>
-          <div><Label>Cellulare</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
-          <div><Label>Codice BDT</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
           <div><Label>Denominazione</Label><Input value={formData.denomination} onChange={e => setFormData({ ...formData, denomination: e.target.value })} /></div>
-          <div>
-            <Label>Settore</Label>
-            <Select value={formData.industry} onValueChange={v => setFormData({ ...formData, industry: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+          <div><Label>Codice BDT</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
           <div>
             <Label>Tipo</Label>
             <Select value={formData.accountType} onValueChange={v => setFormData({ ...formData, accountType: v })}>
@@ -198,6 +182,19 @@ export default function OrganizationsPage() {
               <SelectContent>{ACCOUNT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <div>
+            <Label>Settore</Label>
+            <Select value={formData.industry} onValueChange={v => setFormData({ ...formData, industry: v })}>
+              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+              <SelectContent>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div><Label>P.IVA</Label><Input value={formData.vatNumber} onChange={e => setFormData({ ...formData, vatNumber: e.target.value })} /></div>
+          <div><Label>Codice Univoco (SDI)</Label><Input value={formData.uniqueCode} onChange={e => setFormData({ ...formData, uniqueCode: e.target.value })} /></div>
+          <div><Label>PEC</Label><Input value={formData.pec} onChange={e => setFormData({ ...formData, pec: e.target.value })} /></div>
+          <div><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
+          <div><Label>Telefono</Label><Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} /></div>
+          <div><Label>Cellulare</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
           <div className="flex items-center gap-2 pt-6">
             <input type="checkbox" checked={formData.isActive} onChange={e => setFormData({ ...formData, isActive: e.target.checked })} id="isActive" />
             <Label htmlFor="isActive">Attivo</Label>
@@ -221,23 +218,21 @@ export default function OrganizationsPage() {
           <div><Label>CAP</Label><Input value={formData.shipCode} onChange={e => setFormData({ ...formData, shipCode: e.target.value })} /></div>
           <div><Label>Paese</Label><Input value={formData.shipCountry} onChange={e => setFormData({ ...formData, shipCountry: e.target.value })} /></div>
         </div>
-      </TabsContent>
-      <TabsContent value="banca" className="space-y-4 mt-4">
+        <h4 className="font-medium mt-4">Banca</h4>
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Nome Banca</Label><Input value={formData.bankName} onChange={e => setFormData({ ...formData, bankName: e.target.value })} /></div>
           <div><Label>IBAN</Label><Input value={formData.iban} onChange={e => setFormData({ ...formData, iban: e.target.value })} /></div>
         </div>
       </TabsContent>
-      <TabsContent value="altro" className="space-y-4 mt-4">
+      <TabsContent value="dettagli" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Dispositivi</Label><Input value={formData.devices} onChange={e => setFormData({ ...formData, devices: e.target.value })} placeholder="NAS,PC,MAC" /></div>
-          <div><Label>Listino</Label><Input value={formData.priceList} onChange={e => setFormData({ ...formData, priceList: e.target.value })} /></div>
-          <div><Label>Contratto NAS</Label><Input value={formData.nasContract} onChange={e => setFormData({ ...formData, nasContract: e.target.value })} /></div>
-          <div><Label>Info NAS</Label><Input value={formData.nasInfo} onChange={e => setFormData({ ...formData, nasInfo: e.target.value })} /></div>
           <div><Label>Legale Rappresentante</Label><Input value={formData.legalRep} onChange={e => setFormData({ ...formData, legalRep: e.target.value })} /></div>
           {formData.coordinator && <div><Label>Coordinatrice</Label><Input value={formData.coordinator} onChange={e => setFormData({ ...formData, coordinator: e.target.value })} /></div>}
-          <div className="col-span-2"><Label>Compagine Sociale</Label><Textarea value={formData.shareholders} onChange={e => setFormData({ ...formData, shareholders: e.target.value })} placeholder="Inserisci nomi separati da virgola o a capo" rows={3} /></div>
+          <div><Label>Dispositivi</Label><Input value={formData.devices} onChange={e => setFormData({ ...formData, devices: e.target.value })} placeholder="NAS, PC, MAC" /></div>
+          <div><Label>Info NAS</Label><Input value={formData.nasInfo} onChange={e => setFormData({ ...formData, nasInfo: e.target.value })} /></div>
+          <div><Label>Contratto NAS</Label><Input value={formData.nasContract} onChange={e => setFormData({ ...formData, nasContract: e.target.value })} /></div>
         </div>
+        <div><Label>Compagine Sociale</Label><Textarea value={formData.shareholders} onChange={e => setFormData({ ...formData, shareholders: e.target.value })} placeholder="Inserisci nomi separati da virgola o a capo" rows={3} /></div>
         <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
       </TabsContent>
     </Tabs>
@@ -373,24 +368,45 @@ export default function OrganizationsPage() {
               <DialogDescription>Dettagli organizzazione</DialogDescription>
             </DialogHeader>
             {selected && (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="font-medium">P.IVA:</span> {selected.vatNumber || "-"}</div>
-                <div><span className="font-medium">Cod. Univoco:</span> {selected.uniqueCode || "-"}</div>
-                <div><span className="font-medium">PEC:</span> {selected.pec || "-"}</div>
-                <div><span className="font-medium">Email:</span> {selected.email || "-"}</div>
-                <div><span className="font-medium">Telefono:</span> {selected.phone || "-"}</div>
-                <div><span className="font-medium">Cellulare:</span> {selected.mobile || "-"}</div>
-                <div><span className="font-medium">Settore:</span> {selected.industry || "-"}</div>
-                <div><span className="font-medium">Tipo:</span> {selected.accountType || "-"}</div>
-                <div><span className="font-medium">Stato:</span> <Badge variant={selected.isActive ? "default" : "secondary"}>{selected.isActive ? "Attivo" : "Non attivo"}</Badge></div>
-                <div><span className="font-medium">Codice:</span> {selected.code || "-"}</div>
-                {selected.coordinator && <div><span className="font-medium">Coordinatrice:</span> {selected.coordinator}</div>}
-                {selected.legalRep && <div><span className="font-medium">Legale Rappresentante:</span> {selected.legalRep}</div>}
-                {selected.shareholders && <div className="col-span-2"><span className="font-medium">Compagine Sociale:</span> {selected.shareholders}</div>}
-                {selected.billCity && <div><span className="font-medium">Indirizzo fatt.:</span> {selected.billStreet}, {selected.billCity} {selected.billState} {selected.billCode}</div>}
-                {selected.bankName && <div><span className="font-medium">Banca:</span> {selected.bankName}</div>}
-                {selected.iban && <div><span className="font-medium">IBAN:</span> {selected.iban}</div>}
-                {selected.description && <div className="col-span-2"><span className="font-medium">Descrizione:</span> {selected.description}</div>}
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="font-medium">Tipo:</span> {selected.accountType || "-"}</div>
+                  <div><span className="font-medium">Codice BDT:</span> {selected.code || "-"}</div>
+                  <div><span className="font-medium">Denominazione:</span> {selected.denomination || "-"}</div>
+                  <div><span className="font-medium">Settore:</span> {selected.industry || "-"}</div>
+                  <div><span className="font-medium">Telefono:</span> {selected.phone?.replace(/\//g, ' ') || "-"}</div>
+                  <div><span className="font-medium">Cellulare:</span> {selected.mobile || "-"}</div>
+                  <div><span className="font-medium">Email:</span> {selected.email || "-"}</div>
+                  <div><span className="font-medium">PEC:</span> {selected.pec || "-"}</div>
+                  <div><span className="font-medium">P.IVA:</span> {selected.vatNumber || "-"}</div>
+                  <div><span className="font-medium">Cod. Univoco:</span> {selected.uniqueCode || "-"}</div>
+                </div>
+                {(selected.legalRep || selected.coordinator || selected.shareholders) && (
+                  <div className="border-t pt-3 grid grid-cols-2 gap-3">
+                    {selected.legalRep && <div><span className="font-medium">Legale Rappresentante:</span> {selected.legalRep}</div>}
+                    {selected.coordinator && <div><span className="font-medium">Coordinatrice:</span> {selected.coordinator}</div>}
+                    {selected.shareholders && <div className="col-span-2"><span className="font-medium">Compagine Sociale:</span><p className="mt-1 whitespace-pre-wrap">{selected.shareholders}</p></div>}
+                  </div>
+                )}
+                {(selected.devices || selected.nasInfo || selected.nasContract) && (
+                  <div className="border-t pt-3 grid grid-cols-2 gap-3">
+                    {selected.devices && <div><span className="font-medium">Dispositivi:</span> {selected.devices}</div>}
+                    {selected.nasInfo && <div><span className="font-medium">Info NAS:</span> {selected.nasInfo}</div>}
+                    {selected.nasContract && <div><span className="font-medium">Contratto NAS:</span> {selected.nasContract}</div>}
+                  </div>
+                )}
+                {(selected.billStreet || selected.billCity) && (
+                  <div className="border-t pt-3">
+                    <span className="font-medium">Indirizzo fatt.:</span> {[selected.billStreet, selected.billCity, selected.billState, selected.billCode, selected.billCountry].filter(Boolean).join(', ')}
+                  </div>
+                )}
+                {(selected.bankName || selected.iban) && (
+                  <div className="border-t pt-3 grid grid-cols-2 gap-3">
+                    {selected.bankName && <div><span className="font-medium">Banca:</span> {selected.bankName}</div>}
+                    {selected.iban && <div><span className="font-medium">IBAN:</span> {selected.iban}</div>}
+                  </div>
+                )}
+                {selected.description && <div className="border-t pt-3"><span className="font-medium">Descrizione:</span><p className="mt-1 whitespace-pre-wrap bg-muted p-3 rounded">{selected.description}</p></div>}
               </div>
             )}
             <DialogFooter>
