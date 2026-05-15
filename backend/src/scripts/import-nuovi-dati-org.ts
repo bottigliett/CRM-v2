@@ -24,9 +24,12 @@ function mapIndustry(val: string | null): string | null {
 
 function mapCoordinator(val: string | null): string | null {
   if (!val) return null;
-  // "segretaria" label becomes "coordinatrice" conceptually,
-  // but we keep the actual name value as-is
   return val;
+}
+
+function cleanPhone(val: string | null): string | null {
+  if (!val) return null;
+  return val.replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // ─── Main ──────────────────────────────────────────────────────────
@@ -85,8 +88,8 @@ async function main() {
       denomination: trim(r1['Denominazione']),
       name: trim(r1['Nome Organizzazione']) || trim(r1['Denominazione']) || 'Senza nome',
       vatNumber: trim(r1['P.Iva']),
-      phone: trim(r1['Telefono']),
-      mobile: trim(r1['Cellulare']),
+      phone: cleanPhone(trim(r1['Telefono'])),
+      mobile: cleanPhone(trim(r1['Cellulare'])),
       shareholders: trim(r1['Decisore']),
       legalRep: trim(r1['Responsabile']),
       coordinator: mapCoordinator(trim(r1['Segretaria'])),

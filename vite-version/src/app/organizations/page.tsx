@@ -33,15 +33,11 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
 const COLUMNS: ToggleColumnDef[] = [
-  { id: "name", label: "Nome Organizzazione" },
-  { id: "code", label: "Codice BDT" },
-  { id: "vatNumber", label: "P.IVA" },
-  { id: "phone", label: "Telefono" },
-  { id: "email", label: "Email" },
-  { id: "industry", label: "Settore" },
   { id: "accountType", label: "Tipo" },
-  { id: "isActive", label: "Stato" },
-  { id: "assignedTo", label: "Assegnato a" },
+  { id: "code", label: "Codice Banca Dati" },
+  { id: "denomination", label: "Denominazione" },
+  { id: "phone", label: "Telefono" },
+  { id: "createdAt", label: "Data di Creazione" },
 ]
 
 const INDUSTRIES = ["Immobiliare", "Creditizio"]
@@ -294,15 +290,11 @@ export default function OrganizationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("name") && <TableHead>Nome Organizzazione</TableHead>}
-                {isColVisible("code") && <TableHead>Codice BDT</TableHead>}
-                {isColVisible("vatNumber") && <TableHead>P.IVA</TableHead>}
-                {isColVisible("phone") && <TableHead>Telefono</TableHead>}
-                {isColVisible("email") && <TableHead>Email</TableHead>}
-                {isColVisible("industry") && <TableHead>Settore</TableHead>}
                 {isColVisible("accountType") && <TableHead>Tipo</TableHead>}
-                {isColVisible("isActive") && <TableHead>Stato</TableHead>}
-                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
+                {isColVisible("code") && <TableHead>Codice Banca Dati</TableHead>}
+                {isColVisible("denomination") && <TableHead>Denominazione</TableHead>}
+                {isColVisible("phone") && <TableHead>Telefono</TableHead>}
+                {isColVisible("createdAt") && <TableHead>Data di Creazione</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -313,19 +305,11 @@ export default function OrganizationsPage() {
                 <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("name") && <TableCell className="font-medium">{item.name}</TableCell>}
-                  {isColVisible("code") && <TableCell>{item.code || "-"}</TableCell>}
-                  {isColVisible("vatNumber") && <TableCell>{item.vatNumber || "-"}</TableCell>}
-                  {isColVisible("phone") && <TableCell>{item.phone || "-"}</TableCell>}
-                  {isColVisible("email") && <TableCell>{item.email || "-"}</TableCell>}
-                  {isColVisible("industry") && <TableCell>{item.industry || "-"}</TableCell>}
                   {isColVisible("accountType") && <TableCell>{item.accountType || "-"}</TableCell>}
-                  {isColVisible("isActive") && <TableCell>
-                    <Badge variant={item.isActive ? "default" : "secondary"}>
-                      {item.isActive ? "Attivo" : "Non attivo"}
-                    </Badge>
-                  </TableCell>}
-                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
+                  {isColVisible("code") && <TableCell>{item.code || "-"}</TableCell>}
+                  {isColVisible("denomination") && <TableCell className="font-medium">{item.denomination || item.name}</TableCell>}
+                  {isColVisible("phone") && <TableCell>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>}
+                  {isColVisible("createdAt") && <TableCell className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
