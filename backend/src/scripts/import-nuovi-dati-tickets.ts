@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import prisma from '../config/database';
 
 // ─── Config ──────────────────────────────────────────────────────────
-const DATA_DIR = path.join(__dirname, '../../NUOVI_DATI');
+const DATA_DIR = path.join(process.cwd(), '../NUOVI_DATI');
 const FILE = path.join(DATA_DIR, 'report assitenza per export.xls');
 
 const DRY_RUN = process.argv.includes('--dry-run');

@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import prisma from '../config/database';
 
 // ─── Config ──────────────────────────────────────────────────────────
-const DATA_DIR = path.join(__dirname, '../../NUOVI_DATI');
+const DATA_DIR = path.join(process.cwd(), '../NUOVI_DATI');
 const FILE1 = path.join(DATA_DIR, 'Anagrafiche.xls');
 const FILE2 = path.join(DATA_DIR, 'anagrafiche per export.xls');
 
