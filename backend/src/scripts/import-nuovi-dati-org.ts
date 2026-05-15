@@ -13,7 +13,7 @@ const DRY_RUN = process.argv.includes('--dry-run');
 function trim(val: any): string | null {
   if (val === undefined || val === null) return null;
   const s = String(val).trim();
-  return s === '' || s === '--' ? null : s;
+  return s === '' || s === '-' || s === '--' ? null : s;
 }
 
 function mapIndustry(val: string | null): string | null {
