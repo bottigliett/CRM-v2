@@ -40,14 +40,14 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
 const COLUMNS: ToggleColumnDef[] = [
-  { id: "ticketNumber", label: "Numero" },
+  { id: "createdAt", label: "Data" },
+  { id: "orgCode", label: "Codice Ufficio" },
+  { id: "organization", label: "Denominazione Uff." },
   { id: "title", label: "Titolo" },
+  { id: "assignedTo", label: "Assegnato a" },
+  { id: "callType", label: "Tipo Chiamata" },
+  { id: "description", label: "Descrizione" },
   { id: "status", label: "Stato" },
-  { id: "priority", label: "Priorità" },
-  { id: "callType", label: "Tipo" },
-  { id: "ticketOrigin", label: "Origine" },
-  { id: "organization", label: "Organizzazione" },
-  { id: "hours", label: "Durata" },
 ]
 
 const STATUSES = ["Aperto", "In Corso", "In attesa risposta", "Chiuso"]
@@ -343,14 +343,14 @@ export default function HelpDeskPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("ticketNumber") && <TableHead>Numero</TableHead>}
+                {isColVisible("createdAt") && <TableHead>Data</TableHead>}
+                {isColVisible("orgCode") && <TableHead>Codice Ufficio</TableHead>}
+                {isColVisible("organization") && <TableHead>Denominazione Uff.</TableHead>}
                 {isColVisible("title") && <TableHead>Titolo</TableHead>}
+                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
+                {isColVisible("callType") && <TableHead>Tipo Chiamata</TableHead>}
+                {isColVisible("description") && <TableHead>Descrizione</TableHead>}
                 {isColVisible("status") && <TableHead>Stato</TableHead>}
-                {isColVisible("priority") && <TableHead>Priorità</TableHead>}
-                {isColVisible("callType") && <TableHead>Tipo</TableHead>}
-                {isColVisible("ticketOrigin") && <TableHead>Origine</TableHead>}
-                {isColVisible("organization") && <TableHead>Organizzazione</TableHead>}
-                {isColVisible("hours") && <TableHead>Durata</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -361,14 +361,14 @@ export default function HelpDeskPage() {
                 <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("ticketNumber") && <TableCell className="font-mono text-sm">{item.ticketNumber}</TableCell>}
-                  {isColVisible("title") && <TableCell className="font-medium">{item.title}</TableCell>}
-                  {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
-                  {isColVisible("priority") && <TableCell>{item.priority || "-"}</TableCell>}
-                  {isColVisible("callType") && <TableCell>{item.callType || "-"}</TableCell>}
-                  {isColVisible("ticketOrigin") && <TableCell>{item.ticketOrigin || "-"}</TableCell>}
+                  {isColVisible("createdAt") && <TableCell className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>}
+                  {isColVisible("orgCode") && <TableCell className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>}
                   {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
-                  {isColVisible("hours") && <TableCell>{item.hours ? `${item.hours}h` : "-"}</TableCell>}
+                  {isColVisible("title") && <TableCell className="font-medium">{item.title}</TableCell>}
+                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
+                  {isColVisible("callType") && <TableCell>{item.callType || "-"}</TableCell>}
+                  {isColVisible("description") && <TableCell className="max-w-[200px] truncate">{item.description || "-"}</TableCell>}
+                  {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

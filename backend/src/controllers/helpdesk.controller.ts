@@ -60,7 +60,7 @@ export const getHelpDeskTickets = async (req: Request, res: Response) => {
     const tickets = await prisma.helpDeskTicket.findMany({
       where,
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, code: true } },
         contact: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
@@ -99,7 +99,7 @@ export const getHelpDeskTicket = async (req: Request, res: Response) => {
     const ticket = await prisma.helpDeskTicket.findUnique({
       where: { id: parseInt(id) },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, code: true } },
         contact: { select: { id: true, name: true, email: true, phone: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
@@ -147,7 +147,7 @@ export const createHelpDeskTicket = async (req: Request, res: Response) => {
         technicianName: data.technicianName || null,
       },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, code: true } },
         contact: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
@@ -191,7 +191,7 @@ export const updateHelpDeskTicket = async (req: Request, res: Response) => {
         technicianName: data.technicianName,
       },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, code: true } },
         contact: { select: { id: true, name: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
