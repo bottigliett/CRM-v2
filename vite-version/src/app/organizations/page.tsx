@@ -33,24 +33,25 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
 const COLUMNS: ToggleColumnDef[] = [
-  { id: "name", label: "Nome" },
+  { id: "name", label: "Nome Organizzazione" },
+  { id: "code", label: "Codice BDT" },
   { id: "vatNumber", label: "P.IVA" },
-  { id: "accountType", label: "Tipo" },
-  { id: "industry", label: "Settore" },
   { id: "phone", label: "Telefono" },
   { id: "email", label: "Email" },
+  { id: "industry", label: "Settore" },
+  { id: "accountType", label: "Tipo" },
   { id: "isActive", label: "Stato" },
   { id: "assignedTo", label: "Assegnato a" },
 ]
 
-const INDUSTRIES = ["Tecnologia", "Edilizia", "Commercio", "Servizi", "Manifattura", "Sanità", "Istruzione", "Altro"]
+const INDUSTRIES = ["Immobiliare", "Creditizio"]
 const ACCOUNT_TYPES = ["NO Contratto", "SI Contratto"]
 
 const emptyForm = {
   name: "", vatNumber: "", uniqueCode: "", pec: "", isActive: true, code: "",
-  denomination: "", phone: "", otherPhone: "", mobile: "", fax: "", email: "",
-  employees: "", industry: "", accountType: "", devices: "", parentId: "",
-  nasInfo: "", shareholders: "", nasContract: "", legalRep: "", secretary: "",
+  denomination: "", phone: "", mobile: "", email: "",
+  industry: "", accountType: "", devices: "", parentId: "",
+  nasInfo: "", shareholders: "", nasContract: "", legalRep: "", coordinator: "",
   assignedToId: "", priceList: "",
   billStreet: "", billCity: "", billState: "", billCode: "", billCountry: "",
   shipStreet: "", shipCity: "", shipState: "", shipCode: "", shipCountry: "",
@@ -151,13 +152,13 @@ export default function OrganizationsPage() {
     setFormData({
       name: item.name || "", vatNumber: item.vatNumber || "", uniqueCode: item.uniqueCode || "",
       pec: item.pec || "", isActive: item.isActive, code: item.code || "",
-      denomination: item.denomination || "", phone: item.phone || "", otherPhone: item.otherPhone || "",
-      mobile: item.mobile || "", fax: item.fax || "", email: item.email || "",
-      employees: item.employees?.toString() || "", industry: item.industry || "",
+      denomination: item.denomination || "", phone: item.phone || "",
+      mobile: item.mobile || "", email: item.email || "",
+      industry: item.industry || "",
       accountType: item.accountType || "", devices: item.devices || "",
       parentId: item.parentId?.toString() || "", nasInfo: item.nasInfo || "",
       shareholders: item.shareholders || "", nasContract: item.nasContract || "",
-      legalRep: item.legalRep || "", secretary: item.secretary || "",
+      legalRep: item.legalRep || "", coordinator: item.coordinator || "",
       assignedToId: item.assignedToId?.toString() || "", priceList: item.priceList || "",
       billStreet: item.billStreet || "", billCity: item.billCity || "",
       billState: item.billState || "", billCode: item.billCode || "", billCountry: item.billCountry || "",
@@ -178,18 +179,15 @@ export default function OrganizationsPage() {
       </TabsList>
       <TabsContent value="generale" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Nome *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+          <div><Label>Nome Organizzazione *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
           <div><Label>P.IVA</Label><Input value={formData.vatNumber} onChange={e => setFormData({ ...formData, vatNumber: e.target.value })} /></div>
           <div><Label>Codice Univoco (SDI)</Label><Input value={formData.uniqueCode} onChange={e => setFormData({ ...formData, uniqueCode: e.target.value })} /></div>
           <div><Label>PEC</Label><Input value={formData.pec} onChange={e => setFormData({ ...formData, pec: e.target.value })} /></div>
           <div><Label>Email</Label><Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
           <div><Label>Telefono</Label><Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} /></div>
-          <div><Label>Altro telefono</Label><Input value={formData.otherPhone} onChange={e => setFormData({ ...formData, otherPhone: e.target.value })} /></div>
           <div><Label>Cellulare</Label><Input value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} /></div>
-          <div><Label>Fax</Label><Input value={formData.fax} onChange={e => setFormData({ ...formData, fax: e.target.value })} /></div>
-          <div><Label>Codice</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
+          <div><Label>Codice BDT</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
           <div><Label>Denominazione</Label><Input value={formData.denomination} onChange={e => setFormData({ ...formData, denomination: e.target.value })} /></div>
-          <div><Label>Dipendenti</Label><Input type="number" value={formData.employees} onChange={e => setFormData({ ...formData, employees: e.target.value })} /></div>
           <div>
             <Label>Settore</Label>
             <Select value={formData.industry} onValueChange={v => setFormData({ ...formData, industry: v })}>
@@ -241,8 +239,8 @@ export default function OrganizationsPage() {
           <div><Label>Contratto NAS</Label><Input value={formData.nasContract} onChange={e => setFormData({ ...formData, nasContract: e.target.value })} /></div>
           <div><Label>Info NAS</Label><Input value={formData.nasInfo} onChange={e => setFormData({ ...formData, nasInfo: e.target.value })} /></div>
           <div><Label>Legale Rappresentante</Label><Input value={formData.legalRep} onChange={e => setFormData({ ...formData, legalRep: e.target.value })} /></div>
-          <div><Label>Segretaria</Label><Input value={formData.secretary} onChange={e => setFormData({ ...formData, secretary: e.target.value })} /></div>
-          <div><Label>Compagine Sociale</Label><Input value={formData.shareholders} onChange={e => setFormData({ ...formData, shareholders: e.target.value })} /></div>
+          {formData.coordinator && <div><Label>Coordinatrice</Label><Input value={formData.coordinator} onChange={e => setFormData({ ...formData, coordinator: e.target.value })} /></div>}
+          <div className="col-span-2"><Label>Compagine Sociale</Label><Textarea value={formData.shareholders} onChange={e => setFormData({ ...formData, shareholders: e.target.value })} placeholder="Inserisci nomi separati da virgola o a capo" rows={3} /></div>
         </div>
         <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} /></div>
       </TabsContent>
@@ -296,12 +294,13 @@ export default function OrganizationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("name") && <TableHead>Nome</TableHead>}
+                {isColVisible("name") && <TableHead>Nome Organizzazione</TableHead>}
+                {isColVisible("code") && <TableHead>Codice BDT</TableHead>}
                 {isColVisible("vatNumber") && <TableHead>P.IVA</TableHead>}
-                {isColVisible("accountType") && <TableHead>Tipo</TableHead>}
-                {isColVisible("industry") && <TableHead>Settore</TableHead>}
                 {isColVisible("phone") && <TableHead>Telefono</TableHead>}
                 {isColVisible("email") && <TableHead>Email</TableHead>}
+                {isColVisible("industry") && <TableHead>Settore</TableHead>}
+                {isColVisible("accountType") && <TableHead>Tipo</TableHead>}
                 {isColVisible("isActive") && <TableHead>Stato</TableHead>}
                 {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
@@ -315,11 +314,12 @@ export default function OrganizationsPage() {
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
                   {isColVisible("name") && <TableCell className="font-medium">{item.name}</TableCell>}
+                  {isColVisible("code") && <TableCell>{item.code || "-"}</TableCell>}
                   {isColVisible("vatNumber") && <TableCell>{item.vatNumber || "-"}</TableCell>}
-                  {isColVisible("accountType") && <TableCell>{item.accountType || "-"}</TableCell>}
-                  {isColVisible("industry") && <TableCell>{item.industry || "-"}</TableCell>}
                   {isColVisible("phone") && <TableCell>{item.phone || "-"}</TableCell>}
                   {isColVisible("email") && <TableCell>{item.email || "-"}</TableCell>}
+                  {isColVisible("industry") && <TableCell>{item.industry || "-"}</TableCell>}
+                  {isColVisible("accountType") && <TableCell>{item.accountType || "-"}</TableCell>}
                   {isColVisible("isActive") && <TableCell>
                     <Badge variant={item.isActive ? "default" : "secondary"}>
                       {item.isActive ? "Attivo" : "Non attivo"}
@@ -400,6 +400,9 @@ export default function OrganizationsPage() {
                 <div><span className="font-medium">Tipo:</span> {selected.accountType || "-"}</div>
                 <div><span className="font-medium">Stato:</span> <Badge variant={selected.isActive ? "default" : "secondary"}>{selected.isActive ? "Attivo" : "Non attivo"}</Badge></div>
                 <div><span className="font-medium">Codice:</span> {selected.code || "-"}</div>
+                {selected.coordinator && <div><span className="font-medium">Coordinatrice:</span> {selected.coordinator}</div>}
+                {selected.legalRep && <div><span className="font-medium">Legale Rappresentante:</span> {selected.legalRep}</div>}
+                {selected.shareholders && <div className="col-span-2"><span className="font-medium">Compagine Sociale:</span> {selected.shareholders}</div>}
                 {selected.billCity && <div><span className="font-medium">Indirizzo fatt.:</span> {selected.billStreet}, {selected.billCity} {selected.billState} {selected.billCode}</div>}
                 {selected.bankName && <div><span className="font-medium">Banca:</span> {selected.bankName}</div>}
                 {selected.iban && <div><span className="font-medium">IBAN:</span> {selected.iban}</div>}

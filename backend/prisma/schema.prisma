@@ -1448,7 +1448,7 @@ model Organization {
   shareholders    String?
   nasContract     String?  @map("nas_contract")
   legalRep        String?  @map("legal_rep")
-  secretary       String?
+  coordinator     String?  @map("coordinator")
   assignedToId    Int?     @map("assigned_to_id")
   priceList       String?  @map("price_list")
   billStreet      String?  @map("bill_street")

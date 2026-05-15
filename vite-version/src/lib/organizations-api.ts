@@ -23,7 +23,7 @@ export interface Organization {
   shareholders: string | null;
   nasContract: string | null;
   legalRep: string | null;
-  secretary: string | null;
+  coordinator: string | null;
   assignedToId: number | null;
   priceList: string | null;
   billStreet: string | null;
