@@ -7,6 +7,8 @@ export interface UserPagePreference {
   viewMode?: string;
   pageLimit?: number;
   typeFilter?: string;
+  columnOrder?: string;      // JSON array of column IDs
+  columnVisibility?: string; // JSON object of visibility
   createdAt: string;
   updatedAt: string;
 }
@@ -15,16 +17,14 @@ export interface SavePreferencesData {
   viewMode?: string;
   pageLimit?: number;
   typeFilter?: string;
+  columnOrder?: string[];
+  columnVisibility?: Record<string, boolean>;
 }
 
-// Helper function to get auth token
 function getAuthToken(): string | null {
   return localStorage.getItem('auth_token');
 }
 
-/**
- * Get user preferences for a specific page
- */
 export async function getUserPreferences(pageName: string): Promise<UserPagePreference | null> {
   try {
     const token = getAuthToken();
@@ -36,15 +36,10 @@ export async function getUserPreferences(pageName: string): Promise<UserPagePref
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.message || 'Errore nel recupero delle preferenze');
-    }
+    if (!result.success) throw new Error(result.message || 'Errore nel recupero delle preferenze');
 
     return result.data;
   } catch (error: any) {
@@ -53,9 +48,6 @@ export async function getUserPreferences(pageName: string): Promise<UserPagePref
   }
 }
 
-/**
- * Save or update user preferences for a specific page
- */
 export async function saveUserPreferences(
   pageName: string,
   preferences: SavePreferencesData
@@ -71,15 +63,10 @@ export async function saveUserPreferences(
       body: JSON.stringify(preferences),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.message || 'Errore nel salvataggio delle preferenze');
-    }
+    if (!result.success) throw new Error(result.message || 'Errore nel salvataggio delle preferenze');
 
     return result.data;
   } catch (error: any) {

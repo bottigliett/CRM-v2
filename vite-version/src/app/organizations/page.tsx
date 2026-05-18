@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,11 +27,14 @@ import {
   Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2,
 } from "lucide-react"
 import { organizationsAPI, type Organization } from "@/lib/organizations-api"
+import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
-const COLUMNS: ToggleColumnDef[] = [
+const PAGE_NAME = "organizations"
+
+const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "accountType", label: "Tipo" },
   { id: "code", label: "Codice Banca Dati" },
   { id: "denomination", label: "Denominazione" },
@@ -63,13 +65,65 @@ export default function OrganizationsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-
   const [limit, setLimit] = useState(20)
+
+  // Column state: ordered list + visibility map
+  const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Load column preferences from DB on mount
+  useEffect(() => {
+    userPreferencesAPI.getUserPreferences(PAGE_NAME)
+      .then(prefs => {
+        if (!prefs) return
+        if (prefs.columnOrder) {
+          try {
+            const order: string[] = JSON.parse(prefs.columnOrder)
+            const reordered = [
+              ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+              ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+            ]
+            setColumns(reordered)
+          } catch {}
+        }
+        if (prefs.columnVisibility) {
+          try {
+            setVisibleColumns(JSON.parse(prefs.columnVisibility))
+          } catch {}
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Debounced save to DB whenever columns or visibility changes
+  const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      userPreferencesAPI.saveUserPreferences(PAGE_NAME, {
+        columnOrder: cols.map(c => c.id),
+        columnVisibility: vis,
+      }).catch(() => {})
+    }, 600)
+  }, [])
 
   const toggleColumn = (columnId: string) => {
-    setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
+    setVisibleColumns(prev => {
+      const next = { ...prev, [columnId]: prev[columnId] === false ? true : false }
+      persistPreferences(columns, next)
+      return next
+    })
   }
+
+  const handleReorder = (newOrder: string[]) => {
+    const reordered = [
+      ...newOrder.map(id => columns.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+      ...columns.filter(c => !newOrder.includes(c.id)),
+    ]
+    setColumns(reordered)
+    persistPreferences(reordered, visibleColumns)
+  }
+
   const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -238,6 +292,17 @@ export default function OrganizationsPage() {
     </Tabs>
   )
 
+  const renderCell = (columnId: string, item: Organization) => {
+    switch (columnId) {
+      case "accountType": return <TableCell key={columnId}>{item.accountType || "-"}</TableCell>
+      case "code": return <TableCell key={columnId}>{item.code || "-"}</TableCell>
+      case "denomination": return <TableCell key={columnId} className="font-medium">{item.denomination || item.name}</TableCell>
+      case "phone": return <TableCell key={columnId}>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>
+      case "createdAt": return <TableCell key={columnId} className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
+      default: return null
+    }
+  }
+
   return (
     <BaseLayout>
       <div className="flex flex-col gap-6 p-6">
@@ -278,33 +343,32 @@ export default function OrganizationsPage() {
               <SelectItem value="false">Non attivi</SelectItem>
             </SelectContent>
           </Select>
-          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+          <ColumnToggle
+            columns={columns}
+            visibleColumns={visibleColumns}
+            onToggle={toggleColumn}
+            onReorder={handleReorder}
+          />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("accountType") && <TableHead>Tipo</TableHead>}
-                {isColVisible("code") && <TableHead>Codice Banca Dati</TableHead>}
-                {isColVisible("denomination") && <TableHead>Denominazione</TableHead>}
-                {isColVisible("phone") && <TableHead>Telefono</TableHead>}
-                {isColVisible("createdAt") && <TableHead>Data di Creazione</TableHead>}
+                {columns.filter(c => isColVisible(c.id)).map(col => (
+                  <TableHead key={col.id}>{col.label}</TableHead>
+                ))}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
+                <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("accountType") && <TableCell>{item.accountType || "-"}</TableCell>}
-                  {isColVisible("code") && <TableCell>{item.code || "-"}</TableCell>}
-                  {isColVisible("denomination") && <TableCell className="font-medium">{item.denomination || item.name}</TableCell>}
-                  {isColVisible("phone") && <TableCell>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>}
-                  {isColVisible("createdAt") && <TableCell className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>}
+                  {columns.filter(c => isColVisible(c.id)).map(col => renderCell(col.id, item))}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

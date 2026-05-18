@@ -8,9 +8,7 @@ import prisma from '../config/database';
 export const getUserPreferences = async (req: Request, res: Response) => {
   try {
     const { pageName } = req.params;
-    const userId = (req as any).user?.userId || 1; // Default to user 1 for now
-
-    console.log('[getUserPreferences] Loading preferences for:', { userId, pageName });
+    const userId = (req as any).user?.userId || 1;
 
     const preferences = await prisma.userPagePreference.findUnique({
       where: {
@@ -20,8 +18,6 @@ export const getUserPreferences = async (req: Request, res: Response) => {
         },
       },
     });
-
-    console.log('[getUserPreferences] Found preferences:', preferences);
 
     res.json({
       success: true,
@@ -43,10 +39,11 @@ export const getUserPreferences = async (req: Request, res: Response) => {
 export const saveUserPreferences = async (req: Request, res: Response) => {
   try {
     const { pageName } = req.params;
-    const userId = (req as any).user?.userId || 1; // Default to user 1 for now
-    const { viewMode, pageLimit, typeFilter } = req.body;
+    const userId = (req as any).user?.userId || 1;
+    const { viewMode, pageLimit, typeFilter, columnOrder, columnVisibility } = req.body;
 
-    console.log('[saveUserPreferences] Saving preferences:', { userId, pageName, viewMode, pageLimit, typeFilter });
+    const columnOrderStr = columnOrder ? JSON.stringify(columnOrder) : undefined;
+    const columnVisibilityStr = columnVisibility ? JSON.stringify(columnVisibility) : undefined;
 
     const preferences = await prisma.userPagePreference.upsert({
       where: {
@@ -61,15 +58,17 @@ export const saveUserPreferences = async (req: Request, res: Response) => {
         viewMode,
         pageLimit,
         typeFilter,
+        columnOrder: columnOrderStr,
+        columnVisibility: columnVisibilityStr,
       },
       update: {
-        viewMode,
-        pageLimit,
-        typeFilter,
+        ...(viewMode !== undefined && { viewMode }),
+        ...(pageLimit !== undefined && { pageLimit }),
+        ...(typeFilter !== undefined && { typeFilter }),
+        ...(columnOrderStr !== undefined && { columnOrder: columnOrderStr }),
+        ...(columnVisibilityStr !== undefined && { columnVisibility: columnVisibilityStr }),
       },
     });
-
-    console.log('[saveUserPreferences] Saved successfully:', preferences);
 
     res.json({
       success: true,
