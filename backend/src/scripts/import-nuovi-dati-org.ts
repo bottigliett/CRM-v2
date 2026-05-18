@@ -151,7 +151,12 @@ async function main() {
   let imported = 0;
   for (const org of orgs) {
     try {
-      await prisma.organization.create({ data: org });
+      const { createdAt: orgCreatedAt, ...orgData } = org;
+      const created = await prisma.organization.create({ data: orgData });
+      if (orgCreatedAt) {
+        const dt = orgCreatedAt instanceof Date ? orgCreatedAt : new Date(orgCreatedAt);
+        await prisma.$executeRaw`UPDATE organizations SET created_at = ${dt} WHERE id = ${created.id}`;
+      }
       imported++;
     } catch (err: any) {
       console.error(`Error importing org "${org.name}" (code: ${org.code}): ${err.message}`);

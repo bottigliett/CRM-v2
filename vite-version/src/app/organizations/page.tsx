@@ -96,22 +96,40 @@ export default function OrganizationsPage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    // Fast path: localStorage
+    const savedOrder = localStorage.getItem(`crm_col_order_${PAGE_NAME}`)
+    const savedVis = localStorage.getItem(`crm_col_vis_${PAGE_NAME}`)
+    if (savedOrder) {
+      try {
+        const order: string[] = JSON.parse(savedOrder)
+        setColumns([
+          ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+          ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+        ])
+      } catch {}
+    }
+    if (savedVis) {
+      try { setVisibleColumns(JSON.parse(savedVis)) } catch {}
+    }
+
+    // DB sync — overwrites localStorage when it arrives
     userPreferencesAPI.getUserPreferences(PAGE_NAME)
       .then(prefs => {
         if (!prefs) return
         if (prefs.columnOrder) {
           try {
             const order: string[] = JSON.parse(prefs.columnOrder)
-            const reordered = [
+            setColumns([
               ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
               ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
-            ]
-            setColumns(reordered)
+            ])
+            localStorage.setItem(`crm_col_order_${PAGE_NAME}`, prefs.columnOrder)
           } catch {}
         }
         if (prefs.columnVisibility) {
           try {
             setVisibleColumns(JSON.parse(prefs.columnVisibility))
+            localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, prefs.columnVisibility)
           } catch {}
         }
       })
@@ -119,6 +137,8 @@ export default function OrganizationsPage() {
   }, [])
 
   const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
+    localStorage.setItem(`crm_col_order_${PAGE_NAME}`, JSON.stringify(cols.map(c => c.id)))
+    localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, JSON.stringify(vis))
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       userPreferencesAPI.saveUserPreferences(PAGE_NAME, {

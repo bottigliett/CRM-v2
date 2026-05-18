@@ -20,7 +20,7 @@ export interface HelpDeskTicket {
   technicianName: string | null;
   createdAt: string;
   updatedAt: string;
-  organization?: { id: number; name: string; code: string | null } | null;
+  organization?: { id: number; name: string; code: string | null; denomination: string | null; industry: string | null; coordinator: string | null; legalRep: string | null } | null;
   contact?: { id: number; name: string } | null;
   assignedTo?: { id: number; username: string; firstName: string | null; lastName: string | null } | null;
 }

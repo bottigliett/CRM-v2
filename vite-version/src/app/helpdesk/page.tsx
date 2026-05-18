@@ -35,6 +35,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { helpdeskAPI, type HelpDeskTicket } from "@/lib/helpdesk-api"
 import { organizationsAPI } from "@/lib/organizations-api"
+import { usersAPI, type User } from "@/lib/users-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
@@ -44,8 +45,8 @@ const PAGE_NAME = "helpdesk"
 
 const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "createdAt",    label: "Data" },
-  { id: "orgCode",      label: "Codice BDT" },
-  { id: "organization", label: "Nome Organizzazione" },
+  { id: "orgCode",      label: "Codice Ufficio" },
+  { id: "organization", label: "Denominazione Uff." },
   { id: "title",        label: "Titolo" },
   { id: "assignedTo",   label: "Assegnato a" },
   { id: "callType",     label: "Tipo Chiamata" },
@@ -70,7 +71,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const emptyForm: any = {
   title: "", status: "Aperto", callType: "", ticketOrigin: "",
-  organizationId: "", description: "",
+  organizationId: "", assignedToId: "", description: "",
 }
 
 export default function HelpDeskPage() {
@@ -93,22 +94,40 @@ export default function HelpDeskPage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    // Fast path: localStorage
+    const savedOrder = localStorage.getItem(`crm_col_order_${PAGE_NAME}`)
+    const savedVis = localStorage.getItem(`crm_col_vis_${PAGE_NAME}`)
+    if (savedOrder) {
+      try {
+        const order: string[] = JSON.parse(savedOrder)
+        setColumns([
+          ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+          ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+        ])
+      } catch {}
+    }
+    if (savedVis) {
+      try { setVisibleColumns(JSON.parse(savedVis)) } catch {}
+    }
+
+    // DB sync — overwrites localStorage when it arrives
     userPreferencesAPI.getUserPreferences(PAGE_NAME)
       .then(prefs => {
         if (!prefs) return
         if (prefs.columnOrder) {
           try {
             const order: string[] = JSON.parse(prefs.columnOrder)
-            const reordered = [
+            setColumns([
               ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
               ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
-            ]
-            setColumns(reordered)
+            ])
+            localStorage.setItem(`crm_col_order_${PAGE_NAME}`, prefs.columnOrder)
           } catch {}
         }
         if (prefs.columnVisibility) {
           try {
             setVisibleColumns(JSON.parse(prefs.columnVisibility))
+            localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, prefs.columnVisibility)
           } catch {}
         }
       })
@@ -116,6 +135,8 @@ export default function HelpDeskPage() {
   }, [])
 
   const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
+    localStorage.setItem(`crm_col_order_${PAGE_NAME}`, JSON.stringify(cols.map(c => c.id)))
+    localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, JSON.stringify(vis))
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       userPreferencesAPI.saveUserPreferences(PAGE_NAME, {
@@ -152,11 +173,16 @@ export default function HelpDeskPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState<any>({ ...emptyForm })
   const [orgs, setOrgs] = useState<{ id: number; name: string }[]>([])
+  const [adminUsers, setAdminUsers] = useState<User[]>([])
   const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
+  const [userPopoverOpen, setUserPopoverOpen] = useState(false)
 
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 })
       .then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.denomination || o.name }))))
+      .catch(() => {})
+    usersAPI.getAdminUsers()
+      .then(r => setAdminUsers(r.data.users))
       .catch(() => {})
   }, [])
 
@@ -201,6 +227,7 @@ export default function HelpDeskPage() {
       toast.success("Ticket creato con successo!")
       setIsCreateOpen(false)
       setOrgPopoverOpen(false)
+      setUserPopoverOpen(false)
       setFormData({ ...emptyForm })
       loadData()
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
@@ -214,6 +241,7 @@ export default function HelpDeskPage() {
       toast.success("Ticket aggiornato!")
       setIsEditOpen(false)
       setOrgPopoverOpen(false)
+      setUserPopoverOpen(false)
       setSelected(null)
       setFormData({ ...emptyForm })
       loadData()
@@ -238,9 +266,16 @@ export default function HelpDeskPage() {
       title: item.title, status: item.status,
       callType: item.callType || "", ticketOrigin: item.ticketOrigin || "",
       organizationId: item.organizationId?.toString() || "",
+      assignedToId: item.assignedToId?.toString() || "",
       description: item.description || "",
     })
     setIsEditOpen(true)
+  }
+
+  const getUserLabel = (userId: string) => {
+    const u = adminUsers.find(u => u.id.toString() === userId)
+    if (!u) return "Seleziona..."
+    return `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username
   }
 
   const renderForm = () => (
@@ -272,7 +307,41 @@ export default function HelpDeskPage() {
           </Select>
         </div>
         <div>
-          <Label>Nome Organizzazione</Label>
+          <Label>Assegnato a</Label>
+          <Popover open={userPopoverOpen} onOpenChange={setUserPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" aria-expanded={userPopoverOpen} className="w-full justify-between font-normal">
+                <span className="truncate">{formData.assignedToId ? getUserLabel(formData.assignedToId) : "Seleziona..."}</span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Cerca utente..." />
+                <CommandList>
+                  <CommandEmpty>Nessun utente trovato.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem value="__none__" onSelect={() => { setFormData({ ...formData, assignedToId: '' }); setUserPopoverOpen(false) }}>
+                      <Check className={cn("mr-2 h-4 w-4", !formData.assignedToId ? "opacity-100" : "opacity-0")} />
+                      <span className="text-muted-foreground italic">Nessuno</span>
+                    </CommandItem>
+                    {adminUsers.map(u => {
+                      const label = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username
+                      return (
+                        <CommandItem key={u.id} value={label} onSelect={() => { setFormData({ ...formData, assignedToId: u.id.toString() }); setUserPopoverOpen(false) }}>
+                          <Check className={cn("mr-2 h-4 w-4", formData.assignedToId === u.id.toString() ? "opacity-100" : "opacity-0")} />
+                          {label}
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="col-span-2">
+          <Label>Organizzazione</Label>
           <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" aria-expanded={orgPopoverOpen} className="w-full justify-between font-normal">
@@ -284,7 +353,7 @@ export default function HelpDeskPage() {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0" align="start">
+            <PopoverContent className="w-[400px] p-0" align="start">
               <Command>
                 <CommandInput placeholder="Cerca organizzazione..." />
                 <CommandList>
@@ -314,8 +383,8 @@ export default function HelpDeskPage() {
   const renderCell = (columnId: string, item: HelpDeskTicket) => {
     switch (columnId) {
       case "createdAt":    return <TableCell key={columnId} className="tabular-nums text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
-      case "orgCode":      return <TableCell key={columnId} className="font-mono text-sm">{(item.organization as any)?.code || "-"}</TableCell>
-      case "organization": return <TableCell key={columnId}>{(item.organization as any)?.denomination || item.organization?.name || "-"}</TableCell>
+      case "orgCode":      return <TableCell key={columnId} className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>
+      case "organization": return <TableCell key={columnId}>{item.organization?.denomination || item.organization?.name || "-"}</TableCell>
       case "title":        return <TableCell key={columnId} className="font-medium">{item.title}</TableCell>
       case "assignedTo":   return <TableCell key={columnId}>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
       case "callType":     return <TableCell key={columnId}>{item.callType || "-"}</TableCell>
@@ -329,7 +398,7 @@ export default function HelpDeskPage() {
 
   // client-side industry filter on loaded tickets
   const filteredItems = industryFilter
-    ? items.filter(t => (t.organization as any)?.industry === industryFilter)
+    ? items.filter(t => t.organization?.industry === industryFilter)
     : items
 
   return (
@@ -439,16 +508,16 @@ export default function HelpDeskPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><span className="font-medium">Data:</span> {new Date(selected.createdAt).toLocaleDateString("it-IT")}</div>
                   <div><span className="font-medium">Tipo Chiamata:</span> {selected.callType || "-"}</div>
-                  <div><span className="font-medium">Codice BDT:</span> <span className="font-mono">{(selected.organization as any)?.code || "-"}</span></div>
-                  <div><span className="font-medium">Nome Organizzazione:</span> {(selected.organization as any)?.denomination || selected.organization?.name || "-"}</div>
-                  <div><span className="font-medium">Settore:</span> {(selected.organization as any)?.industry || "-"}</div>
+                  <div><span className="font-medium">Codice Ufficio:</span> <span className="font-mono">{selected.organization?.code || "-"}</span></div>
+                  <div><span className="font-medium">Denominazione Uff.:</span> {selected.organization?.denomination || selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium">Settore:</span> {selected.organization?.industry || "-"}</div>
                   <div><span className="font-medium">Origine:</span> {selected.ticketOrigin || "-"}</div>
                   {selected.assignedTo && <div><span className="font-medium">Assegnato a:</span> {`${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username}</div>}
-                  {(selected.organization as any)?.coordinator && (
-                    <div><span className="font-medium">Coordinatrice:</span> {(selected.organization as any).coordinator}</div>
+                  {selected.organization?.coordinator && (
+                    <div><span className="font-medium">Coordinatrice:</span> {selected.organization.coordinator}</div>
                   )}
-                  {(selected.organization as any)?.legalRep && (
-                    <div><span className="font-medium">Legale Rappresentante:</span> {(selected.organization as any).legalRep}</div>
+                  {selected.organization?.legalRep && (
+                    <div><span className="font-medium">Legale Rappresentante:</span> {selected.organization.legalRep}</div>
                   )}
                 </div>
                 {selected.description && <div><span className="font-medium text-sm">Descrizione:</span><p className="text-sm mt-1 whitespace-pre-wrap bg-muted p-3 rounded">{selected.description}</p></div>}
