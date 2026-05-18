@@ -14,7 +14,8 @@
     "import:vtiger": "ts-node src/scripts/import-vtiger-csv.ts",
     "import:org": "ts-node src/scripts/import-nuovi-dati-org.ts",
     "import:tickets": "ts-node src/scripts/import-nuovi-dati-tickets.ts",
-    "import:contracts": "ts-node src/scripts/import-nuovi-dati-contracts.ts"
+    "import:contracts": "ts-node src/scripts/import-nuovi-dati-contracts.ts",
+    "import:quotes": "ts-node src/scripts/import-nuovi-dati-quotes.ts"
   },
   "keywords": [],
   "author": "",

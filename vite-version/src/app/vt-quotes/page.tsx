@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,42 +23,46 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileText,
 } from "lucide-react"
 import { vtQuotesAPI, type VtQuote } from "@/lib/vt-quotes-api"
 import { organizationsAPI } from "@/lib/organizations-api"
+import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
-const COLUMNS: ToggleColumnDef[] = [
-  { id: "quoteNumber", label: "Numero" },
-  { id: "subject", label: "Oggetto" },
+const PAGE_NAME = "vt-quotes"
+
+const DEFAULT_COLUMNS: ToggleColumnDef[] = [
+  { id: "quoteNumber",  label: "Numero" },
+  { id: "subject",      label: "Oggetto" },
   { id: "organization", label: "Organizzazione" },
-  { id: "contact", label: "Contatto" },
-  { id: "stage", label: "Stadio" },
-  { id: "validUntil", label: "Valido fino a" },
-  { id: "assignedTo", label: "Assegnato a" },
+  { id: "stage",        label: "Stadio" },
+  { id: "assignedTo",   label: "Assegnato a" },
+  { id: "validUntil",   label: "Valido fino a" },
 ]
 
+const DEFAULT_VISIBLE_IDS = new Set([
+  "quoteNumber", "subject", "organization", "stage", "assignedTo",
+])
+
 const STAGES = ["Creato", "Consegnato", "Revisionato", "Scaduto", "Accettato", "Rifiutato", "Annullato"]
+
 const STAGE_COLORS: Record<string, string> = {
-  "Creato": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  "Creato":     "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   "Consegnato": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300",
-  "Revisionato": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  "Scaduto": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  "Accettato": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  "Rifiutato": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  "Annullato": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  "Revisionato":"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  "Scaduto":    "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  "Accettato":  "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "Rifiutato":  "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  "Annullato":  "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 }
 
 const emptyForm: any = {
-  subject: "", organizationId: "", contactId: "", assignedToId: "", stage: "Creato",
-  validUntil: "", billStreet: "", billPoBox: "", billCity: "", billState: "", billCode: "", billCountry: "",
-  shipStreet: "", shipPoBox: "", shipCity: "", shipState: "", shipCode: "", shipCountry: "",
-  termsConditions: "", description: "",
+  subject: "", organizationId: "", assignedToId: "", stage: "Creato",
+  validUntil: "", description: "",
 }
 
 export default function VtQuotesPage() {
@@ -69,11 +73,79 @@ export default function VtQuotesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-
   const [limit, setLimit] = useState(20)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
-  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
-  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
+  const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    Object.fromEntries(DEFAULT_COLUMNS.map(c => [c.id, DEFAULT_VISIBLE_IDS.has(c.id)]))
+  )
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const defaultVis = Object.fromEntries(DEFAULT_COLUMNS.map(c => [c.id, DEFAULT_VISIBLE_IDS.has(c.id)]))
+
+    const applyOrder = (order: string[]) => [
+      ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+      ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+    ]
+    const mergeVis = (saved: Record<string, boolean>) => ({ ...defaultVis, ...saved })
+
+    const savedOrder = localStorage.getItem(`crm_col_order_${PAGE_NAME}`)
+    const savedVis   = localStorage.getItem(`crm_col_vis_${PAGE_NAME}`)
+    if (savedOrder) { try { setColumns(applyOrder(JSON.parse(savedOrder))) } catch {} }
+    if (savedVis)   { try { setVisibleColumns(mergeVis(JSON.parse(savedVis))) } catch {} }
+
+    userPreferencesAPI.getUserPreferences(PAGE_NAME)
+      .then(prefs => {
+        if (!prefs) return
+        if (prefs.columnOrder) {
+          try {
+            const order: string[] = JSON.parse(prefs.columnOrder)
+            setColumns(applyOrder(order))
+            localStorage.setItem(`crm_col_order_${PAGE_NAME}`, prefs.columnOrder)
+          } catch {}
+        }
+        if (prefs.columnVisibility) {
+          try {
+            const merged = mergeVis(JSON.parse(prefs.columnVisibility))
+            setVisibleColumns(merged)
+            localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, JSON.stringify(merged))
+          } catch {}
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
+    localStorage.setItem(`crm_col_order_${PAGE_NAME}`, JSON.stringify(cols.map(c => c.id)))
+    localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, JSON.stringify(vis))
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      userPreferencesAPI.saveUserPreferences(PAGE_NAME, {
+        columnOrder: cols.map(c => c.id),
+        columnVisibility: vis,
+      }).catch(() => {})
+    }, 600)
+  }, [])
+
+  const toggleColumn = (columnId: string) => {
+    setVisibleColumns(prev => {
+      const next = { ...prev, [columnId]: !prev[columnId] }
+      persistPreferences(columns, next)
+      return next
+    })
+  }
+
+  const handleReorder = (newOrder: string[]) => {
+    const reordered = [
+      ...newOrder.map(id => columns.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+      ...columns.filter(c => !newOrder.includes(c.id)),
+    ]
+    setColumns(reordered)
+    persistPreferences(reordered, visibleColumns)
+  }
+
+  const isColVisible = (columnId: string) => visibleColumns[columnId] === true
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -85,7 +157,9 @@ export default function VtQuotesPage() {
   const [orgs, setOrgs] = useState<{ id: number; name: string }[]>([])
 
   useEffect(() => {
-    organizationsAPI.getAll({ limit: 1000 }).then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.name })))).catch(() => {})
+    organizationsAPI.getAll({ limit: 1000 })
+      .then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.denomination || o.name }))))
+      .catch(() => {})
   }, [])
 
   const loadData = useCallback(async (page = 1) => {
@@ -151,16 +225,12 @@ export default function VtQuotesPage() {
   const openEdit = (item: VtQuote) => {
     setSelected(item)
     setFormData({
-      subject: item.subject, organizationId: item.organizationId?.toString() || "",
-      contactId: item.contactId?.toString() || "", assignedToId: item.assignedToId?.toString() || "",
-      stage: item.stage, validUntil: item.validUntil ? new Date(item.validUntil).toISOString().split("T")[0] : "",
-      billStreet: item.billStreet || "", billPoBox: item.billPoBox || "",
-      billCity: item.billCity || "", billState: item.billState || "",
-      billCode: item.billCode || "", billCountry: item.billCountry || "",
-      shipStreet: item.shipStreet || "", shipPoBox: item.shipPoBox || "",
-      shipCity: item.shipCity || "", shipState: item.shipState || "",
-      shipCode: item.shipCode || "", shipCountry: item.shipCountry || "",
-      termsConditions: item.termsConditions || "", description: item.description || "",
+      subject:        item.subject,
+      organizationId: item.organizationId?.toString() || "",
+      assignedToId:   item.assignedToId?.toString()   || "",
+      stage:          item.stage,
+      validUntil:     item.validUntil ? new Date(item.validUntil).toISOString().split("T")[0] : "",
+      description:    item.description || "",
     })
     setIsEditOpen(true)
   }
@@ -168,58 +238,38 @@ export default function VtQuotesPage() {
   const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString("it-IT") : "-"
 
   const renderForm = () => (
-    <Tabs defaultValue="generale" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="generale">Generale</TabsTrigger>
-        <TabsTrigger value="fatturazione">Ind. Fatturazione</TabsTrigger>
-        <TabsTrigger value="spedizione">Ind. Spedizione</TabsTrigger>
-        <TabsTrigger value="note">Note</TabsTrigger>
-      </TabsList>
-      <TabsContent value="generale" className="space-y-4 mt-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Oggetto *</Label><Input value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })} /></div>
-          <div>
-            <Label>Stadio</Label>
-            <Select value={formData.stage} onValueChange={v => setFormData({ ...formData, stage: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Organizzazione</Label>
-            <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
-              <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-              <SelectContent>{orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label>Valido fino a</Label><Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} /></div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Oggetto *</Label>
+          <Input value={formData.subject} onChange={e => setFormData({ ...formData, subject: e.target.value })} />
         </div>
-      </TabsContent>
-      <TabsContent value="fatturazione" className="space-y-4 mt-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Via</Label><Input value={formData.billStreet} onChange={e => setFormData({ ...formData, billStreet: e.target.value })} /></div>
-          <div><Label>Casella Postale</Label><Input value={formData.billPoBox} onChange={e => setFormData({ ...formData, billPoBox: e.target.value })} /></div>
-          <div><Label>Città</Label><Input value={formData.billCity} onChange={e => setFormData({ ...formData, billCity: e.target.value })} /></div>
-          <div><Label>Provincia</Label><Input value={formData.billState} onChange={e => setFormData({ ...formData, billState: e.target.value })} /></div>
-          <div><Label>CAP</Label><Input value={formData.billCode} onChange={e => setFormData({ ...formData, billCode: e.target.value })} /></div>
-          <div><Label>Paese</Label><Input value={formData.billCountry} onChange={e => setFormData({ ...formData, billCountry: e.target.value })} /></div>
+        <div>
+          <Label>Stadio</Label>
+          <Select value={formData.stage} onValueChange={v => setFormData({ ...formData, stage: v })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-      </TabsContent>
-      <TabsContent value="spedizione" className="space-y-4 mt-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div><Label>Via</Label><Input value={formData.shipStreet} onChange={e => setFormData({ ...formData, shipStreet: e.target.value })} /></div>
-          <div><Label>Casella Postale</Label><Input value={formData.shipPoBox} onChange={e => setFormData({ ...formData, shipPoBox: e.target.value })} /></div>
-          <div><Label>Città</Label><Input value={formData.shipCity} onChange={e => setFormData({ ...formData, shipCity: e.target.value })} /></div>
-          <div><Label>Provincia</Label><Input value={formData.shipState} onChange={e => setFormData({ ...formData, shipState: e.target.value })} /></div>
-          <div><Label>CAP</Label><Input value={formData.shipCode} onChange={e => setFormData({ ...formData, shipCode: e.target.value })} /></div>
-          <div><Label>Paese</Label><Input value={formData.shipCountry} onChange={e => setFormData({ ...formData, shipCountry: e.target.value })} /></div>
+        <div>
+          <Label>Organizzazione</Label>
+          <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
+            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+            <SelectContent>
+              {orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-      </TabsContent>
-      <TabsContent value="note" className="space-y-4 mt-4">
-        <div><Label>Termini e Condizioni</Label><Textarea value={formData.termsConditions} onChange={e => setFormData({ ...formData, termsConditions: e.target.value })} rows={4} /></div>
-        <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={4} /></div>
-      </TabsContent>
-    </Tabs>
+        <div>
+          <Label>Valido fino a</Label>
+          <Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} />
+        </div>
+      </div>
+      <div>
+        <Label>Descrizione</Label>
+        <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} />
+      </div>
+    </div>
   )
 
   return (
@@ -227,7 +277,9 @@ export default function VtQuotesPage() {
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="h-6 w-6" />Preventivi</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FileText className="h-6 w-6" />Preventivi
+            </h1>
             <p className="text-muted-foreground">{totalCount} preventivi totali</p>
           </div>
           <Button onClick={() => { setFormData({ ...emptyForm }); setIsCreateOpen(true) }}>
@@ -238,50 +290,72 @@ export default function VtQuotesPage() {
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
+            <Input
+              placeholder="Cerca..."
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+              className="pl-10"
+            />
           </div>
           <Select value={stageFilter} onValueChange={v => { setStageFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
             <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stadio" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti gli stadi</SelectItem>{STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli stadi</SelectItem>
+              {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
           </Select>
-          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+          <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("quoteNumber") && <TableHead>Numero</TableHead>}
-                {isColVisible("subject") && <TableHead>Oggetto</TableHead>}
+                {isColVisible("quoteNumber")  && <TableHead>Numero</TableHead>}
+                {isColVisible("subject")      && <TableHead>Oggetto</TableHead>}
                 {isColVisible("organization") && <TableHead>Organizzazione</TableHead>}
-                {isColVisible("contact") && <TableHead>Contatto</TableHead>}
-                {isColVisible("stage") && <TableHead>Stadio</TableHead>}
-                {isColVisible("validUntil") && <TableHead>Valido fino a</TableHead>}
-                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
+                {isColVisible("stage")        && <TableHead>Stadio</TableHead>}
+                {isColVisible("assignedTo")   && <TableHead>Assegnato a</TableHead>}
+                {isColVisible("validUntil")   && <TableHead>Valido fino a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={DEFAULT_COLUMNS.length + 1} className="text-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                  </TableCell>
+                </TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun preventivo trovato</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={DEFAULT_COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">
+                    Nessun preventivo trovato
+                  </TableCell>
+                </TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("quoteNumber") && <TableCell className="font-mono text-sm">{item.quoteNumber}</TableCell>}
-                  {isColVisible("subject") && <TableCell className="font-medium">{item.subject}</TableCell>}
+                  {isColVisible("quoteNumber")  && <TableCell className="font-mono text-sm">{item.quoteNumber}</TableCell>}
+                  {isColVisible("subject")      && <TableCell className="font-medium">{item.subject}</TableCell>}
                   {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
-                  {isColVisible("contact") && <TableCell>{item.contact?.name || "-"}</TableCell>}
-                  {isColVisible("stage") && <TableCell><Badge className={STAGE_COLORS[item.stage] || ""}>{item.stage}</Badge></TableCell>}
-                  {isColVisible("validUntil") && <TableCell>{formatDate(item.validUntil)}</TableCell>}
-                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
+                  {isColVisible("stage")        && <TableCell><Badge className={STAGE_COLORS[item.stage] || ""}>{item.stage}</Badge></TableCell>}
+                  {isColVisible("assignedTo")   && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
+                  {isColVisible("validUntil")   && <TableCell>{formatDate(item.validUntil)}</TableCell>}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setSelected(item); setIsPreviewOpen(true) }}><Eye className="mr-2 h-4 w-4" />Visualizza</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEdit(item)}><Edit className="mr-2 h-4 w-4" />Modifica</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setSelected(item); setIsDeleteOpen(true) }} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Elimina</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
+                          <Eye className="mr-2 h-4 w-4" />Visualizza
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEdit(item)}>
+                          <Edit className="mr-2 h-4 w-4" />Modifica
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSelected(item); setIsDeleteOpen(true) }} className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />Elimina
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -300,41 +374,60 @@ export default function VtQuotesPage() {
           onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
         />
 
+        {/* Create */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Nuovo Preventivo</DialogTitle><DialogDescription>Crea un nuovo preventivo.</DialogDescription></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Nuovo Preventivo</DialogTitle>
+              <DialogDescription>Crea un nuovo preventivo.</DialogDescription>
+            </DialogHeader>
             {renderForm()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annulla</Button>
-              <Button onClick={handleCreate} disabled={submitting}>{submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crea</Button>
+              <Button onClick={handleCreate} disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crea
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
+        {/* Edit */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Modifica Preventivo</DialogTitle><DialogDescription>Modifica i dati del preventivo.</DialogDescription></DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Modifica Preventivo — {selected?.quoteNumber}</DialogTitle>
+              <DialogDescription>Modifica i dati del preventivo.</DialogDescription>
+            </DialogHeader>
             {renderForm()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>Annulla</Button>
-              <Button onClick={handleEdit} disabled={submitting}>{submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salva</Button>
+              <Button onClick={handleEdit} disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salva
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
+        {/* Preview */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{selected?.quoteNumber}</DialogTitle><DialogDescription>Dettagli preventivo</DialogDescription></DialogHeader>
+          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selected?.quoteNumber}</DialogTitle>
+              <DialogDescription>Dettagli preventivo</DialogDescription>
+            </DialogHeader>
             {selected && (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><span className="font-medium">Oggetto:</span> {selected.subject}</div>
-                <div><span className="font-medium">Stadio:</span> <Badge className={STAGE_COLORS[selected.stage] || ""}>{selected.stage}</Badge></div>
-                <div><span className="font-medium">Organizzazione:</span> {selected.organization?.name || "-"}</div>
-                <div><span className="font-medium">Contatto:</span> {selected.contact?.name || "-"}</div>
-                <div><span className="font-medium">Valido fino a:</span> {formatDate(selected.validUntil)}</div>
-                <div><span className="font-medium">Assegnato a:</span> {selected.assignedTo ? `${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() : "-"}</div>
-                {selected.description && <div className="col-span-2"><span className="font-medium">Descrizione:</span><p className="mt-1 whitespace-pre-wrap">{selected.description}</p></div>}
-                {selected.termsConditions && <div className="col-span-2"><span className="font-medium">Termini:</span><p className="mt-1 whitespace-pre-wrap">{selected.termsConditions}</p></div>}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div><span className="font-medium text-muted-foreground">Oggetto:</span><br />{selected.subject}</div>
+                <div><span className="font-medium text-muted-foreground">Stadio:</span><br /><Badge className={STAGE_COLORS[selected.stage] || ""}>{selected.stage}</Badge></div>
+                <div><span className="font-medium text-muted-foreground">Organizzazione:</span><br />{selected.organization?.name || "-"}</div>
+                <div><span className="font-medium text-muted-foreground">Assegnato a:</span><br />{selected.assignedTo ? `${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username : "-"}</div>
+                <div><span className="font-medium text-muted-foreground">Valido fino a:</span><br />{formatDate(selected.validUntil)}</div>
+                {selected.description && (
+                  <div className="col-span-2">
+                    <span className="font-medium text-muted-foreground">Descrizione:</span>
+                    <p className="mt-1 whitespace-pre-wrap">{selected.description}</p>
+                  </div>
+                )}
               </div>
             )}
             <DialogFooter>
@@ -344,11 +437,14 @@ export default function VtQuotesPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Delete */}
         <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Eliminare il preventivo?</AlertDialogTitle>
-              <AlertDialogDescription>Il preventivo "{selected?.quoteNumber}" verrà eliminato permanentemente.</AlertDialogDescription>
+              <AlertDialogDescription>
+                Il preventivo "{selected?.quoteNumber}" verrà eliminato permanentemente.
+              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Annulla</AlertDialogCancel>

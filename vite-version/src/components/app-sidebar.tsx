@@ -154,7 +154,7 @@ const allNavGroups: NavGroup[] = [
         moduleName: "service_contracts",
       },
       {
-        title: "Preventivi VT",
+        title: "Preventivi",
         url: "/vt-quotes",
         icon: FileText,
         moduleName: "vt_quotes",
