@@ -52,6 +52,7 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "callType",     label: "Tipo Chiamata" },
   { id: "description",  label: "Descrizione" },
   { id: "status",       label: "Stato" },
+  { id: "ticketNumber", label: "N. Ticket" },
 ]
 
 const DEFAULT_VISIBLE_IDS = new Set(["createdAt", "orgCode", "organization", "title", "assignedTo", "callType", "description", "status"])
@@ -390,6 +391,7 @@ export default function HelpDeskPage() {
       case "callType":     return <TableCell key={columnId}>{item.callType || "-"}</TableCell>
       case "description":  return <TableCell key={columnId} className="max-w-[200px] truncate">{item.description || "-"}</TableCell>
       case "status":       return <TableCell key={columnId}><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>
+      case "ticketNumber": return <TableCell key={columnId} className="font-mono text-sm">{item.ticketNumber}</TableCell>
       default: return null
     }
   }
