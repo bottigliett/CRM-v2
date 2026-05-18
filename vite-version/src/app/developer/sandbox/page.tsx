@@ -565,7 +565,7 @@ export default function SandboxPage() {
                       <FileSignature className="mr-2 h-4 w-4" /> Contratti
                     </Button>
                     <Button variant="outline" className="justify-start" onClick={() => navigate("/vt-quotes")}>
-                      <FileText className="mr-2 h-4 w-4" /> Preventivi VT
+                      <FileText className="mr-2 h-4 w-4" /> Preventivi
                     </Button>
                     <Button variant="outline" className="justify-start" onClick={() => navigate("/sales-orders")}>
                       <ShoppingCart className="mr-2 h-4 w-4" /> Ordini
