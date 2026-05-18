@@ -40,9 +40,9 @@ async function main() {
   const ws1 = wb1.Sheets[wb1.SheetNames[0]];
   const rows1: any[] = XLSX.utils.sheet_to_json(ws1, { defval: '' });
 
-  const wb2 = XLSX.readFile(FILE2);
+  const wb2 = XLSX.readFile(FILE2, { cellDates: true });
   const ws2 = wb2.Sheets[wb2.SheetNames[0]];
-  const rows2: any[] = XLSX.utils.sheet_to_json(ws2, { defval: '', cellDates: true });
+  const rows2: any[] = XLSX.utils.sheet_to_json(ws2, { defval: '' });
 
   console.log(`File 1 (Anagrafiche): ${rows1.length} righe`);
   console.log(`File 2 (anagrafiche per export): ${rows2.length} righe`);
