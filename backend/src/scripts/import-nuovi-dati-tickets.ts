@@ -46,7 +46,14 @@ async function main() {
 
   const wb = XLSX.readFile(FILE);
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  const rawRows: any[] = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+  // Normalize column keys: strip leading/trailing spaces (Excel often adds them)
+  const rows = rawRows.map(row => {
+    const normalized: any = {};
+    for (const key of Object.keys(row)) normalized[key.trim()] = row[key];
+    return normalized;
+  });
 
   console.log(`Ticket rows: ${rows.length}`);
 
