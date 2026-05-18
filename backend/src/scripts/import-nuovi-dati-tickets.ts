@@ -50,15 +50,16 @@ async function main() {
 
   console.log(`Ticket rows: ${rows.length}`);
 
-  // Build org lookup by code
+  // Build org lookup by code and denomination
   const allOrgs = await prisma.organization.findMany({
-    select: { id: true, code: true, name: true },
+    select: { id: true, code: true, name: true, denomination: true },
   });
   const orgByCode = new Map<string, number>();
   const orgByName = new Map<string, number>();
   for (const org of allOrgs) {
     if (org.code) orgByCode.set(org.code.toLowerCase(), org.id);
-    if (org.name) orgByName.set(org.name.toLowerCase(), org.id);
+    if (org.denomination) orgByName.set(org.denomination.toLowerCase(), org.id);
+    if (org.name) orgByName.set(org.name.toLowerCase(), org.id); // fallback
   }
 
   // Build user lookup
@@ -70,6 +71,9 @@ async function main() {
     if (u.username) userMap.set(u.username.toLowerCase(), u.id);
     const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
     if (fullName) userMap.set(fullName, u.id);
+    // also try "LastName FirstName" order
+    const reverseName = `${u.lastName || ''} ${u.firstName || ''}`.trim().toLowerCase();
+    if (reverseName && reverseName !== fullName) userMap.set(reverseName, u.id);
   }
 
   // Map tickets
