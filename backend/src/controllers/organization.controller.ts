@@ -54,7 +54,7 @@ export const getOrganizations = async (req: Request, res: Response) => {
           select: { id: true, name: true },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { createdAt: 'desc' },
       skip,
       take: limitNum,
     });

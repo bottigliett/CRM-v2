@@ -141,7 +141,14 @@ async function main() {
 
   for (const ticket of tickets) {
     try {
-      await prisma.helpDeskTicket.create({ data: ticket });
+      const { createdAt: ticketCreatedAt, ...ticketData } = ticket;
+      const created = await prisma.helpDeskTicket.create({ data: ticketData });
+      if (ticketCreatedAt instanceof Date && !isNaN(ticketCreatedAt.getTime())) {
+        const dateStr = ticketCreatedAt.toISOString().slice(0, 19).replace('T', ' ');
+        await prisma.$executeRawUnsafe(
+          `UPDATE help_desk_tickets SET created_at = '${dateStr}' WHERE id = ${created.id}`
+        );
+      }
       imported++;
     } catch (err: any) {
       errors++;
