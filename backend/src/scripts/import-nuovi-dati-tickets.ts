@@ -179,9 +179,20 @@ async function main() {
 
   for (const ticket of tickets) {
     try {
-      const { createdAt: ticketCreatedAt, ...ticketData } = ticket;
-      const created = await prisma.helpDeskTicket.create({ data: ticketData });
-      if (ticketCreatedAt instanceof Date && !isNaN(ticketCreatedAt.getTime())) {
+      const created = await prisma.helpDeskTicket.create({
+        data: {
+          ticketNumber:   String(ticket.ticketNumber),
+          title:          String(ticket.title),
+          status:         String(ticket.status),
+          callType:       ticket.callType       ?? null,
+          ticketOrigin:   ticket.ticketOrigin   ?? null,
+          description:    ticket.description    ?? null,
+          organizationId: ticket.organizationId ?? null,
+          assignedToId:   ticket.assignedToId   ?? null,
+        },
+      });
+      const ticketCreatedAt: Date | null = ticket.createdAt instanceof Date ? ticket.createdAt : null;
+      if (ticketCreatedAt && !isNaN(ticketCreatedAt.getTime())) {
         const dateStr = ticketCreatedAt.toISOString().slice(0, 19).replace('T', ' ');
         await prisma.$executeRawUnsafe(
           `UPDATE help_desk_tickets SET created_at = '${dateStr}' WHERE id = ${created.id}`

@@ -151,8 +151,43 @@ async function main() {
   let imported = 0;
   for (const org of orgs) {
     try {
-      const { createdAt: orgCreatedAt, ...orgData } = org;
-      const created = await prisma.organization.create({ data: orgData });
+      const created = await prisma.organization.create({
+        data: {
+          name:         String(org.name),
+          code:         org.code         ?? null,
+          denomination: org.denomination ?? null,
+          vatNumber:    org.vatNumber    ?? null,
+          phone:        org.phone        ?? null,
+          mobile:       org.mobile       ?? null,
+          shareholders: org.shareholders ?? null,
+          legalRep:     org.legalRep     ?? null,
+          coordinator:  org.coordinator  ?? null,
+          industry:     org.industry     ?? null,
+          billStreet:   org.billStreet   ?? null,
+          billCity:     org.billCity     ?? null,
+          billState:    org.billState    ?? null,
+          billCode:     org.billCode     ?? null,
+          billCountry:  org.billCountry  ?? null,
+          shipStreet:   org.shipStreet   ?? null,
+          shipCity:     org.shipCity     ?? null,
+          shipState:    org.shipState    ?? null,
+          shipCode:     org.shipCode     ?? null,
+          shipCountry:  org.shipCountry  ?? null,
+          bankName:     org.bankName     ?? null,
+          iban:         org.iban         ?? null,
+          accountType:  org.accountType  ?? null,
+          email:        org.email        ?? null,
+          uniqueCode:   org.uniqueCode   ?? null,
+          pec:          org.pec          ?? null,
+          description:  org.description  ?? null,
+          devices:      org.devices      ?? null,
+          nasInfo:      org.nasInfo      ?? null,
+          nasContract:  org.nasContract  ?? null,
+          assignedToId: org.assignedToId ?? null,
+          isActive:     org.isActive     ?? true,
+        },
+      });
+      const orgCreatedAt = org.createdAt;
       if (orgCreatedAt) {
         const dt = orgCreatedAt instanceof Date ? orgCreatedAt : new Date(String(orgCreatedAt));
         if (!isNaN(dt.getTime())) {
