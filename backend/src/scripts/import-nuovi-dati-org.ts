@@ -154,8 +154,13 @@ async function main() {
       const { createdAt: orgCreatedAt, ...orgData } = org;
       const created = await prisma.organization.create({ data: orgData });
       if (orgCreatedAt) {
-        const dt = orgCreatedAt instanceof Date ? orgCreatedAt : new Date(orgCreatedAt);
-        await prisma.$executeRaw`UPDATE organizations SET created_at = ${dt} WHERE id = ${created.id}`;
+        const dt = orgCreatedAt instanceof Date ? orgCreatedAt : new Date(String(orgCreatedAt));
+        if (!isNaN(dt.getTime())) {
+          const dateStr = dt.toISOString().slice(0, 19).replace('T', ' ');
+          await prisma.$executeRawUnsafe(
+            `UPDATE organizations SET created_at = '${dateStr}' WHERE id = ${created.id}`
+          );
+        }
       }
       imported++;
     } catch (err: any) {
