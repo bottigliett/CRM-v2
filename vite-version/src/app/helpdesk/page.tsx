@@ -95,20 +95,22 @@ export default function HelpDeskPage() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    const defaultVis = Object.fromEntries(DEFAULT_COLUMNS.map(c => [c.id, DEFAULT_VISIBLE_IDS.has(c.id)]))
+
+    const applyOrder = (order: string[]) => [
+      ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+      ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+    ]
+    const mergeVis = (saved: Record<string, boolean>) => ({ ...defaultVis, ...saved })
+
     // Fast path: localStorage
     const savedOrder = localStorage.getItem(`crm_col_order_${PAGE_NAME}`)
     const savedVis = localStorage.getItem(`crm_col_vis_${PAGE_NAME}`)
     if (savedOrder) {
-      try {
-        const order: string[] = JSON.parse(savedOrder)
-        setColumns([
-          ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
-          ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
-        ])
-      } catch {}
+      try { setColumns(applyOrder(JSON.parse(savedOrder))) } catch {}
     }
     if (savedVis) {
-      try { setVisibleColumns(JSON.parse(savedVis)) } catch {}
+      try { setVisibleColumns(mergeVis(JSON.parse(savedVis))) } catch {}
     }
 
     // DB sync — overwrites localStorage when it arrives
@@ -118,17 +120,15 @@ export default function HelpDeskPage() {
         if (prefs.columnOrder) {
           try {
             const order: string[] = JSON.parse(prefs.columnOrder)
-            setColumns([
-              ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
-              ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
-            ])
+            setColumns(applyOrder(order))
             localStorage.setItem(`crm_col_order_${PAGE_NAME}`, prefs.columnOrder)
           } catch {}
         }
         if (prefs.columnVisibility) {
           try {
-            setVisibleColumns(JSON.parse(prefs.columnVisibility))
-            localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, prefs.columnVisibility)
+            const merged = mergeVis(JSON.parse(prefs.columnVisibility))
+            setVisibleColumns(merged)
+            localStorage.setItem(`crm_col_vis_${PAGE_NAME}`, JSON.stringify(merged))
           } catch {}
         }
       })
