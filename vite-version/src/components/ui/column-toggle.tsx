@@ -37,16 +37,17 @@ interface ColumnToggleProps {
   columns: ColumnDef[]
   visibleColumns: Record<string, boolean>
   onToggle: (columnId: string) => void
-  onReorder: (newOrder: string[]) => void
+  onReorder?: (newOrder: string[]) => void
 }
 
 interface SortableRowProps {
   column: ColumnDef
   visible: boolean
+  draggable: boolean
   onToggle: (id: string) => void
 }
 
-function SortableRow({ column, visible, onToggle }: SortableRowProps) {
+function SortableRow({ column, visible, draggable, onToggle }: SortableRowProps) {
   const {
     attributes,
     listeners,
@@ -68,14 +69,16 @@ function SortableRow({ column, visible, onToggle }: SortableRowProps) {
       style={style}
       className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-default select-none"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-0.5"
-        tabIndex={-1}
-      >
-        <GripVertical className="h-3.5 w-3.5" />
-      </button>
+      {draggable && (
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-0.5"
+          tabIndex={-1}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+      )}
       <Checkbox
         id={`col-${column.id}`}
         checked={visible}
@@ -95,6 +98,7 @@ export function ColumnToggle({ columns, visibleColumns, onToggle, onReorder }: C
   )
 
   function handleDragEnd(event: DragEndEvent) {
+    if (!onReorder) return
     const { active, over } = event
     if (over && active.id !== over.id) {
       const oldIndex = columns.findIndex(c => c.id === active.id)
@@ -112,8 +116,8 @@ export function ColumnToggle({ columns, visibleColumns, onToggle, onReorder }: C
           Colonne
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuLabel>Mostra e ordina colonne</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-[210px]">
+        <DropdownMenuLabel>{onReorder ? "Mostra e ordina colonne" : "Mostra colonne"}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DndContext
           sensors={sensors}
@@ -130,6 +134,7 @@ export function ColumnToggle({ columns, visibleColumns, onToggle, onReorder }: C
                   key={col.id}
                   column={col}
                   visible={visibleColumns[col.id] !== false}
+                  draggable={!!onReorder}
                   onToggle={onToggle}
                 />
               ))}

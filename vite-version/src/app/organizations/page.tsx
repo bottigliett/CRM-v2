@@ -20,6 +20,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -35,12 +36,33 @@ import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui
 const PAGE_NAME = "organizations"
 
 const DEFAULT_COLUMNS: ToggleColumnDef[] = [
-  { id: "accountType", label: "Tipo" },
-  { id: "code", label: "Codice Banca Dati" },
+  { id: "accountType",  label: "Tipo" },
+  { id: "code",         label: "Codice BDT" },
   { id: "denomination", label: "Denominazione" },
-  { id: "phone", label: "Telefono" },
-  { id: "createdAt", label: "Data di Creazione" },
+  { id: "phone",        label: "Telefono" },
+  { id: "createdAt",    label: "Data di Creazione" },
+  { id: "vatNumber",    label: "P.IVA" },
+  { id: "mobile",       label: "Cellulare" },
+  { id: "industry",     label: "Settore" },
+  { id: "email",        label: "Email" },
+  { id: "uniqueCode",   label: "Cod. Univoco" },
+  { id: "pec",          label: "PEC" },
+  { id: "legalRep",     label: "Legale Rappresentante" },
+  { id: "shareholders", label: "Compagine Sociale" },
+  { id: "coordinator",  label: "Coordinatrice" },
+  { id: "bankName",     label: "Banca" },
+  { id: "iban",         label: "IBAN" },
+  { id: "devices",      label: "Dispositivi" },
+  { id: "nasInfo",      label: "Info NAS" },
+  { id: "nasContract",  label: "Contratto NAS" },
 ]
+
+const DEFAULT_VISIBLE_IDS = new Set(["accountType", "code", "denomination", "phone", "createdAt"])
+
+const ACCOUNT_TYPE_COLORS: Record<string, string> = {
+  "SI Contratto": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "NO Contratto": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+}
 
 const INDUSTRIES = ["Immobiliare", "Creditizio"]
 const ACCOUNT_TYPES = ["NO Contratto", "SI Contratto"]
@@ -67,12 +89,12 @@ export default function OrganizationsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [limit, setLimit] = useState(20)
 
-  // Column state: ordered list + visibility map
   const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    Object.fromEntries(DEFAULT_COLUMNS.map(c => [c.id, DEFAULT_VISIBLE_IDS.has(c.id)]))
+  )
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Load column preferences from DB on mount
   useEffect(() => {
     userPreferencesAPI.getUserPreferences(PAGE_NAME)
       .then(prefs => {
@@ -96,7 +118,6 @@ export default function OrganizationsPage() {
       .catch(() => {})
   }, [])
 
-  // Debounced save to DB whenever columns or visibility changes
   const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
@@ -109,7 +130,7 @@ export default function OrganizationsPage() {
 
   const toggleColumn = (columnId: string) => {
     setVisibleColumns(prev => {
-      const next = { ...prev, [columnId]: prev[columnId] === false ? true : false }
+      const next = { ...prev, [columnId]: !prev[columnId] }
       persistPreferences(columns, next)
       return next
     })
@@ -124,7 +145,7 @@ export default function OrganizationsPage() {
     persistPreferences(reordered, visibleColumns)
   }
 
-  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+  const isColVisible = (columnId: string) => visibleColumns[columnId] === true
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -281,7 +302,7 @@ export default function OrganizationsPage() {
       <TabsContent value="dettagli" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Legale Rappresentante</Label><Input value={formData.legalRep} onChange={e => setFormData({ ...formData, legalRep: e.target.value })} /></div>
-          {formData.coordinator && <div><Label>Coordinatrice</Label><Input value={formData.coordinator} onChange={e => setFormData({ ...formData, coordinator: e.target.value })} /></div>}
+          <div><Label>Coordinatrice</Label><Input value={formData.coordinator} onChange={e => setFormData({ ...formData, coordinator: e.target.value })} /></div>
           <div><Label>Dispositivi</Label><Input value={formData.devices} onChange={e => setFormData({ ...formData, devices: e.target.value })} placeholder="NAS, PC, MAC" /></div>
           <div><Label>Info NAS</Label><Input value={formData.nasInfo} onChange={e => setFormData({ ...formData, nasInfo: e.target.value })} /></div>
           <div><Label>Contratto NAS</Label><Input value={formData.nasContract} onChange={e => setFormData({ ...formData, nasContract: e.target.value })} /></div>
@@ -294,14 +315,31 @@ export default function OrganizationsPage() {
 
   const renderCell = (columnId: string, item: Organization) => {
     switch (columnId) {
-      case "accountType": return <TableCell key={columnId}>{item.accountType || "-"}</TableCell>
-      case "code": return <TableCell key={columnId}>{item.code || "-"}</TableCell>
+      case "accountType":
+        return <TableCell key={columnId}>{item.accountType ? <Badge className={ACCOUNT_TYPE_COLORS[item.accountType] || "bg-gray-100 text-gray-800"}>{item.accountType}</Badge> : "-"}</TableCell>
+      case "code":         return <TableCell key={columnId} className="font-mono text-sm">{item.code || "-"}</TableCell>
       case "denomination": return <TableCell key={columnId} className="font-medium">{item.denomination || item.name}</TableCell>
-      case "phone": return <TableCell key={columnId}>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>
-      case "createdAt": return <TableCell key={columnId} className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
+      case "phone":        return <TableCell key={columnId}>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>
+      case "createdAt":    return <TableCell key={columnId} className="tabular-nums text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
+      case "vatNumber":    return <TableCell key={columnId} className="font-mono text-sm">{item.vatNumber || "-"}</TableCell>
+      case "mobile":       return <TableCell key={columnId}>{item.mobile || "-"}</TableCell>
+      case "industry":     return <TableCell key={columnId}>{item.industry || "-"}</TableCell>
+      case "email":        return <TableCell key={columnId}>{item.email || "-"}</TableCell>
+      case "uniqueCode":   return <TableCell key={columnId} className="font-mono text-sm">{item.uniqueCode || "-"}</TableCell>
+      case "pec":          return <TableCell key={columnId}>{item.pec || "-"}</TableCell>
+      case "legalRep":     return <TableCell key={columnId}>{item.legalRep || "-"}</TableCell>
+      case "shareholders": return <TableCell key={columnId} className="max-w-[160px] truncate">{item.shareholders || "-"}</TableCell>
+      case "coordinator":  return <TableCell key={columnId}>{item.coordinator || "-"}</TableCell>
+      case "bankName":     return <TableCell key={columnId}>{item.bankName || "-"}</TableCell>
+      case "iban":         return <TableCell key={columnId} className="font-mono text-sm">{item.iban || "-"}</TableCell>
+      case "devices":      return <TableCell key={columnId}>{item.devices || "-"}</TableCell>
+      case "nasInfo":      return <TableCell key={columnId}>{item.nasInfo || "-"}</TableCell>
+      case "nasContract":  return <TableCell key={columnId}>{item.nasContract || "-"}</TableCell>
       default: return null
     }
   }
+
+  const visibleCols = columns.filter(c => isColVisible(c.id))
 
   return (
     <BaseLayout>
@@ -316,59 +354,52 @@ export default function OrganizationsPage() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
           </div>
           <Select value={industryFilter} onValueChange={v => { setIndustryFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Settore" /></SelectTrigger>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Settore" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti i settori</SelectItem>
               {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={accountTypeFilter} onValueChange={v => { setAccountTypeFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti i tipi</SelectItem>
               {ACCOUNT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={isActiveFilter} onValueChange={v => { setIsActiveFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Stato" /></SelectTrigger>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Stato" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti</SelectItem>
               <SelectItem value="true">Attivi</SelectItem>
               <SelectItem value="false">Non attivi</SelectItem>
             </SelectContent>
           </Select>
-          <ColumnToggle
-            columns={columns}
-            visibleColumns={visibleColumns}
-            onToggle={toggleColumn}
-            onReorder={handleReorder}
-          />
+          <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.filter(c => isColVisible(c.id)).map(col => (
-                  <TableHead key={col.id}>{col.label}</TableHead>
-                ))}
+                {visibleCols.map(col => <TableHead key={col.id}>{col.label}</TableHead>)}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
+                <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8 text-muted-foreground">Nessuna organizzazione trovata</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {columns.filter(c => isColVisible(c.id)).map(col => renderCell(col.id, item))}
+                  {visibleCols.map(col => renderCell(col.id, item))}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -386,21 +417,14 @@ export default function OrganizationsPage() {
         </div>
 
         <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          limit={limit}
+          currentPage={currentPage} totalPages={totalPages} totalCount={totalCount} limit={limit}
           onPageChange={(page) => loadData(page)}
           onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
         />
 
-        {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nuova Organizzazione</DialogTitle>
-              <DialogDescription>Compila i campi per creare una nuova organizzazione.</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Nuova Organizzazione</DialogTitle><DialogDescription>Compila i campi per creare una nuova organizzazione.</DialogDescription></DialogHeader>
             {renderForm()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annulla</Button>
@@ -409,13 +433,9 @@ export default function OrganizationsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Modifica Organizzazione</DialogTitle>
-              <DialogDescription>Modifica i dati dell'organizzazione.</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Modifica Organizzazione</DialogTitle><DialogDescription>Modifica i dati dell'organizzazione.</DialogDescription></DialogHeader>
             {renderForm()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>Annulla</Button>
@@ -424,26 +444,27 @@ export default function OrganizationsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Preview Dialog */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selected?.name}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 flex-wrap">
+                {selected?.accountType && <Badge className={ACCOUNT_TYPE_COLORS[selected.accountType] || "bg-gray-100 text-gray-800"}>{selected.accountType}</Badge>}
+                {selected?.denomination || selected?.name}
+              </DialogTitle>
               <DialogDescription>Dettagli organizzazione</DialogDescription>
             </DialogHeader>
             {selected && (
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
-                  <div><span className="font-medium">Tipo:</span> {selected.accountType || "-"}</div>
-                  <div><span className="font-medium">Codice BDT:</span> {selected.code || "-"}</div>
-                  <div><span className="font-medium">Denominazione:</span> {selected.denomination || "-"}</div>
+                  <div><span className="font-medium">Codice BDT:</span> <span className="font-mono">{selected.code || "-"}</span></div>
                   <div><span className="font-medium">Settore:</span> {selected.industry || "-"}</div>
                   <div><span className="font-medium">Telefono:</span> {selected.phone?.replace(/\//g, ' ') || "-"}</div>
                   <div><span className="font-medium">Cellulare:</span> {selected.mobile || "-"}</div>
                   <div><span className="font-medium">Email:</span> {selected.email || "-"}</div>
                   <div><span className="font-medium">PEC:</span> {selected.pec || "-"}</div>
-                  <div><span className="font-medium">P.IVA:</span> {selected.vatNumber || "-"}</div>
-                  <div><span className="font-medium">Cod. Univoco:</span> {selected.uniqueCode || "-"}</div>
+                  <div><span className="font-medium">P.IVA:</span> <span className="font-mono">{selected.vatNumber || "-"}</span></div>
+                  <div><span className="font-medium">Cod. Univoco:</span> <span className="font-mono">{selected.uniqueCode || "-"}</span></div>
+                  <div><span className="font-medium">Data creazione:</span> {new Date(selected.createdAt).toLocaleDateString("it-IT")}</div>
                 </div>
                 {(selected.legalRep || selected.coordinator || selected.shareholders) && (
                   <div className="border-t pt-3 grid grid-cols-2 gap-3">
@@ -467,7 +488,7 @@ export default function OrganizationsPage() {
                 {(selected.bankName || selected.iban) && (
                   <div className="border-t pt-3 grid grid-cols-2 gap-3">
                     {selected.bankName && <div><span className="font-medium">Banca:</span> {selected.bankName}</div>}
-                    {selected.iban && <div><span className="font-medium">IBAN:</span> {selected.iban}</div>}
+                    {selected.iban && <div><span className="font-medium">IBAN:</span> <span className="font-mono">{selected.iban}</span></div>}
                   </div>
                 )}
                 {selected.description && <div className="border-t pt-3"><span className="font-medium">Descrizione:</span><p className="mt-1 whitespace-pre-wrap bg-muted p-3 rounded">{selected.description}</p></div>}
@@ -480,12 +501,11 @@ export default function OrganizationsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Dialog */}
         <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Eliminare l'organizzazione?</AlertDialogTitle>
-              <AlertDialogDescription>Questa azione non può essere annullata. L'organizzazione "{selected?.name}" verrà eliminata permanentemente.</AlertDialogDescription>
+              <AlertDialogDescription>Questa azione non può essere annullata. L'organizzazione "{selected?.denomination || selected?.name}" verrà eliminata permanentemente.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Annulla</AlertDialogCancel>

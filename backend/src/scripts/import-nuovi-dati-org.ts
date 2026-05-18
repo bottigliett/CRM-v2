@@ -42,7 +42,7 @@ async function main() {
 
   const wb2 = XLSX.readFile(FILE2);
   const ws2 = wb2.Sheets[wb2.SheetNames[0]];
-  const rows2: any[] = XLSX.utils.sheet_to_json(ws2, { defval: '' });
+  const rows2: any[] = XLSX.utils.sheet_to_json(ws2, { defval: '', cellDates: true });
 
   console.log(`File 1 (Anagrafiche): ${rows1.length} righe`);
   console.log(`File 2 (anagrafiche per export): ${rows2.length} righe`);
@@ -117,6 +117,11 @@ async function main() {
       description: r2 ? trim(r2['Organizzazioni Descrizione']) : null,
       assignedToId,
       isActive: true,
+      createdAt: r2 && r2['Organizzazioni Orario creazione']
+        ? (r2['Organizzazioni Orario creazione'] instanceof Date
+            ? r2['Organizzazioni Orario creazione']
+            : new Date(r2['Organizzazioni Orario creazione']))
+        : undefined,
     });
   }
 

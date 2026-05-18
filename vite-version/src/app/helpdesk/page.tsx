@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { useLocation } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
@@ -35,32 +35,37 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { helpdeskAPI, type HelpDeskTicket } from "@/lib/helpdesk-api"
 import { organizationsAPI } from "@/lib/organizations-api"
+import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { ColumnToggle, type ColumnDef as ToggleColumnDef } from "@/components/ui/column-toggle"
 
-const COLUMNS: ToggleColumnDef[] = [
-  { id: "createdAt", label: "Data" },
-  { id: "orgCode", label: "Codice Ufficio" },
-  { id: "organization", label: "Denominazione Uff." },
-  { id: "title", label: "Titolo" },
-  { id: "assignedTo", label: "Assegnato a" },
-  { id: "callType", label: "Tipo Chiamata" },
-  { id: "description", label: "Descrizione" },
-  { id: "status", label: "Stato" },
+const PAGE_NAME = "helpdesk"
+
+const DEFAULT_COLUMNS: ToggleColumnDef[] = [
+  { id: "createdAt",    label: "Data" },
+  { id: "orgCode",      label: "Codice BDT" },
+  { id: "organization", label: "Nome Organizzazione" },
+  { id: "title",        label: "Titolo" },
+  { id: "assignedTo",   label: "Assegnato a" },
+  { id: "callType",     label: "Tipo Chiamata" },
+  { id: "description",  label: "Descrizione" },
+  { id: "status",       label: "Stato" },
 ]
+
+const DEFAULT_VISIBLE_IDS = new Set(["createdAt", "orgCode", "organization", "title", "assignedTo", "callType", "description", "status"])
 
 const STATUSES = ["Aperto", "In Corso", "In attesa risposta", "Chiuso"]
 const PRIORITIES = ["Bloccante", "Principale", "Secondario"]
 const CALL_TYPES = ["Atelier", "Browser", "Tecnico", "Gestionale", "Server", "Hardware", "Software", "Rete", "Altro"]
 const ORIGINS = ["Telefono", "Whatsapp", "Email", "Di persona", "Portale"]
-const CATEGORIES = ["Intervento on site", "Controllo Remoto", "Consulenza", "Manutenzione", "Altro"]
+const INDUSTRIES = ["Immobiliare", "Creditizio"]
 
 const STATUS_COLORS: Record<string, string> = {
-  "Aperto": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  "In Corso": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  "In attesa risposta": "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
-  "Chiuso": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "Aperto":              "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  "In Corso":            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  "In attesa risposta":  "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  "Chiuso":              "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
 }
 
 const emptyForm: any = {
@@ -74,17 +79,70 @@ export default function HelpDeskPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
-  const [priorityFilter, setPriorityFilter] = useState("")
   const [callTypeFilter, setCallTypeFilter] = useState("")
-  const [originFilter, setOriginFilter] = useState("")
+  const [industryFilter, setIndustryFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-
   const [limit, setLimit] = useState(20)
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
-  const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
-  const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
+  const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    Object.fromEntries(DEFAULT_COLUMNS.map(c => [c.id, DEFAULT_VISIBLE_IDS.has(c.id)]))
+  )
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    userPreferencesAPI.getUserPreferences(PAGE_NAME)
+      .then(prefs => {
+        if (!prefs) return
+        if (prefs.columnOrder) {
+          try {
+            const order: string[] = JSON.parse(prefs.columnOrder)
+            const reordered = [
+              ...order.map(id => DEFAULT_COLUMNS.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+              ...DEFAULT_COLUMNS.filter(c => !order.includes(c.id)),
+            ]
+            setColumns(reordered)
+          } catch {}
+        }
+        if (prefs.columnVisibility) {
+          try {
+            setVisibleColumns(JSON.parse(prefs.columnVisibility))
+          } catch {}
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const persistPreferences = useCallback((cols: ToggleColumnDef[], vis: Record<string, boolean>) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      userPreferencesAPI.saveUserPreferences(PAGE_NAME, {
+        columnOrder: cols.map(c => c.id),
+        columnVisibility: vis,
+      }).catch(() => {})
+    }, 600)
+  }, [])
+
+  const toggleColumn = (columnId: string) => {
+    setVisibleColumns(prev => {
+      const next = { ...prev, [columnId]: !prev[columnId] }
+      persistPreferences(columns, next)
+      return next
+    })
+  }
+
+  const handleReorder = (newOrder: string[]) => {
+    const reordered = [
+      ...newOrder.map(id => columns.find(c => c.id === id)).filter(Boolean) as ToggleColumnDef[],
+      ...columns.filter(c => !newOrder.includes(c.id)),
+    ]
+    setColumns(reordered)
+    persistPreferences(reordered, visibleColumns)
+  }
+
+  const isColVisible = (columnId: string) => visibleColumns[columnId] === true
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -97,16 +155,16 @@ export default function HelpDeskPage() {
   const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
 
   useEffect(() => {
-    organizationsAPI.getAll({ limit: 1000 }).then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.name })))).catch(() => {})
+    organizationsAPI.getAll({ limit: 1000 })
+      .then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.denomination || o.name }))))
+      .catch(() => {})
   }, [])
 
-  // Apri il dialog "Nuovo Ticket" pre-compilato se navigato dal widget chiamata
   useEffect(() => {
     const state = location.state as { openCreate?: boolean; prefill?: Partial<typeof emptyForm> } | null
     if (state?.openCreate) {
       setFormData({ ...emptyForm, ...(state.prefill ?? {}) })
       setIsCreateOpen(true)
-      // Pulisci lo state per evitare riaperture al refresh
       window.history.replaceState({}, '')
     }
   }, [location.state])
@@ -117,9 +175,7 @@ export default function HelpDeskPage() {
       const response = await helpdeskAPI.getAll({
         page, limit, search: searchQuery,
         status: statusFilter || undefined,
-        priority: priorityFilter || undefined,
         callType: callTypeFilter || undefined,
-        ticketOrigin: originFilter || undefined,
       })
       setItems(response.data.tickets)
       setCurrentPage(response.data.pagination.page)
@@ -130,7 +186,7 @@ export default function HelpDeskPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, priorityFilter, callTypeFilter, originFilter, limit])
+  }, [searchQuery, statusFilter, callTypeFilter, limit])
 
   useEffect(() => {
     const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
@@ -193,7 +249,6 @@ export default function HelpDeskPage() {
         <Label>Titolo *</Label>
         <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Stato</Label>
@@ -217,15 +272,10 @@ export default function HelpDeskPage() {
           </Select>
         </div>
         <div>
-          <Label>Organizzazione</Label>
+          <Label>Nome Organizzazione</Label>
           <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
             <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={orgPopoverOpen}
-                className="w-full justify-between font-normal"
-              >
+              <Button variant="outline" role="combobox" aria-expanded={orgPopoverOpen} className="w-full justify-between font-normal">
                 <span className="truncate">
                   {formData.organizationId
                     ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? 'Seleziona...'
@@ -240,19 +290,12 @@ export default function HelpDeskPage() {
                 <CommandList>
                   <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
                   <CommandGroup>
-                    <CommandItem
-                      value="__none__"
-                      onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}
-                    >
+                    <CommandItem value="__none__" onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}>
                       <Check className={cn("mr-2 h-4 w-4", !formData.organizationId ? "opacity-100" : "opacity-0")} />
                       <span className="text-muted-foreground italic">Nessuna</span>
                     </CommandItem>
                     {orgs.map(o => (
-                      <CommandItem
-                        key={o.id}
-                        value={o.name}
-                        onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}
-                      >
+                      <CommandItem key={o.id} value={o.name} onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}>
                         <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
                         {o.name}
                       </CommandItem>
@@ -264,10 +307,30 @@ export default function HelpDeskPage() {
           </Popover>
         </div>
       </div>
-
       <div><Label>Descrizione</Label><Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} /></div>
     </div>
   )
+
+  const renderCell = (columnId: string, item: HelpDeskTicket) => {
+    switch (columnId) {
+      case "createdAt":    return <TableCell key={columnId} className="tabular-nums text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
+      case "orgCode":      return <TableCell key={columnId} className="font-mono text-sm">{(item.organization as any)?.code || "-"}</TableCell>
+      case "organization": return <TableCell key={columnId}>{(item.organization as any)?.denomination || item.organization?.name || "-"}</TableCell>
+      case "title":        return <TableCell key={columnId} className="font-medium">{item.title}</TableCell>
+      case "assignedTo":   return <TableCell key={columnId}>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
+      case "callType":     return <TableCell key={columnId}>{item.callType || "-"}</TableCell>
+      case "description":  return <TableCell key={columnId} className="max-w-[200px] truncate">{item.description || "-"}</TableCell>
+      case "status":       return <TableCell key={columnId}><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>
+      default: return null
+    }
+  }
+
+  const visibleCols = columns.filter(c => isColVisible(c.id))
+
+  // client-side industry filter on loaded tickets
+  const filteredItems = industryFilter
+    ? items.filter(t => (t.organization as any)?.industry === industryFilter)
+    : items
 
   return (
     <BaseLayout>
@@ -282,52 +345,42 @@ export default function HelpDeskPage() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
           </div>
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Stato" /></SelectTrigger>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Stato" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti gli stati</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={callTypeFilter} onValueChange={v => { setCallTypeFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Tipo Chiamata" /></SelectTrigger>
+            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Tipo Chiamata" /></SelectTrigger>
             <SelectContent><SelectItem value="all">Tutti i tipi</SelectItem>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
           </Select>
-          <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+          <Select value={industryFilter} onValueChange={v => setIndustryFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Settore" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Tutti i settori</SelectItem>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+          </Select>
+          <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                {isColVisible("createdAt") && <TableHead>Data</TableHead>}
-                {isColVisible("orgCode") && <TableHead>Codice Ufficio</TableHead>}
-                {isColVisible("organization") && <TableHead>Denominazione Uff.</TableHead>}
-                {isColVisible("title") && <TableHead>Titolo</TableHead>}
-                {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
-                {isColVisible("callType") && <TableHead>Tipo Chiamata</TableHead>}
-                {isColVisible("description") && <TableHead>Descrizione</TableHead>}
-                {isColVisible("status") && <TableHead>Stato</TableHead>}
+                {visibleCols.map(col => <TableHead key={col.id}>{col.label}</TableHead>)}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-              ) : items.length === 0 ? (
-                <TableRow><TableCell colSpan={COLUMNS.length + 1} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
-              ) : items.map(item => (
+                <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+              ) : filteredItems.length === 0 ? (
+                <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
+              ) : filteredItems.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("createdAt") && <TableCell className="text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>}
-                  {isColVisible("orgCode") && <TableCell className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>}
-                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
-                  {isColVisible("title") && <TableCell className="font-medium">{item.title}</TableCell>}
-                  {isColVisible("assignedTo") && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
-                  {isColVisible("callType") && <TableCell>{item.callType || "-"}</TableCell>}
-                  {isColVisible("description") && <TableCell className="max-w-[200px] truncate">{item.description || "-"}</TableCell>}
-                  {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
+                  {visibleCols.map(col => renderCell(col.id, item))}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -345,17 +398,13 @@ export default function HelpDeskPage() {
         </div>
 
         <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          limit={limit}
+          currentPage={currentPage} totalPages={totalPages} totalCount={totalCount} limit={limit}
           onPageChange={(page) => loadData(page)}
           onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
         />
 
-        {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Nuovo Ticket</DialogTitle><DialogDescription>Crea un nuovo ticket di assistenza.</DialogDescription></DialogHeader>
             {renderForm()}
             <DialogFooter>
@@ -365,9 +414,8 @@ export default function HelpDeskPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Modifica Ticket</DialogTitle><DialogDescription>Modifica i dati del ticket.</DialogDescription></DialogHeader>
             {renderForm()}
             <DialogFooter>
@@ -377,23 +425,31 @@ export default function HelpDeskPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Preview Dialog */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selected?.ticketNumber} - {selected?.title}</DialogTitle>
+              <DialogTitle className="flex items-center gap-2 flex-wrap">
+                <Badge className={STATUS_COLORS[selected?.status || ""] || ""}>{selected?.status}</Badge>
+                {selected?.ticketNumber} — {selected?.title}
+              </DialogTitle>
               <DialogDescription>Dettagli ticket</DialogDescription>
             </DialogHeader>
             {selected && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><span className="font-medium">Data:</span> {new Date(selected.createdAt).toLocaleDateString("it-IT")}</div>
-                  <div><span className="font-medium">Stato:</span> <Badge className={STATUS_COLORS[selected.status] || ""}>{selected.status}</Badge></div>
-                  <div><span className="font-medium">Codice Ufficio:</span> {selected.organization?.code || "-"}</div>
-                  <div><span className="font-medium">Denominazione Uff.:</span> {selected.organization?.name || "-"}</div>
                   <div><span className="font-medium">Tipo Chiamata:</span> {selected.callType || "-"}</div>
+                  <div><span className="font-medium">Codice BDT:</span> <span className="font-mono">{(selected.organization as any)?.code || "-"}</span></div>
+                  <div><span className="font-medium">Nome Organizzazione:</span> {(selected.organization as any)?.denomination || selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium">Settore:</span> {(selected.organization as any)?.industry || "-"}</div>
                   <div><span className="font-medium">Origine:</span> {selected.ticketOrigin || "-"}</div>
                   {selected.assignedTo && <div><span className="font-medium">Assegnato a:</span> {`${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username}</div>}
+                  {(selected.organization as any)?.coordinator && (
+                    <div><span className="font-medium">Coordinatrice:</span> {(selected.organization as any).coordinator}</div>
+                  )}
+                  {(selected.organization as any)?.legalRep && (
+                    <div><span className="font-medium">Legale Rappresentante:</span> {(selected.organization as any).legalRep}</div>
+                  )}
                 </div>
                 {selected.description && <div><span className="font-medium text-sm">Descrizione:</span><p className="text-sm mt-1 whitespace-pre-wrap bg-muted p-3 rounded">{selected.description}</p></div>}
               </div>
@@ -405,7 +461,6 @@ export default function HelpDeskPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Dialog */}
         <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
