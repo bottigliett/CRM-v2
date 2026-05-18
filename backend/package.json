@@ -11,7 +11,10 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "import:vtiger": "ts-node src/scripts/import-vtiger-csv.ts"
+    "import:vtiger": "ts-node src/scripts/import-vtiger-csv.ts",
+    "import:org": "ts-node src/scripts/import-nuovi-dati-org.ts",
+    "import:tickets": "ts-node src/scripts/import-nuovi-dati-tickets.ts",
+    "import:contracts": "ts-node src/scripts/import-nuovi-dati-contracts.ts"
   },
   "keywords": [],
   "author": "",
