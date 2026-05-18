@@ -50,48 +50,73 @@ async function main() {
 
   console.log(`Ticket rows: ${rows.length}`);
 
+  // Print actual column names from first row for diagnostics
+  if (rows.length > 0) {
+    console.log('Colonne trovate nell\'Excel:', Object.keys(rows[0]).join(' | '));
+    console.log('Prima riga (sample):');
+    console.log('  Codice uff. =', JSON.stringify(rows[0]['Codice uff.']));
+    console.log('  Denominazione uff. =', JSON.stringify(rows[0]['Denominazione uff.']));
+    console.log('  Assegnato a =', JSON.stringify(rows[0]['Assegnato a']));
+  }
+
   // Build org lookup by code and denomination
   const allOrgs = await prisma.organization.findMany({
     select: { id: true, code: true, name: true, denomination: true },
   });
+  console.log(`Orgs in DB: ${allOrgs.length}, con codice: ${allOrgs.filter(o => o.code).length}`);
+
   const orgByCode = new Map<string, number>();
   const orgByName = new Map<string, number>();
   for (const org of allOrgs) {
-    if (org.code) orgByCode.set(org.code.toLowerCase(), org.id);
-    if (org.denomination) orgByName.set(org.denomination.toLowerCase(), org.id);
-    if (org.name) orgByName.set(org.name.toLowerCase(), org.id); // fallback
+    if (org.code) {
+      orgByCode.set(org.code.toLowerCase().trim(), org.id);
+      // also strip non-alphanumeric for fuzzy match
+      orgByCode.set(org.code.toLowerCase().replace(/[^a-z0-9]/g, ''), org.id);
+    }
+    if (org.denomination) orgByName.set(org.denomination.toLowerCase().trim(), org.id);
+    if (org.name) orgByName.set(org.name.toLowerCase().trim(), org.id);
   }
 
   // Build user lookup
   const users = await prisma.user.findMany({
     select: { id: true, username: true, firstName: true, lastName: true },
   });
+  console.log('Admin users in DB:');
+  for (const u of users) {
+    console.log(`  id=${u.id} username=${u.username} firstName=${u.firstName} lastName=${u.lastName}`);
+  }
+
   const userMap = new Map<string, number>();
   for (const u of users) {
     if (u.username) userMap.set(u.username.toLowerCase(), u.id);
     const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
     if (fullName) userMap.set(fullName, u.id);
-    // also try "LastName FirstName" order
     const reverseName = `${u.lastName || ''} ${u.firstName || ''}`.trim().toLowerCase();
     if (reverseName && reverseName !== fullName) userMap.set(reverseName, u.id);
+    // also try single name parts
+    if (u.firstName) userMap.set(u.firstName.toLowerCase().trim(), u.id);
+    if (u.lastName) userMap.set(u.lastName.toLowerCase().trim(), u.id);
   }
 
   // Map tickets
   const tickets: any[] = [];
   let ticketCounter = 0;
   let noOrgCount = 0;
+  let noUserCount = 0;
 
   for (const row of rows) {
     const codiceUff = trim(row['Codice uff.']);
     const denomUff = trim(row['Denominazione uff.']);
 
-    // Lookup organization
+    // Lookup organization — try code (also normalized), then denomination/name
     let organizationId: number | null = null;
     if (codiceUff) {
-      organizationId = orgByCode.get(codiceUff.toLowerCase()) || null;
+      organizationId = orgByCode.get(codiceUff.toLowerCase().trim())
+        || orgByCode.get(codiceUff.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        || null;
     }
     if (!organizationId && denomUff) {
-      organizationId = orgByName.get(denomUff.toLowerCase()) || null;
+      organizationId = orgByName.get(denomUff.toLowerCase().trim()) || null;
     }
     if (!organizationId) noOrgCount++;
 
@@ -99,7 +124,8 @@ async function main() {
     const assignedName = trim(row['Assegnato a']);
     let assignedToId: number | null = null;
     if (assignedName) {
-      assignedToId = userMap.get(assignedName.toLowerCase()) || null;
+      assignedToId = userMap.get(assignedName.toLowerCase().trim()) || null;
+      if (!assignedToId) noUserCount++;
     }
 
     // Ticket number from file or generate
@@ -121,7 +147,8 @@ async function main() {
   }
 
   console.log(`Mapped tickets: ${tickets.length}`);
-  console.log(`Tickets without matching org: ${noOrgCount}`);
+  console.log(`Tickets senza org trovata: ${noOrgCount}/${tickets.length}`);
+  console.log(`Tickets con "Assegnato a" non trovato: ${noUserCount}`);
 
   if (DRY_RUN) {
     console.log('\n--- DRY RUN ---');
