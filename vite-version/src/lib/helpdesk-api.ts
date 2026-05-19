@@ -34,6 +34,15 @@ export interface GetHelpDeskParams {
   callType?: string;
   ticketOrigin?: string;
   category?: string;
+  orgCode?: string;
+  orgName?: string;
+  title?: string;
+  assignedTo?: string;
+  description?: string;
+  ticketNumber?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  industry?: string;
 }
 
 class HelpDeskAPI {
@@ -53,6 +62,15 @@ class HelpDeskAPI {
     if (params.callType) qp.append('callType', params.callType);
     if (params.ticketOrigin) qp.append('ticketOrigin', params.ticketOrigin);
     if (params.category) qp.append('category', params.category);
+    if (params.orgCode) qp.append('orgCode', params.orgCode);
+    if (params.orgName) qp.append('orgName', params.orgName);
+    if (params.title) qp.append('title', params.title);
+    if (params.assignedTo) qp.append('assignedTo', params.assignedTo);
+    if (params.description) qp.append('description', params.description);
+    if (params.ticketNumber) qp.append('ticketNumber', params.ticketNumber);
+    if (params.dateFrom) qp.append('dateFrom', params.dateFrom);
+    if (params.dateTo) qp.append('dateTo', params.dateTo);
+    if (params.industry) qp.append('industry', params.industry);
 
     const url = `${API_BASE_URL}/helpdesk${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });

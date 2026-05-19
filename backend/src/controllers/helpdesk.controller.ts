@@ -32,6 +32,15 @@ export const getHelpDeskTickets = async (req: Request, res: Response) => {
       category = '',
       page = '1',
       limit = '20',
+      orgCode = '',
+      orgName = '',
+      title = '',
+      assignedTo = '',
+      description = '',
+      ticketNumber = '',
+      dateFrom = '',
+      dateTo = '',
+      industry = '',
     } = req.query;
 
     const where: any = {};
@@ -53,6 +62,46 @@ export const getHelpDeskTickets = async (req: Request, res: Response) => {
     if (callType) where.callType = callType as string;
     if (ticketOrigin) where.ticketOrigin = ticketOrigin as string;
     if (category) where.category = category as string;
+
+    // Column-level filters for organization relation
+    if (orgCode || orgName || industry) {
+      const orgWhere: any = {};
+      if (orgCode) orgWhere.code = { contains: orgCode as string };
+      if (industry) orgWhere.industry = industry as string;
+      if (orgName) {
+        // Search denomination OR name — combine with other org conditions via AND
+        where.organization = {
+          ...orgWhere,
+          OR: [
+            { denomination: { contains: orgName as string } },
+            { name: { contains: orgName as string } },
+          ],
+        };
+      } else {
+        where.organization = orgWhere;
+      }
+    }
+    if (title) where.title = { contains: title as string };
+    if (description) where.description = { contains: description as string };
+    if (ticketNumber) where.ticketNumber = { contains: ticketNumber as string };
+    if (assignedTo) {
+      where.assignedTo = {
+        OR: [
+          { firstName: { contains: assignedTo as string } },
+          { lastName: { contains: assignedTo as string } },
+          { username: { contains: assignedTo as string } },
+        ],
+      };
+    }
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom as string);
+      if (dateTo) {
+        const end = new Date(dateTo as string);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);

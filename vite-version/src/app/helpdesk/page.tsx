@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, Headset,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Headset,
   ChevronsUpDown, Check,
 } from "lucide-react"
 import {
@@ -58,11 +58,8 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
 const DEFAULT_VISIBLE_IDS = new Set(["createdAt", "orgCode", "organization", "title", "assignedTo", "callType", "description", "status"])
 
 const STATUSES = ["Aperto", "In Corso", "In attesa risposta", "Chiuso"]
-const PRIORITIES = ["Bloccante", "Principale", "Secondario"]
 const CALL_TYPES = ["Atelier", "Browser", "Tecnico", "Gestionale", "Server", "Hardware", "Software", "Rete", "Altro"]
 const ORIGINS = ["Telefono", "Whatsapp", "Email", "Di persona", "Portale"]
-const INDUSTRIES = ["Immobiliare", "Creditizio"]
-
 const STATUS_COLORS: Record<string, string> = {
   "Aperto":              "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   "In Corso":            "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
@@ -79,14 +76,34 @@ export default function HelpDeskPage() {
   const location = useLocation()
   const [items, setItems] = useState<HelpDeskTicket[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
-  const [callTypeFilter, setCallTypeFilter] = useState("")
-  const [industryFilter, setIndustryFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [limit, setLimit] = useState(20)
+
+  // Text inputs use debounce; selects apply immediately
+  const TEXT_FILTER_COLS = new Set(["createdAt", "orgCode", "organization", "title", "assignedTo", "description", "ticketNumber"])
+  const updateColumnFilter = useCallback((colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev, [colId]: value }
+      if (!TEXT_FILTER_COLS.has(colId)) {
+        // select — apply immediately
+        setDebouncedFilters(d => ({ ...d, [colId]: value }))
+        setCurrentPage(1)
+      } else {
+        // text — debounce 500ms
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          setDebouncedFilters(d => ({ ...d, [colId]: value }))
+          setCurrentPage(1)
+        }, 500)
+      }
+      return next
+    })
+  }, [])
 
   const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -199,10 +216,19 @@ export default function HelpDeskPage() {
   const loadData = useCallback(async (page = 1) => {
     try {
       setLoading(true)
+      const f = debouncedFilters
       const response = await helpdeskAPI.getAll({
-        page, limit, search: searchQuery,
-        status: statusFilter || undefined,
-        callType: callTypeFilter || undefined,
+        page, limit,
+        status: f.status || undefined,
+        callType: f.callType || undefined,
+        orgCode: f.orgCode || undefined,
+        orgName: f.organization || undefined,
+        title: f.title || undefined,
+        assignedTo: f.assignedTo || undefined,
+        description: f.description || undefined,
+        ticketNumber: f.ticketNumber || undefined,
+        dateFrom: f.createdAt || undefined,
+        industry: f.industry || undefined,
       })
       setItems(response.data.tickets)
       setCurrentPage(response.data.pagination.page)
@@ -213,11 +239,10 @@ export default function HelpDeskPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, callTypeFilter, limit])
+  }, [debouncedFilters, limit])
 
   useEffect(() => {
-    const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
-    return () => clearTimeout(timer)
+    loadData()
   }, [loadData])
 
   const handleCreate = async () => {
@@ -398,10 +423,49 @@ export default function HelpDeskPage() {
 
   const visibleCols = columns.filter(c => isColVisible(c.id))
 
-  // client-side industry filter on loaded tickets
-  const filteredItems = industryFilter
-    ? items.filter(t => t.organization?.industry === industryFilter)
-    : items
+  const renderFilterCell = (columnId: string) => {
+    switch (columnId) {
+      case "status":
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Select value={columnFilters.status || ""} onValueChange={v => updateColumnFilter("status", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Stato" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tutti</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </TableHead>
+        )
+      case "callType":
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Select value={columnFilters.callType || ""} onValueChange={v => updateColumnFilter("callType", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tutti</SelectItem>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </TableHead>
+        )
+      default: {
+        const placeholders: Record<string, string> = {
+          createdAt: "gg/mm/aaaa",
+          orgCode: "Codice...",
+          organization: "Denominazione...",
+          title: "Titolo...",
+          assignedTo: "Assegnato a...",
+          description: "Descrizione...",
+          ticketNumber: "N. Ticket...",
+        }
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Input
+              className="h-8 text-xs"
+              placeholder={placeholders[columnId] || "Filtra..."}
+              value={columnFilters[columnId] || ""}
+              onChange={e => updateColumnFilter(columnId, e.target.value)}
+            />
+          </TableHead>
+        )
+      }
+    }
+  }
 
   return (
     <BaseLayout>
@@ -417,22 +481,6 @@ export default function HelpDeskPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
-          </div>
-          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Stato" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti gli stati</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={callTypeFilter} onValueChange={v => { setCallTypeFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Tipo Chiamata" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti i tipi</SelectItem>{CALL_TYPES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={industryFilter} onValueChange={v => setIndustryFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Settore" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti i settori</SelectItem>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
-          </Select>
           <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
@@ -443,13 +491,17 @@ export default function HelpDeskPage() {
                 {visibleCols.map(col => <TableHead key={col.id}>{col.label}</TableHead>)}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
+              <TableRow>
+                {visibleCols.map(col => renderFilterCell(col.id))}
+                <TableHead className="w-[50px] p-1"></TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
-              ) : filteredItems.length === 0 ? (
+              ) : items.length === 0 ? (
                 <TableRow><TableCell colSpan={visibleCols.length + 1} className="text-center py-8 text-muted-foreground">Nessun ticket trovato</TableCell></TableRow>
-              ) : filteredItems.map(item => (
+              ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
                   {visibleCols.map(col => renderCell(col.id, item))}
                   <TableCell onClick={e => e.stopPropagation()}>
