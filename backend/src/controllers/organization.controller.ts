@@ -11,6 +11,24 @@ export const getOrganizations = async (req: Request, res: Response) => {
       isActive = '',
       page = '1',
       limit = '20',
+      code = '',
+      denomination = '',
+      phone = '',
+      vatNumber = '',
+      mobile = '',
+      email = '',
+      uniqueCode = '',
+      pec = '',
+      legalRep = '',
+      shareholders = '',
+      coordinator = '',
+      bankName = '',
+      iban = '',
+      devices = '',
+      nasInfo = '',
+      nasContract = '',
+      dateFrom = '',
+      dateTo = '',
     } = req.query;
 
     const where: any = {};
@@ -36,6 +54,38 @@ export const getOrganizations = async (req: Request, res: Response) => {
 
     if (isActive !== '') {
       where.isActive = isActive === 'true';
+    }
+
+    // Column-level text filters
+    if (code) where.code = { contains: code as string };
+    if (denomination) {
+      where.OR = [
+        { denomination: { contains: denomination as string } },
+        { name: { contains: denomination as string } },
+      ];
+    }
+    if (phone) where.phone = { contains: phone as string };
+    if (vatNumber) where.vatNumber = { contains: vatNumber as string };
+    if (mobile) where.mobile = { contains: mobile as string };
+    if (email) where.email = { contains: email as string };
+    if (uniqueCode) where.uniqueCode = { contains: uniqueCode as string };
+    if (pec) where.pec = { contains: pec as string };
+    if (legalRep) where.legalRep = { contains: legalRep as string };
+    if (shareholders) where.shareholders = { contains: shareholders as string };
+    if (coordinator) where.coordinator = { contains: coordinator as string };
+    if (bankName) where.bankName = { contains: bankName as string };
+    if (iban) where.iban = { contains: iban as string };
+    if (devices) where.devices = { contains: devices as string };
+    if (nasInfo) where.nasInfo = { contains: nasInfo as string };
+    if (nasContract) where.nasContract = { contains: nasContract as string };
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom as string);
+      if (dateTo) {
+        const end = new Date(dateTo as string);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
     }
 
     const pageNum = parseInt(page as string);

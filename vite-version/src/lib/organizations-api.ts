@@ -52,6 +52,24 @@ export interface GetOrganizationsParams {
   industry?: string;
   accountType?: string;
   isActive?: string;
+  code?: string;
+  denomination?: string;
+  phone?: string;
+  vatNumber?: string;
+  mobile?: string;
+  email?: string;
+  uniqueCode?: string;
+  pec?: string;
+  legalRep?: string;
+  shareholders?: string;
+  coordinator?: string;
+  bankName?: string;
+  iban?: string;
+  devices?: string;
+  nasInfo?: string;
+  nasContract?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 class OrganizationsAPI {
@@ -69,6 +87,24 @@ class OrganizationsAPI {
     if (params.industry) qp.append('industry', params.industry);
     if (params.accountType) qp.append('accountType', params.accountType);
     if (params.isActive !== undefined) qp.append('isActive', params.isActive);
+    if (params.code) qp.append('code', params.code);
+    if (params.denomination) qp.append('denomination', params.denomination);
+    if (params.phone) qp.append('phone', params.phone);
+    if (params.vatNumber) qp.append('vatNumber', params.vatNumber);
+    if (params.mobile) qp.append('mobile', params.mobile);
+    if (params.email) qp.append('email', params.email);
+    if (params.uniqueCode) qp.append('uniqueCode', params.uniqueCode);
+    if (params.pec) qp.append('pec', params.pec);
+    if (params.legalRep) qp.append('legalRep', params.legalRep);
+    if (params.shareholders) qp.append('shareholders', params.shareholders);
+    if (params.coordinator) qp.append('coordinator', params.coordinator);
+    if (params.bankName) qp.append('bankName', params.bankName);
+    if (params.iban) qp.append('iban', params.iban);
+    if (params.devices) qp.append('devices', params.devices);
+    if (params.nasInfo) qp.append('nasInfo', params.nasInfo);
+    if (params.nasContract) qp.append('nasContract', params.nasContract);
+    if (params.dateFrom) qp.append('dateFrom', params.dateFrom);
+    if (params.dateTo) qp.append('dateTo', params.dateTo);
 
     const url = `${API_BASE_URL}/organizations${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });

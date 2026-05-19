@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2,
 } from "lucide-react"
 import { organizationsAPI, type Organization } from "@/lib/organizations-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
@@ -80,14 +80,31 @@ const emptyForm = {
 export default function OrganizationsPage() {
   const [items, setItems] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [industryFilter, setIndustryFilter] = useState("")
-  const [accountTypeFilter, setAccountTypeFilter] = useState("")
-  const [isActiveFilter, setIsActiveFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [limit, setLimit] = useState(20)
+
+  const SELECT_FILTER_COLS = new Set(["accountType", "industry"])
+  const updateColumnFilter = useCallback((colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev, [colId]: value }
+      if (SELECT_FILTER_COLS.has(colId)) {
+        setDebouncedFilters(d => ({ ...d, [colId]: value }))
+        setCurrentPage(1)
+      } else {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          setDebouncedFilters(d => ({ ...d, [colId]: value }))
+          setCurrentPage(1)
+        }, 500)
+      }
+      return next
+    })
+  }, [])
 
   const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -178,11 +195,28 @@ export default function OrganizationsPage() {
   const loadData = useCallback(async (page = 1) => {
     try {
       setLoading(true)
+      const f = debouncedFilters
       const response = await organizationsAPI.getAll({
-        page, limit, search: searchQuery,
-        industry: industryFilter || undefined,
-        accountType: accountTypeFilter || undefined,
-        isActive: isActiveFilter || undefined,
+        page, limit,
+        industry: f.industry || undefined,
+        accountType: f.accountType || undefined,
+        code: f.code || undefined,
+        denomination: f.denomination || undefined,
+        phone: f.phone || undefined,
+        vatNumber: f.vatNumber || undefined,
+        mobile: f.mobile || undefined,
+        email: f.email || undefined,
+        uniqueCode: f.uniqueCode || undefined,
+        pec: f.pec || undefined,
+        legalRep: f.legalRep || undefined,
+        shareholders: f.shareholders || undefined,
+        coordinator: f.coordinator || undefined,
+        bankName: f.bankName || undefined,
+        iban: f.iban || undefined,
+        devices: f.devices || undefined,
+        nasInfo: f.nasInfo || undefined,
+        nasContract: f.nasContract || undefined,
+        dateFrom: f.createdAt || undefined,
       })
       setItems(response.data.organizations)
       setCurrentPage(response.data.pagination.page)
@@ -193,11 +227,10 @@ export default function OrganizationsPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, industryFilter, accountTypeFilter, isActiveFilter, limit])
+  }, [debouncedFilters, limit])
 
   useEffect(() => {
-    const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
-    return () => clearTimeout(timer)
+    loadData()
   }, [loadData])
 
   const handleCreate = async () => {
@@ -361,6 +394,60 @@ export default function OrganizationsPage() {
 
   const visibleCols = columns.filter(c => isColVisible(c.id))
 
+  const renderFilterCell = (columnId: string) => {
+    switch (columnId) {
+      case "accountType":
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Select value={columnFilters.accountType || ""} onValueChange={v => updateColumnFilter("accountType", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tutti</SelectItem>{ACCOUNT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </TableHead>
+        )
+      case "industry":
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Select value={columnFilters.industry || ""} onValueChange={v => updateColumnFilter("industry", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Settore" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tutti</SelectItem>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+            </Select>
+          </TableHead>
+        )
+      default: {
+        const placeholders: Record<string, string> = {
+          code: "Codice...",
+          denomination: "Denominazione...",
+          phone: "Telefono...",
+          createdAt: "gg/mm/aaaa",
+          vatNumber: "P.IVA...",
+          mobile: "Cellulare...",
+          email: "Email...",
+          uniqueCode: "Cod. Univoco...",
+          pec: "PEC...",
+          legalRep: "Legale Rapp...",
+          shareholders: "Compagine...",
+          coordinator: "Coordinatrice...",
+          bankName: "Banca...",
+          iban: "IBAN...",
+          devices: "Dispositivi...",
+          nasInfo: "Info NAS...",
+          nasContract: "Contratto NAS...",
+        }
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Input
+              className="h-8 text-xs"
+              placeholder={placeholders[columnId] || "Filtra..."}
+              value={columnFilters[columnId] || ""}
+              onChange={e => updateColumnFilter(columnId, e.target.value)}
+            />
+          </TableHead>
+        )
+      }
+    }
+  }
+
   return (
     <BaseLayout>
       <div className="flex flex-col gap-6 p-6">
@@ -375,32 +462,6 @@ export default function OrganizationsPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
-          </div>
-          <Select value={industryFilter} onValueChange={v => { setIndustryFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Settore" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti i settori</SelectItem>
-              {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={accountTypeFilter} onValueChange={v => { setAccountTypeFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[170px]"><SelectValue placeholder="Tipo" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti i tipi</SelectItem>
-              {ACCOUNT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={isActiveFilter} onValueChange={v => { setIsActiveFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Stato" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti</SelectItem>
-              <SelectItem value="true">Attivi</SelectItem>
-              <SelectItem value="false">Non attivi</SelectItem>
-            </SelectContent>
-          </Select>
           <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
@@ -410,6 +471,10 @@ export default function OrganizationsPage() {
               <TableRow>
                 {visibleCols.map(col => <TableHead key={col.id}>{col.label}</TableHead>)}
                 <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+              <TableRow>
+                {visibleCols.map(col => renderFilterCell(col.id))}
+                <TableHead className="w-[50px] p-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
