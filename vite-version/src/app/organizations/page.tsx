@@ -55,9 +55,10 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "devices",      label: "Dispositivi" },
   { id: "nasInfo",      label: "Info NAS" },
   { id: "nasContract",  label: "Contratto NAS" },
+  { id: "isActive",     label: "Attivo" },
 ]
 
-const DEFAULT_VISIBLE_IDS = new Set(["accountType", "code", "denomination", "phone", "createdAt"])
+const DEFAULT_VISIBLE_IDS = new Set(["accountType", "code", "denomination", "phone", "createdAt", "isActive"])
 
 const ACCOUNT_TYPE_COLORS: Record<string, string> = {
   "SI Contratto": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -80,15 +81,15 @@ const emptyForm = {
 export default function OrganizationsPage() {
   const [items, setItems] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({ isActive: "true" })
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({ isActive: "true" })
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [limit, setLimit] = useState(20)
 
-  const SELECT_FILTER_COLS = new Set(["accountType", "industry"])
+  const SELECT_FILTER_COLS = new Set(["accountType", "industry", "isActive"])
   const updateColumnFilter = useCallback((colId: string, value: string) => {
     setColumnFilters(prev => {
       const next = { ...prev, [colId]: value }
@@ -217,6 +218,7 @@ export default function OrganizationsPage() {
         nasInfo: f.nasInfo || undefined,
         nasContract: f.nasContract || undefined,
         dateFrom: f.createdAt || undefined,
+        isActive: f.isActive || undefined,
       })
       setItems(response.data.organizations)
       setCurrentPage(response.data.pagination.page)
@@ -388,6 +390,7 @@ export default function OrganizationsPage() {
       case "devices":      return <TableCell key={columnId}>{item.devices || "-"}</TableCell>
       case "nasInfo":      return <TableCell key={columnId}>{item.nasInfo || "-"}</TableCell>
       case "nasContract":  return <TableCell key={columnId}>{item.nasContract || "-"}</TableCell>
+      case "isActive":     return <TableCell key={columnId}><Badge className={item.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}>{item.isActive ? "Attivo" : "Non attivo"}</Badge></TableCell>
       default: return null
     }
   }
@@ -411,6 +414,15 @@ export default function OrganizationsPage() {
             <Select value={columnFilters.industry || ""} onValueChange={v => updateColumnFilter("industry", v === "all" ? "" : v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Settore" /></SelectTrigger>
               <SelectContent><SelectItem value="all">Tutti</SelectItem>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+            </Select>
+          </TableHead>
+        )
+      case "isActive":
+        return (
+          <TableHead key={`filter-${columnId}`} className="p-1">
+            <Select value={columnFilters.isActive || ""} onValueChange={v => updateColumnFilter("isActive", v === "all" ? "" : v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Attivo" /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Tutti</SelectItem><SelectItem value="true">Attivi</SelectItem><SelectItem value="false">Non attivi</SelectItem></SelectContent>
             </Select>
           </TableHead>
         )
