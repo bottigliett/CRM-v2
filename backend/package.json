@@ -15,7 +15,8 @@
     "import:org": "ts-node src/scripts/import-nuovi-dati-org.ts",
     "import:tickets": "ts-node src/scripts/import-nuovi-dati-tickets.ts",
     "import:contracts": "ts-node src/scripts/import-nuovi-dati-contracts.ts",
-    "import:quotes": "ts-node src/scripts/import-nuovi-dati-quotes.ts"
+    "import:quotes": "ts-node src/scripts/import-nuovi-dati-quotes.ts",
+    "update:org-active": "ts-node src/scripts/update-org-active.ts"
   },
   "keywords": [],
   "author": "",
