@@ -42,6 +42,9 @@ export const getHelpDeskTickets = async (req: Request, res: Response) => {
         { title: { contains: search } },
         { description: { contains: search } },
         { technicianName: { contains: search } },
+        { organization: { code: { contains: search } } },
+        { organization: { name: { contains: search } } },
+        { organization: { denomination: { contains: search } } },
       ];
     }
 
