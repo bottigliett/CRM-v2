@@ -36,6 +36,14 @@ export interface GetServiceContractsParams {
   isConsultecno?: string;
   isPaid?: string;
   includeStats?: string;
+  contractNumber?: string;
+  contractType?: string;
+  orgName?: string;
+  subject?: string;
+  startDateFrom?: string;
+  startDateTo?: string;
+  nextInvoiceDateFrom?: string;
+  nextInvoiceDateTo?: string;
 }
 
 class ServiceContractsAPI {
@@ -55,6 +63,14 @@ class ServiceContractsAPI {
     if (params.isConsultecno) qp.append('isConsultecno', params.isConsultecno);
     if (params.isPaid) qp.append('isPaid', params.isPaid);
     if (params.includeStats) qp.append('includeStats', params.includeStats);
+    if (params.contractNumber) qp.append('contractNumber', params.contractNumber);
+    if (params.contractType) qp.append('contractType', params.contractType);
+    if (params.orgName) qp.append('orgName', params.orgName);
+    if (params.subject) qp.append('subject', params.subject);
+    if (params.startDateFrom) qp.append('startDateFrom', params.startDateFrom);
+    if (params.startDateTo) qp.append('startDateTo', params.startDateTo);
+    if (params.nextInvoiceDateFrom) qp.append('nextInvoiceDateFrom', params.nextInvoiceDateFrom);
+    if (params.nextInvoiceDateTo) qp.append('nextInvoiceDateTo', params.nextInvoiceDateTo);
 
     const url = `${API_BASE_URL}/service-contracts${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });

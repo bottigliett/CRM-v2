@@ -36,6 +36,12 @@ export interface GetVtQuotesParams {
   search?: string;
   stage?: string;
   organizationId?: string;
+  quoteNumber?: string;
+  subject?: string;
+  orgName?: string;
+  assignedTo?: string;
+  validUntilFrom?: string;
+  validUntilTo?: string;
 }
 
 class VtQuotesAPI {
@@ -52,6 +58,12 @@ class VtQuotesAPI {
     if (params.search) qp.append('search', params.search);
     if (params.stage) qp.append('stage', params.stage);
     if (params.organizationId) qp.append('organizationId', params.organizationId);
+    if (params.quoteNumber) qp.append('quoteNumber', params.quoteNumber);
+    if (params.subject) qp.append('subject', params.subject);
+    if (params.orgName) qp.append('orgName', params.orgName);
+    if (params.assignedTo) qp.append('assignedTo', params.assignedTo);
+    if (params.validUntilFrom) qp.append('validUntilFrom', params.validUntilFrom);
+    if (params.validUntilTo) qp.append('validUntilTo', params.validUntilTo);
 
     const url = `${API_BASE_URL}/vt-quotes${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });

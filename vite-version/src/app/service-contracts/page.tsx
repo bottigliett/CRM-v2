@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, TrendingUp, AlertTriangle,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, TrendingUp, AlertTriangle,
 } from "lucide-react"
 import { serviceContractsAPI, type ServiceContract } from "@/lib/service-contracts-api"
 import { organizationsAPI } from "@/lib/organizations-api"
@@ -74,13 +74,32 @@ const emptyForm: any = {
 export default function ServiceContractsPage() {
   const [items, setItems] = useState<ServiceContract[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [stats, setStats] = useState<any>(null)
   const [limit, setLimit] = useState(20)
+
+  const SELECT_FILTER_COLS = new Set(["status", "contractType", "isConsultecno"])
+  const updateColumnFilter = useCallback((colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev, [colId]: value }
+      if (SELECT_FILTER_COLS.has(colId)) {
+        setDebouncedFilters(d => ({ ...d, [colId]: value }))
+        setCurrentPage(1)
+      } else {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          setDebouncedFilters(d => ({ ...d, [colId]: value }))
+          setCurrentPage(1)
+        }, 500)
+      }
+      return next
+    })
+  }, [])
 
   const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -174,10 +193,18 @@ export default function ServiceContractsPage() {
   const loadData = useCallback(async (page = 1) => {
     try {
       setLoading(true)
+      const f = debouncedFilters
       const response = await serviceContractsAPI.getAll({
-        page, limit, search: searchQuery,
-        status: statusFilter || undefined,
+        page, limit,
+        status: f.status || undefined,
         includeStats: "true",
+        contractNumber: f.contractNumber || undefined,
+        contractType: f.contractType || undefined,
+        orgName: f.organization || undefined,
+        subject: f.subject || undefined,
+        startDateFrom: f.startDate || undefined,
+        nextInvoiceDateFrom: f.nextInvoiceDate || undefined,
+        isConsultecno: f.isConsultecno || undefined,
       })
       setItems(response.data.contracts)
       setCurrentPage(response.data.pagination.page)
@@ -189,11 +216,10 @@ export default function ServiceContractsPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, limit])
+  }, [debouncedFilters, limit])
 
   useEffect(() => {
-    const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
-    return () => clearTimeout(timer)
+    loadData()
   }, [loadData])
 
   const handleCreate = async () => {
@@ -357,22 +383,6 @@ export default function ServiceContractsPage() {
         )}
 
         <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca..."
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }}
-              className="pl-10"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[220px]"><SelectValue placeholder="Stato" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti gli stati</SelectItem>
-              {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
           <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
@@ -390,6 +400,18 @@ export default function ServiceContractsPage() {
                 {isColVisible("isConsultecno")   && <TableHead>Consultecno</TableHead>}
                 {isColVisible("subject")         && <TableHead>Info aggiuntive</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+              <TableRow>
+                {isColVisible("contractNumber")  && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Numero..." value={columnFilters.contractNumber || ""} onChange={e => updateColumnFilter("contractNumber", e.target.value)} /></TableHead>}
+                {isColVisible("contractType")    && <TableHead className="p-1"><Select value={columnFilters.contractType || ""} onValueChange={v => updateColumnFilter("contractType", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></TableHead>}
+                {isColVisible("organization")    && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Organizzazione..." value={columnFilters.organization || ""} onChange={e => updateColumnFilter("organization", e.target.value)} /></TableHead>}
+                {isColVisible("status")          && <TableHead className="p-1"><Select value={columnFilters.status || ""} onValueChange={v => updateColumnFilter("status", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Stato" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></TableHead>}
+                {isColVisible("contractValue")   && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Valore..." value={columnFilters.contractValue || ""} onChange={e => updateColumnFilter("contractValue", e.target.value)} /></TableHead>}
+                {isColVisible("startDate")       && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="gg/mm/aaaa" value={columnFilters.startDate || ""} onChange={e => updateColumnFilter("startDate", e.target.value)} /></TableHead>}
+                {isColVisible("nextInvoiceDate") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="gg/mm/aaaa" value={columnFilters.nextInvoiceDate || ""} onChange={e => updateColumnFilter("nextInvoiceDate", e.target.value)} /></TableHead>}
+                {isColVisible("isConsultecno")   && <TableHead className="p-1"><Select value={columnFilters.isConsultecno || ""} onValueChange={v => updateColumnFilter("isConsultecno", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tutti" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem><SelectItem value="true">Si</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select></TableHead>}
+                {isColVisible("subject")         && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Info..." value={columnFilters.subject || ""} onChange={e => updateColumnFilter("subject", e.target.value)} /></TableHead>}
+                <TableHead className="w-[50px] p-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, ShoppingCart,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ShoppingCart,
 } from "lucide-react"
 import { salesOrdersAPI, type SalesOrder } from "@/lib/sales-orders-api"
 import { organizationsAPI } from "@/lib/organizations-api"
@@ -75,9 +75,9 @@ export default function SalesOrdersPage() {
   const navigate = useNavigate()
   const [items, setItems] = useState<SalesOrder[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
-  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -86,6 +86,24 @@ export default function SalesOrdersPage() {
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({})
   const toggleColumn = (columnId: string) => setVisibleColumns(prev => ({ ...prev, [columnId]: prev[columnId] === false ? true : false }))
   const isColVisible = (columnId: string) => visibleColumns[columnId] !== false
+
+  const SELECT_FILTER_COLS = new Set(["status", "invoiceStatus"])
+  const updateColumnFilter = useCallback((colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev, [colId]: value }
+      if (SELECT_FILTER_COLS.has(colId)) {
+        setDebouncedFilters(d => ({ ...d, [colId]: value }))
+        setCurrentPage(1)
+      } else {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          setDebouncedFilters(d => ({ ...d, [colId]: value }))
+          setCurrentPage(1)
+        }, 500)
+      }
+      return next
+    })
+  }, [])
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -103,10 +121,18 @@ export default function SalesOrdersPage() {
   const loadData = useCallback(async (page = 1) => {
     try {
       setLoading(true)
+      const f = debouncedFilters
       const response = await salesOrdersAPI.getAll({
-        page, limit, search: searchQuery,
-        status: statusFilter || undefined,
-        invoiceStatus: invoiceStatusFilter || undefined,
+        page, limit,
+        status: f.status || undefined,
+        invoiceStatus: f.invoiceStatus || undefined,
+        orderNumber: f.orderNumber || undefined,
+        subject: f.subject || undefined,
+        orgName: f.organization || undefined,
+        contactName: f.contact || undefined,
+        assignedTo: f.assignedTo || undefined,
+        quoteNumber: f.quote || undefined,
+        dueDateFrom: f.dueDate || undefined,
       })
       setItems(response.data.orders)
       setCurrentPage(response.data.pagination.page)
@@ -117,11 +143,10 @@ export default function SalesOrdersPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, statusFilter, invoiceStatusFilter, limit])
+  }, [debouncedFilters, limit])
 
   useEffect(() => {
-    const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
-    return () => clearTimeout(timer)
+    loadData()
   }, [loadData])
 
   const handleCreate = async () => {
@@ -299,18 +324,6 @@ export default function SalesOrdersPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cerca..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }} className="pl-10" />
-          </div>
-          <Select value={statusFilter} onValueChange={v => { setStatusFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stato" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti gli stati</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={invoiceStatusFilter} onValueChange={v => { setInvoiceStatusFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stato fattura" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Tutti</SelectItem>{INVOICE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-          </Select>
           <ColumnToggle columns={COLUMNS} visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
 
@@ -328,6 +341,18 @@ export default function SalesOrdersPage() {
                 {isColVisible("quote") && <TableHead>Preventivo</TableHead>}
                 {isColVisible("assignedTo") && <TableHead>Assegnato a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+              <TableRow>
+                {isColVisible("orderNumber") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Numero..." value={columnFilters.orderNumber || ""} onChange={e => updateColumnFilter("orderNumber", e.target.value)} /></TableHead>}
+                {isColVisible("subject") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Oggetto..." value={columnFilters.subject || ""} onChange={e => updateColumnFilter("subject", e.target.value)} /></TableHead>}
+                {isColVisible("organization") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Organizzazione..." value={columnFilters.organization || ""} onChange={e => updateColumnFilter("organization", e.target.value)} /></TableHead>}
+                {isColVisible("contact") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Contatto..." value={columnFilters.contact || ""} onChange={e => updateColumnFilter("contact", e.target.value)} /></TableHead>}
+                {isColVisible("status") && <TableHead className="p-1"><Select value={columnFilters.status || ""} onValueChange={v => updateColumnFilter("status", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Stato" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></TableHead>}
+                {isColVisible("invoiceStatus") && <TableHead className="p-1"><Select value={columnFilters.invoiceStatus || ""} onValueChange={v => updateColumnFilter("invoiceStatus", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fattura" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{INVOICE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></TableHead>}
+                {isColVisible("dueDate") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="gg/mm/aaaa" value={columnFilters.dueDate || ""} onChange={e => updateColumnFilter("dueDate", e.target.value)} /></TableHead>}
+                {isColVisible("quote") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Preventivo..." value={columnFilters.quote || ""} onChange={e => updateColumnFilter("quote", e.target.value)} /></TableHead>}
+                {isColVisible("assignedTo") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Assegnato a..." value={columnFilters.assignedTo || ""} onChange={e => updateColumnFilter("assignedTo", e.target.value)} /></TableHead>}
+                <TableHead className="w-[50px] p-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

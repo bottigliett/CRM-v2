@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Plus, Search, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileText,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileText,
 } from "lucide-react"
 import { vtQuotesAPI, type VtQuote } from "@/lib/vt-quotes-api"
 import { organizationsAPI } from "@/lib/organizations-api"
@@ -68,12 +68,31 @@ const emptyForm: any = {
 export default function VtQuotesPage() {
   const [items, setItems] = useState<VtQuote[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [stageFilter, setStageFilter] = useState("")
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [limit, setLimit] = useState(20)
+
+  const SELECT_FILTER_COLS = new Set(["stage"])
+  const updateColumnFilter = useCallback((colId: string, value: string) => {
+    setColumnFilters(prev => {
+      const next = { ...prev, [colId]: value }
+      if (SELECT_FILTER_COLS.has(colId)) {
+        setDebouncedFilters(d => ({ ...d, [colId]: value }))
+        setCurrentPage(1)
+      } else {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+          setDebouncedFilters(d => ({ ...d, [colId]: value }))
+          setCurrentPage(1)
+        }, 500)
+      }
+      return next
+    })
+  }, [])
 
   const [columns, setColumns] = useState<ToggleColumnDef[]>(DEFAULT_COLUMNS)
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
@@ -165,9 +184,15 @@ export default function VtQuotesPage() {
   const loadData = useCallback(async (page = 1) => {
     try {
       setLoading(true)
+      const f = debouncedFilters
       const response = await vtQuotesAPI.getAll({
-        page, limit, search: searchQuery,
-        stage: stageFilter || undefined,
+        page, limit,
+        stage: f.stage || undefined,
+        quoteNumber: f.quoteNumber || undefined,
+        subject: f.subject || undefined,
+        orgName: f.organization || undefined,
+        assignedTo: f.assignedTo || undefined,
+        validUntilFrom: f.validUntil || undefined,
       })
       setItems(response.data.quotes)
       setCurrentPage(response.data.pagination.page)
@@ -178,11 +203,10 @@ export default function VtQuotesPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, stageFilter, limit])
+  }, [debouncedFilters, limit])
 
   useEffect(() => {
-    const timer = setTimeout(() => loadData(), searchQuery ? 500 : 0)
-    return () => clearTimeout(timer)
+    loadData()
   }, [loadData])
 
   const handleCreate = async () => {
@@ -288,22 +312,6 @@ export default function VtQuotesPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca..."
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }}
-              className="pl-10"
-            />
-          </div>
-          <Select value={stageFilter} onValueChange={v => { setStageFilter(v === "all" ? "" : v); setCurrentPage(1) }}>
-            <SelectTrigger className="w-[200px]"><SelectValue placeholder="Stadio" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti gli stadi</SelectItem>
-              {STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
           <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} onReorder={handleReorder} />
         </div>
 
@@ -318,6 +326,15 @@ export default function VtQuotesPage() {
                 {isColVisible("assignedTo")   && <TableHead>Assegnato a</TableHead>}
                 {isColVisible("validUntil")   && <TableHead>Valido fino a</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+              <TableRow>
+                {isColVisible("quoteNumber")  && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Numero..." value={columnFilters.quoteNumber || ""} onChange={e => updateColumnFilter("quoteNumber", e.target.value)} /></TableHead>}
+                {isColVisible("subject")      && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Oggetto..." value={columnFilters.subject || ""} onChange={e => updateColumnFilter("subject", e.target.value)} /></TableHead>}
+                {isColVisible("organization") && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Organizzazione..." value={columnFilters.organization || ""} onChange={e => updateColumnFilter("organization", e.target.value)} /></TableHead>}
+                {isColVisible("stage")        && <TableHead className="p-1"><Select value={columnFilters.stage || ""} onValueChange={v => updateColumnFilter("stage", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Stadio" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></TableHead>}
+                {isColVisible("assignedTo")   && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="Assegnato a..." value={columnFilters.assignedTo || ""} onChange={e => updateColumnFilter("assignedTo", e.target.value)} /></TableHead>}
+                {isColVisible("validUntil")   && <TableHead className="p-1"><Input className="h-8 text-xs" placeholder="gg/mm/aaaa" value={columnFilters.validUntil || ""} onChange={e => updateColumnFilter("validUntil", e.target.value)} /></TableHead>}
+                <TableHead className="w-[50px] p-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

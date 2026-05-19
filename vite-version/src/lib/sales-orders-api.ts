@@ -51,6 +51,14 @@ export interface GetSalesOrdersParams {
   search?: string;
   status?: string;
   invoiceStatus?: string;
+  orderNumber?: string;
+  subject?: string;
+  orgName?: string;
+  contactName?: string;
+  assignedTo?: string;
+  quoteNumber?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
 }
 
 class SalesOrdersAPI {
@@ -67,6 +75,14 @@ class SalesOrdersAPI {
     if (params.search) qp.append('search', params.search);
     if (params.status) qp.append('status', params.status);
     if (params.invoiceStatus) qp.append('invoiceStatus', params.invoiceStatus);
+    if (params.orderNumber) qp.append('orderNumber', params.orderNumber);
+    if (params.subject) qp.append('subject', params.subject);
+    if (params.orgName) qp.append('orgName', params.orgName);
+    if (params.contactName) qp.append('contactName', params.contactName);
+    if (params.assignedTo) qp.append('assignedTo', params.assignedTo);
+    if (params.quoteNumber) qp.append('quoteNumber', params.quoteNumber);
+    if (params.dueDateFrom) qp.append('dueDateFrom', params.dueDateFrom);
+    if (params.dueDateTo) qp.append('dueDateTo', params.dueDateTo);
 
     const url = `${API_BASE_URL}/sales-orders${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });

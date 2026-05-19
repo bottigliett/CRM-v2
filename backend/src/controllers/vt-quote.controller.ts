@@ -29,6 +29,12 @@ export const getVtQuotes = async (req: Request, res: Response) => {
       organizationId = '',
       page = '1',
       limit = '20',
+      quoteNumber = '',
+      subject = '',
+      orgName = '',
+      assignedTo = '',
+      validUntilFrom = '',
+      validUntilTo = '',
     } = req.query;
 
     const where: any = {};
@@ -42,6 +48,25 @@ export const getVtQuotes = async (req: Request, res: Response) => {
 
     if (stage) where.stage = stage as string;
     if (organizationId) where.organizationId = parseInt(organizationId as string);
+
+    // Column-level filters
+    if (quoteNumber) where.quoteNumber = { contains: quoteNumber as string };
+    if (subject) where.subject = { contains: subject as string };
+    if (orgName) where.organization = { name: { contains: orgName as string } };
+    if (assignedTo) {
+      where.assignedTo = {
+        OR: [
+          { firstName: { contains: assignedTo as string } },
+          { lastName: { contains: assignedTo as string } },
+          { username: { contains: assignedTo as string } },
+        ],
+      };
+    }
+    if (validUntilFrom || validUntilTo) {
+      where.validUntil = {};
+      if (validUntilFrom) where.validUntil.gte = new Date(validUntilFrom as string);
+      if (validUntilTo) { const end = new Date(validUntilTo as string); end.setHours(23, 59, 59, 999); where.validUntil.lte = end; }
+    }
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);

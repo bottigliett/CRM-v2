@@ -32,6 +32,14 @@ export const getServiceContracts = async (req: Request, res: Response) => {
       page = '1',
       limit = '20',
       includeStats = 'false',
+      contractNumber = '',
+      contractType = '',
+      orgName = '',
+      subject = '',
+      startDateFrom = '',
+      startDateTo = '',
+      nextInvoiceDateFrom = '',
+      nextInvoiceDateTo = '',
     } = req.query;
 
     const where: any = {};
@@ -48,6 +56,22 @@ export const getServiceContracts = async (req: Request, res: Response) => {
     if (frequency) where.frequency = frequency as string;
     if (isConsultecno !== '') where.isConsultecno = isConsultecno === 'true';
     if (isPaid !== '') where.isPaid = isPaid === 'true';
+
+    // Column-level filters
+    if (contractNumber) where.contractNumber = { contains: contractNumber as string };
+    if (contractType) where.contractType = contractType as string;
+    if (subject) where.subject = { contains: subject as string };
+    if (orgName) where.organization = { name: { contains: orgName as string } };
+    if (startDateFrom || startDateTo) {
+      where.startDate = {};
+      if (startDateFrom) where.startDate.gte = new Date(startDateFrom as string);
+      if (startDateTo) { const end = new Date(startDateTo as string); end.setHours(23, 59, 59, 999); where.startDate.lte = end; }
+    }
+    if (nextInvoiceDateFrom || nextInvoiceDateTo) {
+      where.nextInvoiceDate = {};
+      if (nextInvoiceDateFrom) where.nextInvoiceDate.gte = new Date(nextInvoiceDateFrom as string);
+      if (nextInvoiceDateTo) { const end = new Date(nextInvoiceDateTo as string); end.setHours(23, 59, 59, 999); where.nextInvoiceDate.lte = end; }
+    }
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);

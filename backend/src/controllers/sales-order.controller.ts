@@ -29,6 +29,14 @@ export const getSalesOrders = async (req: Request, res: Response) => {
       invoiceStatus = '',
       page = '1',
       limit = '20',
+      orderNumber = '',
+      subject = '',
+      orgName = '',
+      contactName = '',
+      assignedTo = '',
+      quoteNumber = '',
+      dueDateFrom = '',
+      dueDateTo = '',
     } = req.query;
 
     const where: any = {};
@@ -43,6 +51,27 @@ export const getSalesOrders = async (req: Request, res: Response) => {
 
     if (status) where.status = status as string;
     if (invoiceStatus) where.invoiceStatus = invoiceStatus as string;
+
+    // Column-level filters
+    if (orderNumber) where.orderNumber = { contains: orderNumber as string };
+    if (subject) where.subject = { contains: subject as string };
+    if (orgName) where.organization = { name: { contains: orgName as string } };
+    if (contactName) where.contact = { name: { contains: contactName as string } };
+    if (quoteNumber) where.quote = { quoteNumber: { contains: quoteNumber as string } };
+    if (assignedTo) {
+      where.assignedTo = {
+        OR: [
+          { firstName: { contains: assignedTo as string } },
+          { lastName: { contains: assignedTo as string } },
+          { username: { contains: assignedTo as string } },
+        ],
+      };
+    }
+    if (dueDateFrom || dueDateTo) {
+      where.dueDate = {};
+      if (dueDateFrom) where.dueDate.gte = new Date(dueDateFrom as string);
+      if (dueDateTo) { const end = new Date(dueDateTo as string); end.setHours(23, 59, 59, 999); where.dueDate.lte = end; }
+    }
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
