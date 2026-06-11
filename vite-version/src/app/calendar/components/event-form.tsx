@@ -158,7 +158,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         const [categoriesResponse, usersResponse, contactsResponse, preferencesResponse] = await Promise.all([
           eventsAPI.getEventCategories(),
           usersAPI.getAdminUsers(),
-          contactsAPI.getContacts({ limit: 1000 }), // Get all contacts
+          contactsAPI.getContacts({ limit: 1000, includeFunnel: 'true' }), // Get all contacts including funnel
           usersAPI.getCalendarPreferences().catch(() => {
             // Fallback to localStorage if API fails
             const savedPrefs = localStorage.getItem('calendar-user-preferences')

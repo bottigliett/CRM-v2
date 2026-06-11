@@ -73,6 +73,7 @@ export interface GetContactsParams {
   search?: string;
   type?: string;
   excludeLeads?: string;
+  includeFunnel?: string;
   status?: string;
   tags?: string;
   sortBy?: string;
@@ -125,6 +126,7 @@ class ContactsAPI {
     if (params.type) queryParams.append('type', params.type);
     if (params.status) queryParams.append('status', params.status);
     if (params.tags) queryParams.append('tags', params.tags);
+    if (params.includeFunnel) queryParams.append('includeFunnel', params.includeFunnel);
     if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 

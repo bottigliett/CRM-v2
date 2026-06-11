@@ -66,6 +66,7 @@ function convertAPIEvent(apiEvent: APIEvent): CalendarEvent {
     categoryId: apiEvent.categoryId,
     categoryName: apiEvent.category?.name,
     assignedTo: apiEvent.assignedTo,
+    assignedUserName: apiEvent.assignedUser ? `${apiEvent.assignedUser.firstName} ${apiEvent.assignedUser.lastName}` : undefined,
     contactId: apiEvent.contactId,
     contactName: apiEvent.contact?.name,
     allDay: apiEvent.isAllDay || false,

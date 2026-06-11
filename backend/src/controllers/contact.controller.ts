@@ -14,6 +14,7 @@ export const getContacts = async (req: Request, res: Response) => {
       search = '',
       type,
       excludeLeads,
+      includeFunnel,
       status,
       tags,
       sortBy = 'createdAt',
@@ -47,9 +48,12 @@ export const getContacts = async (req: Request, res: Response) => {
       };
     }
 
-    // Always exclude contacts that are in the funnel (have funnel_stage)
+    // Exclude contacts that are in the funnel (have funnel_stage) by default
     // These are managed in the Lead Board, not in Anagrafica
-    where.funnelStage = null;
+    // Allow includeFunnel=true to bypass this filter (e.g. for agenda event creation)
+    if (includeFunnel !== 'true') {
+      where.funnelStage = null;
+    }
 
     // Status filter
     if (status) {

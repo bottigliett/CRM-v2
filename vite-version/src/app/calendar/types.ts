@@ -13,6 +13,7 @@ export interface CalendarEvent {
   categoryId?: number
   categoryName?: string
   assignedTo?: number
+  assignedUserName?: string
   contactId?: number
   contactName?: string
   allDay?: boolean
