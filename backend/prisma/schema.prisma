@@ -1584,6 +1584,7 @@ model VtQuote {
   contact         Contact?      @relation(fields: [contactId], references: [id])
   assignedTo      User?         @relation("VtQuoteAssigned", fields: [assignedToId], references: [id])
   salesOrders     SalesOrder[]
+  items           VtQuoteItem[]
 
   @@index([stage])
   @@index([organizationId])
@@ -1643,4 +1644,41 @@ model SalesOrder {
   @@index([quoteId])
   @@index([assignedToId])
   @@map("sales_orders")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  unitPrice   Float    @map("unit_price")
+  description String?  @db.Text
+  icon        String?
+  type        String   @default("SERVIZIO")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  quoteItems  VtQuoteItem[]
+
+  @@map("products")
+}
+
+model VtQuoteItem {
+  id          Int      @id @default(autoincrement())
+  quoteId     Int      @map("quote_id")
+  productId   Int?     @map("product_id")
+  itemName    String   @map("item_name")
+  description String?  @db.Text
+  icon        String?
+  quantity    Int      @default(1)
+  unitPrice   Float    @map("unit_price")
+  discount    Float    @default(0)
+  total       Float
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  quote       VtQuote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([quoteId])
+  @@index([productId])
+  @@map("vt_quote_items")
 }

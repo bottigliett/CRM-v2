@@ -21,6 +21,7 @@ import {
   Headset,
   FileSignature,
   ShoppingCart,
+  Warehouse,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -146,6 +147,12 @@ const allNavGroups: NavGroup[] = [
         url: "/invoices",
         icon: FileText,
         moduleName: "invoices",
+      },
+      {
+        title: "Magazzino",
+        url: "/warehouse",
+        icon: Warehouse,
+        moduleName: "warehouse",
       },
       {
         title: "Contratti",

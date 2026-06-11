@@ -38,6 +38,7 @@ import incomingCallRoutes from './routes/incoming-call.routes';
 import serviceContractRoutes from './routes/service-contract.routes';
 import vtQuoteRoutes from './routes/vt-quote.routes';
 import salesOrderRoutes from './routes/sales-order.routes';
+import productRoutes from './routes/product.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { initializeUploadsDirectory } from './utils/file-upload';
@@ -112,6 +113,7 @@ app.use('/api/incoming-call', incomingCallRoutes);
 app.use('/api/service-contracts', serviceContractRoutes);
 app.use('/api/vt-quotes', vtQuoteRoutes);
 app.use('/api/sales-orders', salesOrderRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 // Client-specific routes (require client authentication)

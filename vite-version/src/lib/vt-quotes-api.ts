@@ -1,5 +1,19 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+export interface VtQuoteItem {
+  id?: number;
+  quoteId?: number;
+  productId?: number | null;
+  itemName: string;
+  description?: string | null;
+  icon?: string | null;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  total: number;
+  product?: { id: number; name: string } | null;
+}
+
 export interface VtQuote {
   id: number;
   quoteNumber: string;
@@ -25,9 +39,10 @@ export interface VtQuote {
   description: string | null;
   createdAt: string;
   updatedAt: string;
-  organization?: { id: number; name: string } | null;
+  organization?: { id: number; name: string; billStreet?: string; billCity?: string; billState?: string; billCode?: string; billCountry?: string; pIva?: string; cf?: string } | null;
   contact?: { id: number; name: string } | null;
   assignedTo?: { id: number; username: string; firstName: string | null; lastName: string | null } | null;
+  items?: VtQuoteItem[];
 }
 
 export interface GetVtQuotesParams {
@@ -77,7 +92,7 @@ class VtQuotesAPI {
     return response.json();
   }
 
-  async create(data: Partial<VtQuote>) {
+  async create(data: any) {
     const response = await fetch(`${API_BASE_URL}/vt-quotes`, {
       method: 'POST', headers: this.getAuthHeader(), body: JSON.stringify(data),
     });
@@ -85,7 +100,7 @@ class VtQuotesAPI {
     return response.json();
   }
 
-  async update(id: number, data: Partial<VtQuote>) {
+  async update(id: number, data: any) {
     const response = await fetch(`${API_BASE_URL}/vt-quotes/${id}`, {
       method: 'PUT', headers: this.getAuthHeader(), body: JSON.stringify(data),
     });

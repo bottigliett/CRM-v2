@@ -1,5 +1,6 @@
 import app from './app';
 import prisma from './config/database';
+import { expireOldQuotes } from './controllers/vt-quote.controller';
 
 const PORT = process.env.PORT || 3001;
 
@@ -15,6 +16,17 @@ const startServer = async () => {
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL}`);
     });
+
+    // Cron: expire quotes older than 30 days (runs every hour)
+    setInterval(async () => {
+      try {
+        await expireOldQuotes();
+      } catch (err) {
+        console.error('Cron expireOldQuotes error:', err);
+      }
+    }, 60 * 60 * 1000); // every hour
+    // Run once at startup
+    expireOldQuotes().catch(() => {});
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

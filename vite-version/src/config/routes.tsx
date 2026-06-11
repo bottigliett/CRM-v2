@@ -39,6 +39,7 @@ const HelpDesk = lazy(() => import('@/app/helpdesk/page'))
 const ServiceContracts = lazy(() => import('@/app/service-contracts/page'))
 const VtQuotes = lazy(() => import('@/app/vt-quotes/page'))
 const SalesOrders = lazy(() => import('@/app/sales-orders/page'))
+const WarehousePage = lazy(() => import('@/app/warehouse/page'))
 
 // Auth pages
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
@@ -199,6 +200,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/sales-orders",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="sales_orders"><SalesOrders /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/warehouse",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="warehouse"><WarehousePage /></ModuleProtectedRoute></ProtectedRoute>
   },
 
   // Amministrazione (Users page remains SUPER_ADMIN only - no module permission)

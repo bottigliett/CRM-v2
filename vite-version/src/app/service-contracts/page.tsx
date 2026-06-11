@@ -71,8 +71,10 @@ const STATUS_COLORS: Record<string, string> = {
   "In attesa pagamento":     "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
 }
 
+const CONTRACT_TYPE_RADIO = ["ASSISTENZA TECNICA", "BACKUP ONLINE"]
+
 const emptyForm: any = {
-  contractType: "", customContractType: "", status: "Attivo", organizationId: "",
+  contractType: "ASSISTENZA TECNICA", contractName: "", status: "Attivo", organizationId: "",
   contractValue: "", startDate: "", nextInvoiceDate: "",
   isConsultecno: false, subject: "",
 }
@@ -234,11 +236,11 @@ export default function ServiceContractsPage() {
       setSubmitting(true)
       const submitData = {
         ...formData,
-        contractType: formData.contractType === "ALTRO" && formData.customContractType
-          ? formData.customContractType
+        contractType: formData.contractName
+          ? `${formData.contractType} - ${formData.contractName}`
           : formData.contractType,
       }
-      delete submitData.customContractType
+      delete submitData.contractName
       await serviceContractsAPI.create(submitData)
       toast.success("Contratto creato con successo!")
       setIsCreateOpen(false)
@@ -253,11 +255,11 @@ export default function ServiceContractsPage() {
       setSubmitting(true)
       const submitData = {
         ...formData,
-        contractType: formData.contractType === "ALTRO" && formData.customContractType
-          ? formData.customContractType
+        contractType: formData.contractName
+          ? `${formData.contractType} - ${formData.contractName}`
           : formData.contractType,
       }
-      delete submitData.customContractType
+      delete submitData.contractName
       await serviceContractsAPI.update(selected.id, submitData)
       toast.success("Contratto aggiornato!")
       setIsEditOpen(false)
@@ -281,10 +283,20 @@ export default function ServiceContractsPage() {
 
   const openEdit = (item: ServiceContract) => {
     setSelected(item)
-    const isKnownType = CONTRACT_TYPES.includes(item.contractType || "")
+    const ct = item.contractType || ""
+    // Parse "ASSISTENZA TECNICA - Nome" or "BACKUP ONLINE - Nome" format
+    let radioType = "ASSISTENZA TECNICA"
+    let contractName = ""
+    for (const t of CONTRACT_TYPE_RADIO) {
+      if (ct.startsWith(t)) {
+        radioType = t
+        contractName = ct.replace(t, "").replace(/^\s*-\s*/, "").trim()
+        break
+      }
+    }
     setFormData({
-      contractType:       isKnownType ? (item.contractType || "") : "ALTRO",
-      customContractType: isKnownType ? "" : (item.contractType || ""),
+      contractType:    radioType,
+      contractName:    contractName,
       status:          item.status,
       organizationId:  item.organizationId?.toString() || "",
       contractValue:   item.contractValue?.toString()  || "",
@@ -303,22 +315,31 @@ export default function ServiceContractsPage() {
   const renderForm = () => (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-2">
           <Label>Tipo contratto</Label>
-          <Select value={formData.contractType} onValueChange={v => setFormData({ ...formData, contractType: v, customContractType: v === "ALTRO" ? formData.customContractType : "" })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>
-              {CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {formData.contractType === "ALTRO" && (
+          <div className="flex gap-4">
+            {CONTRACT_TYPE_RADIO.map(t => (
+              <label key={t} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="contractType"
+                  value={t}
+                  checked={formData.contractType === t}
+                  onChange={() => setFormData({ ...formData, contractType: t })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">{t}</span>
+              </label>
+            ))}
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Nome contratto</Label>
             <Input
-              className="mt-2"
-              placeholder="Inserisci tipo contratto..."
-              value={formData.customContractType}
-              onChange={e => setFormData({ ...formData, customContractType: e.target.value })}
+              placeholder="Nome contratto..."
+              value={formData.contractName || ""}
+              onChange={e => setFormData({ ...formData, contractName: e.target.value })}
             />
-          )}
+          </div>
         </div>
         <div>
           <Label>Stato</Label>
