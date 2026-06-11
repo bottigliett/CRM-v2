@@ -759,13 +759,19 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                             {event.categoryName && event.height > 45 && (
                               <div className="text-[10px] opacity-90 truncate">{event.categoryName}</div>
                             )}
-                            {event.contactName && event.height > 60 && (
+                            {event.assignedUserName && event.height > 60 && (
                               <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
                                 <Users className="w-2.5 h-2.5" />
-                                {event.contactName}
+                                {event.assignedUserName}
                               </div>
                             )}
-                            {event.location && event.height > 75 && (
+                            {(event.contactName || event.organizationName) && event.height > 75 && (
+                              <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
+                                <Users className="w-2.5 h-2.5" />
+                                {event.organizationName || event.contactName}
+                              </div>
+                            )}
+                            {event.location && event.height > 90 && (
                               <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
                                 <MapPin className="w-2.5 h-2.5" />
                                 {event.location}

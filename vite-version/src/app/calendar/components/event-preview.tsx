@@ -143,16 +143,18 @@ export function EventPreview({ event, open, onOpenChange, onEdit, onDelete }: Ev
             </>
           )}
 
-          {/* Cliente */}
-          {event.contactName && (
+          {/* Cliente / Organizzazione */}
+          {(event.contactName || event.organizationName) && (
             <>
               <Separator />
               <div className="flex items-start gap-3">
                 <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                 <div className="flex-1">
-                  <div className="text-sm font-medium">Cliente</div>
+                  <div className="text-sm font-medium">
+                    {event.organizationName ? 'Organizzazione' : 'Cliente'}
+                  </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {event.contactName}
+                    {event.organizationName || event.contactName}
                   </div>
                 </div>
               </div>

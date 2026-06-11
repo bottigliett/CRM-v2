@@ -93,6 +93,16 @@ export const getEvents = async (req: Request, res: Response) => {
             type: true,
           },
         },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            denomination: true,
+            vatNumber: true,
+            email: true,
+            phone: true,
+          },
+        },
         assignedUser: {
           select: {
             id: true,
@@ -189,6 +199,16 @@ export const getEventById = async (req: Request, res: Response) => {
             type: true,
           },
         },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            denomination: true,
+            vatNumber: true,
+            email: true,
+            phone: true,
+          },
+        },
         assignedUser: {
           select: {
             id: true,
@@ -271,6 +291,7 @@ export const createEvent = async (req: Request, res: Response) => {
       endDateTime,
       categoryId,
       contactId,
+      organizationId,
       location,
       notes,
       status = 'scheduled',
@@ -312,6 +333,7 @@ export const createEvent = async (req: Request, res: Response) => {
         endDateTime: new Date(endDateTime),
         categoryId: categoryId ? parseInt(categoryId) : null,
         contactId: contactId ? parseInt(contactId) : null,
+        organizationId: organizationId ? parseInt(organizationId) : null,
         location,
         notes,
         status,
@@ -339,6 +361,16 @@ export const createEvent = async (req: Request, res: Response) => {
           select: {
             id: true,
             name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            denomination: true,
+            vatNumber: true,
             email: true,
             phone: true,
           },
@@ -503,6 +535,7 @@ export const updateEvent = async (req: Request, res: Response) => {
       endDateTime,
       categoryId,
       contactId,
+      organizationId,
       location,
       notes,
       status,
@@ -537,6 +570,7 @@ export const updateEvent = async (req: Request, res: Response) => {
     if (endDateTime !== undefined) updateData.endDateTime = new Date(endDateTime);
     if (categoryId !== undefined) updateData.categoryId = categoryId ? parseInt(categoryId) : null;
     if (contactId !== undefined) updateData.contactId = contactId ? parseInt(contactId) : null;
+    if (organizationId !== undefined) updateData.organizationId = organizationId ? parseInt(organizationId) : null;
     if (location !== undefined) updateData.location = location;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
@@ -588,6 +622,16 @@ export const updateEvent = async (req: Request, res: Response) => {
           select: {
             id: true,
             name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            denomination: true,
+            vatNumber: true,
             email: true,
             phone: true,
           },

@@ -452,6 +452,7 @@ model Event {
   endDateTime     DateTime @map("end_datetime")
   categoryId      Int?     @map("category_id")
   contactId       Int?     @map("contact_id") // FK to contacts (renamed from clientId)
+  organizationId  Int?     @map("organization_id") // FK to organizations
   location        String?
   notes           String?
   status          String?  @default("scheduled") // scheduled, confirmed, cancelled, completed
@@ -466,6 +467,7 @@ model Event {
   // Relations
   category     EventCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   contact      Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   assignedUser User?              @relation("AssignedEvents", fields: [assignedTo], references: [id], onDelete: SetNull)
   createdUser  User               @relation("CreatedEvents", fields: [createdBy], references: [id], onDelete: Cascade)
   participants EventParticipant[]
@@ -474,6 +476,7 @@ model Event {
 
   @@index([startDateTime])
   @@index([contactId])
+  @@index([organizationId])
   @@index([categoryId])
   @@index([assignedTo])
   @@index([createdBy])
@@ -1474,6 +1477,7 @@ model Organization {
   parent          Organization?       @relation("OrgHierarchy", fields: [parentId], references: [id])
   children        Organization[]      @relation("OrgHierarchy")
   assignedTo      User?               @relation("OrgAssigned", fields: [assignedToId], references: [id])
+  events          Event[]
   helpDeskTickets HelpDeskTicket[]
   serviceContracts ServiceContract[]
   salesOrders     SalesOrder[]

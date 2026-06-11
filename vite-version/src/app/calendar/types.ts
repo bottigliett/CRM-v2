@@ -16,6 +16,8 @@ export interface CalendarEvent {
   assignedUserName?: string
   contactId?: number
   contactName?: string
+  organizationId?: number
+  organizationName?: string
   allDay?: boolean
   teamMembers?: Array<{
     id: number

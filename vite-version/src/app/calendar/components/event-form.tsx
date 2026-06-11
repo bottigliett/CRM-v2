@@ -37,6 +37,7 @@ import { type CalendarEvent } from "../types"
 import { eventsAPI, type EventCategory } from "@/lib/events-api"
 import { usersAPI, type User, type CalendarPreferences } from "@/lib/users-api"
 import { contactsAPI, type Contact } from "@/lib/contacts-api"
+import { organizationsAPI, type Organization } from "@/lib/organizations-api"
 import { toast } from "sonner"
 
 interface EventFormProps {
@@ -75,6 +76,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
     categoryId: undefined as number | undefined,
     assignedTo: undefined as number | undefined,
     contactId: undefined as number | undefined,
+    organizationId: undefined as number | undefined,
     participants: [] as number[],
     location: event?.location || "",
     description: event?.description || "",
@@ -93,6 +95,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
   const [categories, setCategories] = useState<EventCategory[]>([])
   const [adminUsers, setAdminUsers] = useState<User[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [customDuration, setCustomDuration] = useState("")
   const [showCustomDuration, setShowCustomDuration] = useState(false)
@@ -119,6 +122,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         categoryId: event.categoryId,
         assignedTo: event.assignedTo,
         contactId: event.contactId,
+        organizationId: event.organizationId,
         participants: allParticipants,
         location: event.location || "",
         description: event.description || "",
@@ -139,6 +143,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         categoryId: undefined,
         assignedTo: undefined,
         contactId: undefined,
+        organizationId: undefined,
         participants: [],
         location: "",
         description: "",
@@ -155,10 +160,11 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
     const loadData = async () => {
       try {
         setLoading(true)
-        const [categoriesResponse, usersResponse, contactsResponse, preferencesResponse] = await Promise.all([
+        const [categoriesResponse, usersResponse, contactsResponse, orgsResponse, preferencesResponse] = await Promise.all([
           eventsAPI.getEventCategories(),
           usersAPI.getAdminUsers(),
           contactsAPI.getContacts({ limit: 1000, includeFunnel: 'true' }), // Get all contacts including funnel
+          organizationsAPI.getAll({ limit: 1000 }), // Get all organizations
           usersAPI.getCalendarPreferences().catch(() => {
             // Fallback to localStorage if API fails
             const savedPrefs = localStorage.getItem('calendar-user-preferences')
@@ -168,6 +174,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
         setCategories(categoriesResponse.data)
         setAdminUsers(usersResponse.data.users)
         setContacts(contactsResponse.data.contacts)
+        setOrganizations(orgsResponse.data.organizations || [])
         setFavoriteCategories(preferencesResponse.data.favoriteCategories || [])
       } catch (error) {
         console.error('Errore nel caricamento dati:', error)
@@ -423,10 +430,33 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <UserCircle className="w-4 h-4" />
-              Cliente
+              Cliente / Organizzazione
             </Label>
             <div className="space-y-2">
-              {formData.contactId ? (
+              {formData.organizationId ? (
+                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      {organizations.find(o => o.id === formData.organizationId)?.name || 'Organizzazione selezionata'}
+                    </div>
+                    {organizations.find(o => o.id === formData.organizationId)?.email && (
+                      <div className="text-sm text-muted-foreground">
+                        {organizations.find(o => o.id === formData.organizationId)?.email}
+                      </div>
+                    )}
+                    <Badge variant="secondary" className="text-xs mt-1">Organizzazione</Badge>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFormData(prev => ({ ...prev, organizationId: undefined }))}
+                    className="flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : formData.contactId ? (
                 <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
                   <div className="flex-1">
                     <div className="font-medium">
@@ -437,6 +467,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                         {contacts.find(c => c.id === formData.contactId)?.email}
                       </div>
                     )}
+                    <Badge variant="outline" className="text-xs mt-1">Contatto</Badge>
                   </div>
                   <Button
                     type="button"
@@ -721,147 +752,222 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
       </DialogContent>
     </Dialog>
 
-    {/* Client Search Dialog */}
+    {/* Client/Organization Search Dialog */}
     <Dialog open={showClientSearch} onOpenChange={setShowClientSearch}>
       <DialogContent className="max-w-[95vw] w-[1200px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Seleziona Cliente dall'Anagrafica</DialogTitle>
+          <DialogTitle>Seleziona Cliente o Organizzazione</DialogTitle>
           <DialogDescription>
-            Cerca e seleziona un cliente esistente dall'elenco
+            Cerca e seleziona un contatto o un'organizzazione dall'elenco
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Search and Filters */}
+          {/* Tab selector */}
+          <div className="flex gap-2 border-b">
+            <button
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                clientTypeFilter !== 'ORGANIZATION'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setClientTypeFilter('all')}
+            >
+              Contatti ({contacts.length})
+            </button>
+            <button
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                clientTypeFilter === 'ORGANIZATION'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setClientTypeFilter('ORGANIZATION')}
+            >
+              Organizzazioni ({organizations.length})
+            </button>
+          </div>
+
+          {/* Search */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cerca per nome, email o P.IVA..."
+                placeholder={clientTypeFilter === 'ORGANIZATION' ? "Cerca per nome, P.IVA o email..." : "Cerca per nome, email o P.IVA..."}
                 value={clientSearchQuery}
                 onChange={(e) => setClientSearchQuery(e.target.value)}
                 className="pl-9"
                 autoFocus
               />
             </div>
-            <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i tipi</SelectItem>
-                <SelectItem value="CLIENT">Clienti</SelectItem>
-                <SelectItem value="PROSPECT">Prospect</SelectItem>
-                <SelectItem value="COLLABORATION">Collaborazioni</SelectItem>
-                <SelectItem value="USEFUL_CONTACT">Contatti Utili</SelectItem>
-              </SelectContent>
-            </Select>
+            {clientTypeFilter !== 'ORGANIZATION' && (
+              <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i tipi</SelectItem>
+                  <SelectItem value="CLIENT">Clienti</SelectItem>
+                  <SelectItem value="PROSPECT">Prospect</SelectItem>
+                  <SelectItem value="COLLABORATION">Collaborazioni</SelectItem>
+                  <SelectItem value="USEFUL_CONTACT">Contatti Utili</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Results List */}
           <div className="border rounded-md overflow-hidden">
             <div className="max-h-[400px] overflow-y-auto">
-              {contacts
-                .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                .filter(contact => {
-                  if (!clientSearchQuery) return true
-                  const query = clientSearchQuery.toLowerCase()
-                  return (
-                    contact.name.toLowerCase().includes(query) ||
-                    contact.email?.toLowerCase().includes(query) ||
-                    contact.partitaIva?.toLowerCase().includes(query) ||
-                    contact.phone?.includes(query) ||
-                    contact.mobile?.includes(query)
-                  )
-                })
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map(contact => (
-                  <div
-                    key={contact.id}
-                    className={cn(
-                      "p-4 hover:bg-muted cursor-pointer transition-colors",
-                      formData.contactId === contact.id && "bg-muted"
-                    )}
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, contactId: contact.id }))
-                      setShowClientSearch(false)
-                      setClientSearchQuery("")
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{contact.name}</h4>
-                          {formData.contactId === contact.id && (
-                            <Badge variant="default" className="text-xs">Selezionato</Badge>
-                          )}
-                        </div>
-                        <div className="mt-1 space-y-1 text-sm text-muted-foreground">
-                          {contact.email && <div>Email: {contact.email}</div>}
-                          {contact.partitaIva && <div>P.IVA: {contact.partitaIva}</div>}
-                          {contact.address && <div>Indirizzo: {contact.address}</div>}
+              {clientTypeFilter === 'ORGANIZATION' ? (
+                <>
+                  {organizations
+                    .filter(org => {
+                      if (!clientSearchQuery) return true
+                      const query = clientSearchQuery.toLowerCase()
+                      return (
+                        org.name?.toLowerCase().includes(query) ||
+                        org.denomination?.toLowerCase().includes(query) ||
+                        org.vatNumber?.toLowerCase().includes(query) ||
+                        org.email?.toLowerCase().includes(query) ||
+                        org.phone?.includes(query) ||
+                        org.code?.toLowerCase().includes(query)
+                      )
+                    })
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(org => (
+                      <div
+                        key={org.id}
+                        className={cn(
+                          "p-4 hover:bg-muted cursor-pointer transition-colors",
+                          formData.organizationId === org.id && "bg-muted"
+                        )}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, organizationId: org.id, contactId: undefined }))
+                          setShowClientSearch(false)
+                          setClientSearchQuery("")
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{org.name}</h4>
+                              {formData.organizationId === org.id && (
+                                <Badge variant="default" className="text-xs">Selezionato</Badge>
+                              )}
+                            </div>
+                            <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                              {org.denomination && <div>Denominazione: {org.denomination}</div>}
+                              {org.email && <div>Email: {org.email}</div>}
+                              {org.vatNumber && <div>P.IVA: {org.vatNumber}</div>}
+                              {org.phone && <div>Tel: {org.phone}</div>}
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">Organizzazione</Badge>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {contact.type === 'CLIENT' && 'Cliente'}
-                        {contact.type === 'PROSPECT' && 'Prospect'}
-                        {contact.type === 'COLLABORATION' && 'Collaborazione'}
-                        {contact.type === 'USEFUL_CONTACT' && 'Contatto Utile'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {contacts.length === 0 && (
-                  <div className="p-8 text-center text-muted-foreground">
-                    Nessun contatto trovato
-                  </div>
-                )}
-                {contacts.length > 0 && contacts
-                  .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                  .filter(contact => {
-                    if (!clientSearchQuery) return true
-                    const query = clientSearchQuery.toLowerCase()
-                    return (
-                      contact.name.toLowerCase().includes(query) ||
-                      contact.email?.toLowerCase().includes(query) ||
-                      contact.partitaIva?.toLowerCase().includes(query) ||
-                      contact.phone?.includes(query) ||
-                      contact.mobile?.includes(query)
-                    )
-                  }).length === 0 && (
+                    ))}
+                  {organizations.length === 0 && (
                     <div className="p-8 text-center text-muted-foreground">
-                      Nessun risultato trovato
+                      Nessuna organizzazione trovata
                     </div>
                   )}
-              </div>
-            {/* Results Count */}
-            {contacts.length > 0 && (
-              <div className="text-sm text-muted-foreground text-center p-2">
-                {contacts.filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                  .filter(contact => {
-                    if (!clientSearchQuery) return true
-                    const query = clientSearchQuery.toLowerCase()
-                    return (
-                      contact.name.toLowerCase().includes(query) ||
-                      contact.email?.toLowerCase().includes(query) ||
-                      contact.partitaIva?.toLowerCase().includes(query) ||
-                      contact.phone?.includes(query) ||
-                      contact.mobile?.includes(query)
-                    )
-                  }).length} {contacts.filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                  .filter(contact => {
-                    if (!clientSearchQuery) return true
-                    const query = clientSearchQuery.toLowerCase()
-                    return (
-                      contact.name.toLowerCase().includes(query) ||
-                      contact.email?.toLowerCase().includes(query) ||
-                      contact.partitaIva?.toLowerCase().includes(query) ||
-                      contact.phone?.includes(query) ||
-                      contact.mobile?.includes(query)
-                    )
-                  }).length === 1 ? 'contatto trovato' : 'contatti trovati'}
-              </div>
-            )}
+                  {organizations.length > 0 && organizations
+                    .filter(org => {
+                      if (!clientSearchQuery) return true
+                      const query = clientSearchQuery.toLowerCase()
+                      return (
+                        org.name?.toLowerCase().includes(query) ||
+                        org.denomination?.toLowerCase().includes(query) ||
+                        org.vatNumber?.toLowerCase().includes(query) ||
+                        org.email?.toLowerCase().includes(query) ||
+                        org.phone?.includes(query) ||
+                        org.code?.toLowerCase().includes(query)
+                      )
+                    }).length === 0 && (
+                      <div className="p-8 text-center text-muted-foreground">
+                        Nessun risultato trovato
+                      </div>
+                    )}
+                </>
+              ) : (
+                <>
+                  {contacts
+                    .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
+                    .filter(contact => {
+                      if (!clientSearchQuery) return true
+                      const query = clientSearchQuery.toLowerCase()
+                      return (
+                        contact.name.toLowerCase().includes(query) ||
+                        contact.email?.toLowerCase().includes(query) ||
+                        contact.partitaIva?.toLowerCase().includes(query) ||
+                        contact.phone?.includes(query) ||
+                        contact.mobile?.includes(query)
+                      )
+                    })
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(contact => (
+                      <div
+                        key={contact.id}
+                        className={cn(
+                          "p-4 hover:bg-muted cursor-pointer transition-colors",
+                          formData.contactId === contact.id && "bg-muted"
+                        )}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, contactId: contact.id, organizationId: undefined }))
+                          setShowClientSearch(false)
+                          setClientSearchQuery("")
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{contact.name}</h4>
+                              {formData.contactId === contact.id && (
+                                <Badge variant="default" className="text-xs">Selezionato</Badge>
+                              )}
+                            </div>
+                            <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                              {contact.email && <div>Email: {contact.email}</div>}
+                              {contact.partitaIva && <div>P.IVA: {contact.partitaIva}</div>}
+                              {contact.address && <div>Indirizzo: {contact.address}</div>}
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {contact.type === 'CLIENT' && 'Cliente'}
+                            {contact.type === 'PROSPECT' && 'Prospect'}
+                            {contact.type === 'COLLABORATION' && 'Collaborazione'}
+                            {contact.type === 'USEFUL_CONTACT' && 'Contatto Utile'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {contacts.length === 0 && (
+                    <div className="p-8 text-center text-muted-foreground">
+                      Nessun contatto trovato
+                    </div>
+                  )}
+                  {contacts.length > 0 && contacts
+                    .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
+                    .filter(contact => {
+                      if (!clientSearchQuery) return true
+                      const query = clientSearchQuery.toLowerCase()
+                      return (
+                        contact.name.toLowerCase().includes(query) ||
+                        contact.email?.toLowerCase().includes(query) ||
+                        contact.partitaIva?.toLowerCase().includes(query) ||
+                        contact.phone?.includes(query) ||
+                        contact.mobile?.includes(query)
+                      )
+                    }).length === 0 && (
+                      <div className="p-8 text-center text-muted-foreground">
+                        Nessun risultato trovato
+                      </div>
+                    )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Actions */}
