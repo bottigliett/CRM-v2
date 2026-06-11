@@ -430,7 +430,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <UserCircle className="w-4 h-4" />
-              Cliente / Organizzazione
+              Organizzazione
             </Label>
             <div className="space-y-2">
               {formData.organizationId ? (
@@ -444,36 +444,12 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                         {organizations.find(o => o.id === formData.organizationId)?.email}
                       </div>
                     )}
-                    <Badge variant="secondary" className="text-xs mt-1">Organizzazione</Badge>
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() => setFormData(prev => ({ ...prev, organizationId: undefined }))}
-                    className="flex-shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : formData.contactId ? (
-                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {contacts.find(c => c.id === formData.contactId)?.name || 'Cliente selezionato'}
-                    </div>
-                    {contacts.find(c => c.id === formData.contactId)?.email && (
-                      <div className="text-sm text-muted-foreground">
-                        {contacts.find(c => c.id === formData.contactId)?.email}
-                      </div>
-                    )}
-                    <Badge variant="outline" className="text-xs mt-1">Contatto</Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setFormData(prev => ({ ...prev, contactId: undefined }))}
                     className="flex-shrink-0"
                   >
                     <X className="w-4 h-4" />
@@ -487,7 +463,7 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
                   className="w-full justify-start cursor-pointer"
                 >
                   <Search className="w-4 h-4 mr-2" />
-                  Cerca nell'Anagrafica
+                  Cerca Organizzazione
                 </Button>
               )}
             </div>
@@ -752,221 +728,99 @@ export function EventForm({ event, open, onOpenChange, onSave, onDelete }: Event
       </DialogContent>
     </Dialog>
 
-    {/* Client/Organization Search Dialog */}
+    {/* Organization Search Dialog */}
     <Dialog open={showClientSearch} onOpenChange={setShowClientSearch}>
       <DialogContent className="max-w-[95vw] w-[1200px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Seleziona Cliente o Organizzazione</DialogTitle>
+          <DialogTitle>Seleziona Organizzazione</DialogTitle>
           <DialogDescription>
-            Cerca e seleziona un contatto o un'organizzazione dall'elenco
+            Cerca e seleziona un'organizzazione dall'elenco
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Tab selector */}
-          <div className="flex gap-2 border-b">
-            <button
-              className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                clientTypeFilter !== 'ORGANIZATION'
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-              onClick={() => setClientTypeFilter('all')}
-            >
-              Contatti ({contacts.length})
-            </button>
-            <button
-              className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                clientTypeFilter === 'ORGANIZATION'
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-              onClick={() => setClientTypeFilter('ORGANIZATION')}
-            >
-              Organizzazioni ({organizations.length})
-            </button>
-          </div>
-
           {/* Search */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={clientTypeFilter === 'ORGANIZATION' ? "Cerca per nome, P.IVA o email..." : "Cerca per nome, email o P.IVA..."}
-                value={clientSearchQuery}
-                onChange={(e) => setClientSearchQuery(e.target.value)}
-                className="pl-9"
-                autoFocus
-              />
-            </div>
-            {clientTypeFilter !== 'ORGANIZATION' && (
-              <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tutti i tipi</SelectItem>
-                  <SelectItem value="CLIENT">Clienti</SelectItem>
-                  <SelectItem value="PROSPECT">Prospect</SelectItem>
-                  <SelectItem value="COLLABORATION">Collaborazioni</SelectItem>
-                  <SelectItem value="USEFUL_CONTACT">Contatti Utili</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca per nome, denominazione, P.IVA, email o codice..."
+              value={clientSearchQuery}
+              onChange={(e) => setClientSearchQuery(e.target.value)}
+              className="pl-9"
+              autoFocus
+            />
           </div>
 
           {/* Results List */}
           <div className="border rounded-md overflow-hidden">
             <div className="max-h-[400px] overflow-y-auto">
-              {clientTypeFilter === 'ORGANIZATION' ? (
-                <>
-                  {organizations
-                    .filter(org => {
-                      if (!clientSearchQuery) return true
-                      const query = clientSearchQuery.toLowerCase()
-                      return (
-                        org.name?.toLowerCase().includes(query) ||
-                        org.denomination?.toLowerCase().includes(query) ||
-                        org.vatNumber?.toLowerCase().includes(query) ||
-                        org.email?.toLowerCase().includes(query) ||
-                        org.phone?.includes(query) ||
-                        org.code?.toLowerCase().includes(query)
-                      )
-                    })
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map(org => (
-                      <div
-                        key={org.id}
-                        className={cn(
-                          "p-4 hover:bg-muted cursor-pointer transition-colors",
-                          formData.organizationId === org.id && "bg-muted"
-                        )}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, organizationId: org.id, contactId: undefined }))
-                          setShowClientSearch(false)
-                          setClientSearchQuery("")
-                        }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">{org.name}</h4>
-                              {formData.organizationId === org.id && (
-                                <Badge variant="default" className="text-xs">Selezionato</Badge>
-                              )}
-                            </div>
-                            <div className="mt-1 space-y-1 text-sm text-muted-foreground">
-                              {org.denomination && <div>Denominazione: {org.denomination}</div>}
-                              {org.email && <div>Email: {org.email}</div>}
-                              {org.vatNumber && <div>P.IVA: {org.vatNumber}</div>}
-                              {org.phone && <div>Tel: {org.phone}</div>}
-                            </div>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">Organizzazione</Badge>
+              {organizations
+                .filter(org => {
+                  if (!clientSearchQuery) return true
+                  const query = clientSearchQuery.toLowerCase()
+                  return (
+                    org.name?.toLowerCase().includes(query) ||
+                    org.denomination?.toLowerCase().includes(query) ||
+                    org.vatNumber?.toLowerCase().includes(query) ||
+                    org.email?.toLowerCase().includes(query) ||
+                    org.phone?.includes(query) ||
+                    org.code?.toLowerCase().includes(query)
+                  )
+                })
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(org => (
+                  <div
+                    key={org.id}
+                    className={cn(
+                      "p-4 hover:bg-muted cursor-pointer transition-colors",
+                      formData.organizationId === org.id && "bg-muted"
+                    )}
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, organizationId: org.id, contactId: undefined }))
+                      setShowClientSearch(false)
+                      setClientSearchQuery("")
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{org.name}</h4>
+                          {formData.organizationId === org.id && (
+                            <Badge variant="default" className="text-xs">Selezionato</Badge>
+                          )}
+                        </div>
+                        <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                          {org.denomination && <div>Denominazione: {org.denomination}</div>}
+                          {org.email && <div>Email: {org.email}</div>}
+                          {org.vatNumber && <div>P.IVA: {org.vatNumber}</div>}
+                          {org.phone && <div>Tel: {org.phone}</div>}
                         </div>
                       </div>
-                    ))}
-                  {organizations.length === 0 && (
-                    <div className="p-8 text-center text-muted-foreground">
-                      Nessuna organizzazione trovata
                     </div>
-                  )}
-                  {organizations.length > 0 && organizations
-                    .filter(org => {
-                      if (!clientSearchQuery) return true
-                      const query = clientSearchQuery.toLowerCase()
-                      return (
-                        org.name?.toLowerCase().includes(query) ||
-                        org.denomination?.toLowerCase().includes(query) ||
-                        org.vatNumber?.toLowerCase().includes(query) ||
-                        org.email?.toLowerCase().includes(query) ||
-                        org.phone?.includes(query) ||
-                        org.code?.toLowerCase().includes(query)
-                      )
-                    }).length === 0 && (
-                      <div className="p-8 text-center text-muted-foreground">
-                        Nessun risultato trovato
-                      </div>
-                    )}
-                </>
-              ) : (
-                <>
-                  {contacts
-                    .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                    .filter(contact => {
-                      if (!clientSearchQuery) return true
-                      const query = clientSearchQuery.toLowerCase()
-                      return (
-                        contact.name.toLowerCase().includes(query) ||
-                        contact.email?.toLowerCase().includes(query) ||
-                        contact.partitaIva?.toLowerCase().includes(query) ||
-                        contact.phone?.includes(query) ||
-                        contact.mobile?.includes(query)
-                      )
-                    })
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map(contact => (
-                      <div
-                        key={contact.id}
-                        className={cn(
-                          "p-4 hover:bg-muted cursor-pointer transition-colors",
-                          formData.contactId === contact.id && "bg-muted"
-                        )}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, contactId: contact.id, organizationId: undefined }))
-                          setShowClientSearch(false)
-                          setClientSearchQuery("")
-                        }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">{contact.name}</h4>
-                              {formData.contactId === contact.id && (
-                                <Badge variant="default" className="text-xs">Selezionato</Badge>
-                              )}
-                            </div>
-                            <div className="mt-1 space-y-1 text-sm text-muted-foreground">
-                              {contact.email && <div>Email: {contact.email}</div>}
-                              {contact.partitaIva && <div>P.IVA: {contact.partitaIva}</div>}
-                              {contact.address && <div>Indirizzo: {contact.address}</div>}
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {contact.type === 'CLIENT' && 'Cliente'}
-                            {contact.type === 'PROSPECT' && 'Prospect'}
-                            {contact.type === 'COLLABORATION' && 'Collaborazione'}
-                            {contact.type === 'USEFUL_CONTACT' && 'Contatto Utile'}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  {contacts.length === 0 && (
-                    <div className="p-8 text-center text-muted-foreground">
-                      Nessun contatto trovato
-                    </div>
-                  )}
-                  {contacts.length > 0 && contacts
-                    .filter(contact => clientTypeFilter === 'all' || contact.type === clientTypeFilter)
-                    .filter(contact => {
-                      if (!clientSearchQuery) return true
-                      const query = clientSearchQuery.toLowerCase()
-                      return (
-                        contact.name.toLowerCase().includes(query) ||
-                        contact.email?.toLowerCase().includes(query) ||
-                        contact.partitaIva?.toLowerCase().includes(query) ||
-                        contact.phone?.includes(query) ||
-                        contact.mobile?.includes(query)
-                      )
-                    }).length === 0 && (
-                      <div className="p-8 text-center text-muted-foreground">
-                        Nessun risultato trovato
-                      </div>
-                    )}
-                </>
+                  </div>
+                ))}
+              {organizations.length === 0 && (
+                <div className="p-8 text-center text-muted-foreground">
+                  Nessuna organizzazione trovata
+                </div>
               )}
+              {organizations.length > 0 && organizations
+                .filter(org => {
+                  if (!clientSearchQuery) return true
+                  const query = clientSearchQuery.toLowerCase()
+                  return (
+                    org.name?.toLowerCase().includes(query) ||
+                    org.denomination?.toLowerCase().includes(query) ||
+                    org.vatNumber?.toLowerCase().includes(query) ||
+                    org.email?.toLowerCase().includes(query) ||
+                    org.phone?.includes(query) ||
+                    org.code?.toLowerCase().includes(query)
+                  )
+                }).length === 0 && (
+                  <div className="p-8 text-center text-muted-foreground">
+                    Nessun risultato trovato
+                  </div>
+                )}
             </div>
           </div>
 
