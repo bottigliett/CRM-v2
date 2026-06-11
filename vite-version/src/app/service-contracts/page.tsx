@@ -26,7 +26,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, TrendingUp, AlertTriangle,
+  ChevronsUpDown, Check,
 } from "lucide-react"
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 import { serviceContractsAPI, type ServiceContract } from "@/lib/service-contracts-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
@@ -54,7 +60,7 @@ const DEFAULT_VISIBLE_IDS = new Set([
 ])
 
 const STATUSES = ["Attivo", "In attesa fatturazione", "Scaduto", "Non attivo", "Blocco Amministrativo", "In attesa pagamento"]
-const CONTRACT_TYPES = ["TECNOCASA ESTESO", "TECNOCASA BASE", "HOSTING", "SERVER", "ALTRO"]
+const CONTRACT_TYPES = ["ASSISTENZA TECNICA", "BACKUP ANNUALE", "BACKUP DROPBOX", "HOSTING CRM", "ALTRO"]
 
 const STATUS_COLORS: Record<string, string> = {
   "Attivo":                  "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -66,7 +72,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const emptyForm: any = {
-  contractType: "", status: "Attivo", organizationId: "",
+  contractType: "", customContractType: "", status: "Attivo", organizationId: "",
   contractValue: "", startDate: "", nextInvoiceDate: "",
   isConsultecno: false, subject: "",
 }
@@ -82,6 +88,7 @@ export default function ServiceContractsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [stats, setStats] = useState<any>(null)
   const [limit, setLimit] = useState(20)
+  const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
 
   const SELECT_FILTER_COLS = new Set(["status", "contractType", "isConsultecno"])
   const updateColumnFilter = useCallback((colId: string, value: string) => {
@@ -225,7 +232,14 @@ export default function ServiceContractsPage() {
   const handleCreate = async () => {
     try {
       setSubmitting(true)
-      await serviceContractsAPI.create(formData)
+      const submitData = {
+        ...formData,
+        contractType: formData.contractType === "ALTRO" && formData.customContractType
+          ? formData.customContractType
+          : formData.contractType,
+      }
+      delete submitData.customContractType
+      await serviceContractsAPI.create(submitData)
       toast.success("Contratto creato con successo!")
       setIsCreateOpen(false)
       setFormData({ ...emptyForm })
@@ -237,7 +251,14 @@ export default function ServiceContractsPage() {
     if (!selected) return
     try {
       setSubmitting(true)
-      await serviceContractsAPI.update(selected.id, formData)
+      const submitData = {
+        ...formData,
+        contractType: formData.contractType === "ALTRO" && formData.customContractType
+          ? formData.customContractType
+          : formData.contractType,
+      }
+      delete submitData.customContractType
+      await serviceContractsAPI.update(selected.id, submitData)
       toast.success("Contratto aggiornato!")
       setIsEditOpen(false)
       setSelected(null)
@@ -260,8 +281,10 @@ export default function ServiceContractsPage() {
 
   const openEdit = (item: ServiceContract) => {
     setSelected(item)
+    const isKnownType = CONTRACT_TYPES.includes(item.contractType || "")
     setFormData({
-      contractType:    item.contractType    || "",
+      contractType:       isKnownType ? (item.contractType || "") : "ALTRO",
+      customContractType: isKnownType ? "" : (item.contractType || ""),
       status:          item.status,
       organizationId:  item.organizationId?.toString() || "",
       contractValue:   item.contractValue?.toString()  || "",
@@ -282,12 +305,20 @@ export default function ServiceContractsPage() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Tipo contratto</Label>
-          <Select value={formData.contractType} onValueChange={v => setFormData({ ...formData, contractType: v })}>
+          <Select value={formData.contractType} onValueChange={v => setFormData({ ...formData, contractType: v, customContractType: v === "ALTRO" ? formData.customContractType : "" })}>
             <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
             <SelectContent>
               {CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
+          {formData.contractType === "ALTRO" && (
+            <Input
+              className="mt-2"
+              placeholder="Inserisci tipo contratto..."
+              value={formData.customContractType}
+              onChange={e => setFormData({ ...formData, customContractType: e.target.value })}
+            />
+          )}
         </div>
         <div>
           <Label>Stato</Label>
@@ -301,12 +332,38 @@ export default function ServiceContractsPage() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Organizzazione</Label>
-          <Select value={formData.organizationId} onValueChange={v => setFormData({ ...formData, organizationId: v })}>
-            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-            <SelectContent>
-              {orgs.map(o => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" aria-expanded={orgPopoverOpen} className="w-full justify-between font-normal">
+                <span className="truncate">
+                  {formData.organizationId
+                    ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? 'Seleziona...'
+                    : 'Seleziona...'}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[400px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Cerca organizzazione..." />
+                <CommandList>
+                  <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem value="__none__" onSelect={() => { setFormData({ ...formData, organizationId: '' }); setOrgPopoverOpen(false) }}>
+                      <Check className={cn("mr-2 h-4 w-4", !formData.organizationId ? "opacity-100" : "opacity-0")} />
+                      <span className="text-muted-foreground italic">Nessuna</span>
+                    </CommandItem>
+                    {orgs.map(o => (
+                      <CommandItem key={o.id} value={o.name} onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}>
+                        <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
+                        {o.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div>
           <Label>Valore (EUR)</Label>

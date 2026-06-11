@@ -59,7 +59,22 @@ export const getServiceContracts = async (req: Request, res: Response) => {
 
     // Column-level filters
     if (contractNumber) where.contractNumber = { contains: contractNumber as string };
-    if (contractType) where.contractType = contractType as string;
+    if (contractType) {
+      // Map new filter values to include old database values
+      const typeMapping: Record<string, string[]> = {
+        'ASSISTENZA TECNICA': ['ASSISTENZA TECNICA', 'TECNOCASA ESTESO', 'TECNOCASA BASE'],
+        'BACKUP DROPBOX': ['BACKUP DROPBOX', 'BACKUP CLOUD'],
+        'HOSTING CRM': ['HOSTING CRM', 'HOSTING'],
+        'BACKUP ANNUALE': ['BACKUP ANNUALE'],
+        'ALTRO': ['ALTRO', 'SERVER'],
+      };
+      const mappedValues = typeMapping[contractType as string];
+      if (mappedValues && mappedValues.length > 1) {
+        where.contractType = { in: mappedValues };
+      } else {
+        where.contractType = contractType as string;
+      }
+    }
     if (subject) where.subject = { contains: subject as string };
     if (orgName) where.organization = { name: { contains: orgName as string } };
     if (startDateFrom || startDateTo) {
