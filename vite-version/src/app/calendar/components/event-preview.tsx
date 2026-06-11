@@ -97,51 +97,54 @@ export function EventPreview({ event, open, onOpenChange, onEdit, onDelete }: Ev
             </div>
           </div>
 
-          {/* Responsabile assegnato */}
-          {event.assignedUserName && (
-            <>
-              <Separator />
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Responsabile</div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Avatar className="w-6 h-6">
-                      <AvatarFallback className="text-xs">
-                        {event.assignedUserName.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{event.assignedUserName}</span>
+          {/* Responsabili */}
+          {(event.assignedUserName || (event.teamMembers && event.teamMembers.length > 0)) && (() => {
+            // Build unique list: assignedUser first, then teamMembers excluding assignedUser
+            const allMembers: Array<{ id: number; name: string; initials: string }> = []
+            if (event.assignedTo && event.assignedUserName) {
+              allMembers.push({
+                id: event.assignedTo,
+                name: event.assignedUserName,
+                initials: event.assignedUserName.split(' ').map(n => n[0]).join('')
+              })
+            }
+            if (event.teamMembers) {
+              event.teamMembers.forEach(member => {
+                if (!allMembers.some(m => m.id === member.id)) {
+                  allMembers.push({
+                    id: member.id,
+                    name: `${member.firstName} ${member.lastName}`,
+                    initials: `${member.firstName[0]}${member.lastName[0]}`
+                  })
+                }
+              })
+            }
+            return allMembers.length > 0 ? (
+              <>
+                <Separator />
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">
+                      {allMembers.length === 1 ? 'Responsabile' : 'Responsabili'}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {allMembers.map(member => (
+                        <div key={member.id} className="flex items-center gap-2">
+                          <Avatar className="w-6 h-6">
+                            <AvatarFallback className="text-xs">
+                              {member.initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{member.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </>
-          )}
-
-          {/* Team Members */}
-          {event.teamMembers && event.teamMembers.length > 0 && (
-            <>
-              <Separator />
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">Team</div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {event.teamMembers.map(member => (
-                      <div key={member.id} className="flex items-center gap-2">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs">
-                            {member.firstName[0]}{member.lastName[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{member.firstName} {member.lastName}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+              </>
+            ) : null
+          })()}
 
           {/* Cliente / Organizzazione */}
           {(event.contactName || event.organizationName) && (
