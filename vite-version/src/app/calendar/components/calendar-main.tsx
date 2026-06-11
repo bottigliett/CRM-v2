@@ -759,12 +759,20 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
                             {event.categoryName && event.height > 45 && (
                               <div className="text-[10px] opacity-90 truncate">{event.categoryName}</div>
                             )}
-                            {event.assignedUserName && event.height > 60 && (
-                              <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
-                                <Users className="w-2.5 h-2.5" />
-                                {event.assignedUserName}
-                              </div>
-                            )}
+                            {(event.assignedUserName || (event.teamMembers && event.teamMembers.length > 0)) && event.height > 60 && (() => {
+                              const names: string[] = []
+                              if (event.assignedUserName) names.push(event.assignedUserName)
+                              event.teamMembers?.forEach(m => {
+                                const n = `${m.firstName} ${m.lastName}`
+                                if (n !== event.assignedUserName) names.push(n)
+                              })
+                              return names.length > 0 ? (
+                                <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
+                                  <Users className="w-2.5 h-2.5" />
+                                  {names.join(', ')}
+                                </div>
+                              ) : null
+                            })()}
                             {(event.contactName || event.organizationName) && event.height > 75 && (
                               <div className="text-[10px] opacity-90 truncate flex items-center gap-1">
                                 <Users className="w-2.5 h-2.5" />
