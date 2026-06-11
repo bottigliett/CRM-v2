@@ -480,8 +480,9 @@ export const createEvent = async (req: Request, res: Response) => {
     }
 
     // Send email notification to client if event has "Appuntamenti clienti" category AND client has active FULL_CLIENT dashboard
-    const isClientAppointment = event.category?.name === 'Appuntamenti clienti';
-    if (event.contactId && isClientAppointment && event.contact?.email) {
+    const eventWithRelations = event as any;
+    const isClientAppointment = eventWithRelations.category?.name === 'Appuntamenti clienti';
+    if (event.contactId && isClientAppointment && eventWithRelations.contact?.email) {
       try {
         // Check if client has an active full dashboard (not just quote access)
         const clientAccess = await prisma.clientAccess.findUnique({
@@ -490,15 +491,15 @@ export const createEvent = async (req: Request, res: Response) => {
 
         if (clientAccess && clientAccess.isActive && clientAccess.accessType === 'FULL_CLIENT') {
           await sendClientEventCreatedEmail(
-            event.contact.email,
-            event.contact.name,
+            eventWithRelations.contact.email,
+            eventWithRelations.contact.name,
             event.title,
             new Date(event.startDateTime),
             event.location || undefined
           );
-          console.log(`Event notification email sent to ${event.contact.email}`);
+          console.log(`Event notification email sent to ${eventWithRelations.contact.email}`);
         } else {
-          console.log(`Event email NOT sent to ${event.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
+          console.log(`Event email NOT sent to ${eventWithRelations.contact.email} - no active full client dashboard (access type: ${clientAccess?.accessType || 'none'})`);
         }
       } catch (emailError) {
         console.error('Failed to send event notification email:', emailError);
