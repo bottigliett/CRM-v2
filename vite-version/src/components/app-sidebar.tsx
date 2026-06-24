@@ -18,6 +18,7 @@ import {
   Megaphone,
   Code,
   Building2,
+  Map,
   Headset,
   FileSignature,
   ShoppingCart,
@@ -105,6 +106,12 @@ const allNavGroups: NavGroup[] = [
         title: "Organizzazioni",
         url: "/organizations",
         icon: Building2,
+        moduleName: "organizations",
+      },
+      {
+        title: "Mappa Organizzazioni",
+        url: "/organizations/map",
+        icon: Map,
         moduleName: "organizations",
       },
       {

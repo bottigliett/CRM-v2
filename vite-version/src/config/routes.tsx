@@ -36,6 +36,7 @@ const OnDuty = lazy(() => import('@/app/on-duty/page'))
 // VTiger module pages
 const Organizations = lazy(() => import('@/app/organizations/page'))
 const OrganizationDetail = lazy(() => import('@/app/organizations/[id]/page'))
+const OrganizationsMap = lazy(() => import('@/app/organizations/map/page'))
 const HelpDesk = lazy(() => import('@/app/helpdesk/page'))
 const ServiceContracts = lazy(() => import('@/app/service-contracts/page'))
 const VtQuotes = lazy(() => import('@/app/vt-quotes/page'))
@@ -185,6 +186,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/organizations",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="organizations"><Organizations /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/organizations/map",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="organizations"><OrganizationsMap /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/organizations/:id",
