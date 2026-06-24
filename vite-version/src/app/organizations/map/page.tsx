@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useNavigate } from 'react-router-dom'
 import { organizationsAPI } from '@/lib/organizations-api'
 import type { Organization } from '@/lib/organizations-api'
@@ -68,8 +69,6 @@ export default function OrganizationsMapPage() {
     if (leafletMap.current) return // already initialized
 
     import('leaflet').then(({ default: L }) => {
-      import('leaflet/dist/leaflet.css')
-
       // Fix default icon URLs
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
