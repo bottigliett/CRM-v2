@@ -189,7 +189,7 @@ export default function OrganizationDetailPage() {
 
   return (
     <BaseLayout>
-      <div className="flex flex-col gap-6 p-6 max-w-6xl mx-auto">
+      <div className="flex flex-col gap-6 p-6">
 
         {/* Header */}
         <div className="flex items-start gap-4">
