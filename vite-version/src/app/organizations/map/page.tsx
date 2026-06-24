@@ -1,23 +1,13 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useEffect, useRef, useState } from 'react'
+import type L from 'leaflet'
 import { useNavigate } from 'react-router-dom'
 import { organizationsAPI } from '@/lib/organizations-api'
 import type { Organization } from '@/lib/organizations-api'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MapPin, Loader2 } from 'lucide-react'
-
-// Fix Leaflet default marker icons in Vite/Webpack
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
 
 interface GeocodedOrg extends Organization {
   lat: number
@@ -65,10 +55,68 @@ async function geocodeCity(city: string): Promise<[number, number] | null> {
 
 export default function OrganizationsMapPage() {
   const navigate = useNavigate()
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMap = useRef<L.Map | null>(null)
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [geocoded, setGeocoded] = useState<GeocodedOrg[]>([])
   const [loading, setLoading] = useState(true)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
+
+  // Initialize Leaflet map once geocoding is done
+  useEffect(() => {
+    if (loading || !mapRef.current || geocoded.length === 0) return
+    if (leafletMap.current) return // already initialized
+
+    import('leaflet').then(({ default: L }) => {
+      import('leaflet/dist/leaflet.css')
+
+      // Fix default icon URLs
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      })
+
+      const map = L.map(mapRef.current!).setView([42.5, 12.5], 6)
+      leafletMap.current = map
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map)
+
+      for (const org of geocoded) {
+        const popup = L.popup().setContent(`
+          <div style="min-width:180px">
+            <p style="font-weight:600;font-size:13px;margin:0 0 2px">${org.denomination || org.name}</p>
+            ${org.billCity ? `<p style="color:#666;font-size:12px;margin:0 0 4px">${org.billCity}${org.billState ? ` (${org.billState})` : ''}</p>` : ''}
+            ${org.phone ? `<p style="font-size:12px;margin:0 0 6px">📞 ${org.phone}</p>` : ''}
+            <a href="/organizations/${org.id}" style="font-size:12px;color:#2563eb" id="org-link-${org.id}">Scheda completa →</a>
+          </div>
+        `)
+
+        L.marker([org.lat, org.lng])
+          .bindPopup(popup)
+          .on('popupopen', () => {
+            const el = document.getElementById(`org-link-${org.id}`)
+            if (el) {
+              el.addEventListener('click', (e) => {
+                e.preventDefault()
+                navigate(`/organizations/${org.id}`)
+              })
+            }
+          })
+          .addTo(map)
+      }
+    })
+
+    return () => {
+      if (leafletMap.current) {
+        leafletMap.current.remove()
+        leafletMap.current = null
+      }
+    }
+  }, [loading, geocoded, navigate])
 
   useEffect(() => {
     let cancelled = false
@@ -123,8 +171,8 @@ export default function OrganizationsMapPage() {
     <div className="flex overflow-hidden" style={{ height: 'calc(100vh - var(--header-height, 56px))' }}>
       {/* Map */}
       <div className="flex-1 relative">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+        {loading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground z-10 bg-background">
             <Loader2 className="h-8 w-8 animate-spin" />
             {progress.total > 0 ? (
               <p className="text-sm">Geocodifica {progress.done}/{progress.total} città...</p>
@@ -132,43 +180,8 @@ export default function OrganizationsMapPage() {
               <p className="text-sm">Caricamento organizzazioni...</p>
             )}
           </div>
-        ) : (
-          <MapContainer
-            center={[42.5, 12.5]}
-            zoom={6}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            />
-            {geocoded.map(org => (
-              <Marker key={org.id} position={[org.lat, org.lng]}>
-                <Popup>
-                  <div style={{ minWidth: 180 }}>
-                    <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 2px' }}>
-                      {org.denomination || org.name}
-                    </p>
-                    {org.billCity && (
-                      <p style={{ color: '#666', fontSize: 12, margin: '0 0 4px' }}>
-                        {org.billCity}{org.billState ? ` (${org.billState})` : ''}
-                      </p>
-                    )}
-                    {org.phone && (
-                      <p style={{ fontSize: 12, margin: '0 0 6px' }}>📞 {org.phone}</p>
-                    )}
-                    <button
-                      style={{ fontSize: 12, color: '#2563eb', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                      onClick={() => navigate(`/organizations/${org.id}`)}
-                    >
-                      Scheda completa →
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
         )}
+        <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
       </div>
 
       {/* Sidebar */}
