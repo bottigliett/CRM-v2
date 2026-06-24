@@ -400,6 +400,21 @@ export default function VtQuotesPage() {
     const orgAddress = [org?.billStreet, org?.billCity, org?.billState, org?.billCode, org?.billCountry].filter(Boolean).join(", ")
     const orgVat = org?.vatNumber || ""
 
+    // Convert logo to base64 so html2canvas can embed it without CORS issues
+    const logoBase64 = await fetch('/logo-consultecno.png')
+      .then(r => r.blob())
+      .then(blob => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      }))
+      .catch(() => '')
+
+    const logoImg = logoBase64
+      ? `<img src="${logoBase64}" alt="Consultecno" style="max-height:18mm;max-width:50mm;object-fit:contain;" />`
+      : ''
+
     const iframe = document.createElement("iframe")
     iframe.style.position = "absolute"
     iframe.style.left = "-9999px"
@@ -467,7 +482,7 @@ export default function VtQuotesPage() {
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;">
-      <img src="/logo-consultecno.png" alt="Consultecno" style="max-height:18mm;max-width:50mm;object-fit:contain;" onerror="this.style.display='none'" />
+      ${logoImg}
       <div class="quote-meta">
         <div class="num">${quote.quoteNumber}</div>
         <span>Data: ${new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
