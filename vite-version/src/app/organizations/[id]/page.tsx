@@ -16,6 +16,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
+import {
   ArrowLeft, Building2, Phone, Mail, MapPin, CreditCard, FileSignature,
   Headphones, FileText, MessageSquare, Loader2, Trash2, Send, Clock,
   User, Globe, Info, Hash, Landmark, Users, Cpu, Server
@@ -113,6 +117,8 @@ export default function OrganizationDetailPage() {
   const [noteInput, setNoteInput] = useState("")
   const [sendingNote, setSendingNote] = useState(false)
   const [deleteNoteId, setDeleteNoteId] = useState<number | null>(null)
+  const [selectedContract, setSelectedContract] = useState<ServiceContract | null>(null)
+  const [selectedTicket, setSelectedTicket] = useState<HelpDeskTicket | null>(null)
 
   const loadAll = useCallback(async () => {
     try {
@@ -350,7 +356,7 @@ export default function OrganizationDetailPage() {
                     {contracts.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nessun contratto</TableCell></TableRow>
                     ) : contracts.map(c => (
-                      <TableRow key={c.id}>
+                      <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedContract(c)}>
                         <TableCell className="font-mono text-sm">{c.contractNumber}</TableCell>
                         <TableCell>{c.contractType || "-"}</TableCell>
                         <TableCell><Badge className={STATUS_COLORS[c.status] || "bg-gray-100 text-gray-800"}>{c.status}</Badge></TableCell>
@@ -384,7 +390,7 @@ export default function OrganizationDetailPage() {
                     {tickets.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nessun ticket</TableCell></TableRow>
                     ) : tickets.map(t => (
-                      <TableRow key={t.id}>
+                      <TableRow key={t.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedTicket(t)}>
                         <TableCell className="font-mono text-sm">{t.ticketNumber}</TableCell>
                         <TableCell className="max-w-[280px] truncate">{t.title}</TableCell>
                         <TableCell><Badge className={TICKET_STATUS_COLORS[t.status] || "bg-gray-100 text-gray-800"}>{t.status}</Badge></TableCell>
@@ -475,6 +481,84 @@ export default function OrganizationDetailPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Contract preview dialog */}
+        <Dialog open={!!selectedContract} onOpenChange={() => setSelectedContract(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileSignature className="h-5 w-5" />{selectedContract?.contractNumber}
+              </DialogTitle>
+              <DialogDescription>Dettagli contratto</DialogDescription>
+            </DialogHeader>
+            {selectedContract && (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><p className="text-xs text-muted-foreground">Tipo</p><p className="font-medium">{selectedContract.contractType || "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Stato</p><Badge className={STATUS_COLORS[selectedContract.status] || "bg-gray-100 text-gray-800"}>{selectedContract.status}</Badge></div>
+                  <div><p className="text-xs text-muted-foreground">Valore</p><p className="font-medium">{formatCurrency(selectedContract.contractValue)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Consultecno</p><p className="font-medium">{selectedContract.isConsultecno ? "Sì" : "No"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Data inizio</p><p className="font-medium">{formatDate(selectedContract.startDate)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Prossima fattura</p><p className="font-medium">{formatDate(selectedContract.nextInvoiceDate)}</p></div>
+                </div>
+                {selectedContract.subject && (
+                  <>
+                    <Separator />
+                    <div><p className="text-xs text-muted-foreground mb-1">Informazioni aggiuntive</p><p className="whitespace-pre-wrap">{selectedContract.subject}</p></div>
+                  </>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedContract(null)}>Chiudi</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Ticket preview dialog */}
+        <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Headphones className="h-5 w-5" />{selectedTicket?.ticketNumber}
+              </DialogTitle>
+              <DialogDescription>{selectedTicket?.title}</DialogDescription>
+            </DialogHeader>
+            {selectedTicket && (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><p className="text-xs text-muted-foreground">Stato</p><Badge className={TICKET_STATUS_COLORS[selectedTicket.status] || "bg-gray-100 text-gray-800"}>{selectedTicket.status}</Badge></div>
+                  <div><p className="text-xs text-muted-foreground">Priorità</p><p className="font-medium">{selectedTicket.priority || "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Tipo chiamata</p><p className="font-medium">{selectedTicket.callType || "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Categoria</p><p className="font-medium">{selectedTicket.category || "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Tecnico</p><p className="font-medium">{selectedTicket.technicianName || "-"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Data apertura</p><p className="font-medium">{formatDate(selectedTicket.createdAt)}</p></div>
+                  {(selectedTicket.hours || selectedTicket.days) && (
+                    <>
+                      <div><p className="text-xs text-muted-foreground">Ore</p><p className="font-medium">{selectedTicket.hours ?? "-"}</p></div>
+                      <div><p className="text-xs text-muted-foreground">Giorni</p><p className="font-medium">{selectedTicket.days ?? "-"}</p></div>
+                    </>
+                  )}
+                </div>
+                {selectedTicket.description && (
+                  <>
+                    <Separator />
+                    <div><p className="text-xs text-muted-foreground mb-1">Descrizione</p><p className="whitespace-pre-wrap">{selectedTicket.description}</p></div>
+                  </>
+                )}
+                {selectedTicket.solution && (
+                  <>
+                    <Separator />
+                    <div><p className="text-xs text-muted-foreground mb-1">Soluzione</p><p className="whitespace-pre-wrap">{selectedTicket.solution}</p></div>
+                  </>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedTicket(null)}>Chiudi</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete note dialog */}
         <AlertDialog open={!!deleteNoteId} onOpenChange={() => setDeleteNoteId(null)}>
