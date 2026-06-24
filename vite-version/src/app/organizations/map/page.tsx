@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css'
 import { useNavigate } from 'react-router-dom'
 import { organizationsAPI } from '@/lib/organizations-api'
 import type { Organization } from '@/lib/organizations-api'
+import { BaseLayout } from '@/components/layouts/base-layout'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MapPin, Loader2 } from 'lucide-react'
@@ -124,7 +125,7 @@ export default function OrganizationsMapPage() {
       try {
         const res = await organizationsAPI.getAll({ limit: 2000 })
         if (cancelled) return
-        const all: Organization[] = res.data || res
+        const all: Organization[] = res.data?.organizations || []
         setOrgs(all)
 
         const withCity = all.filter(o => o.billCity)
@@ -167,7 +168,11 @@ export default function OrganizationsMapPage() {
   })()
 
   return (
-    <div className="flex overflow-hidden" style={{ height: 'calc(100vh - var(--header-height, 56px))' }}>
+    <BaseLayout>
+    <div
+      className="-mx-4 -my-4 md:-mx-6 md:-my-6 flex overflow-hidden"
+      style={{ height: 'calc(100vh - var(--header-height, 56px))' }}
+    >
       {/* Map */}
       <div className="flex-1 relative">
         {loading && (
@@ -215,5 +220,6 @@ export default function OrganizationsMapPage() {
         </ScrollArea>
       </div>
     </div>
+    </BaseLayout>
   )
 }
