@@ -138,7 +138,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Ciao, {currentUser?.firstName || currentUser?.username || 'Utente'} 👋
+              Ciao, {currentUser?.firstName || currentUser?.username || 'Utente'}
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5 capitalize">
               {format(new Date(), "EEEE d MMMM yyyy", { locale: it })}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
             <>
               {/* Ticket aperti */}
               <Card
-                className="cursor-pointer hover:bg-accent/40 transition-colors border-red-200 dark:border-red-900/40"
+                className="cursor-pointer hover:bg-accent/40 transition-colors"
                 onClick={() => navigate('/helpdesk')}
               >
                 <CardContent className="p-5">
@@ -395,34 +395,6 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
-
-        {/* ── Ticket per stato ── */}
-        {stats && stats.tickets.byStatus.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <BarChart3 className="h-4 w-4" />
-                Distribuzione ticket per stato
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3">
-                {stats.tickets.byStatus.map(s => (
-                  <div
-                    key={s.status}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card cursor-pointer hover:bg-accent/40 transition-colors"
-                    onClick={() => navigate('/helpdesk')}
-                  >
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor(s.status)}`}>
-                      {s.status}
-                    </span>
-                    <span className="text-lg font-bold">{s.count}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
       </div>
     </BaseLayout>

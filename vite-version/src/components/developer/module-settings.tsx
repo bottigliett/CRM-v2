@@ -26,6 +26,7 @@ const moduleRoutes: Record<string, string> = {
   projects: "/projects",
   finance: "/finance",
   invoices: "/invoices",
+  warehouse: "/warehouse",
   service_contracts: "/service-contracts",
   vt_quotes: "/vt-quotes",
   sales_orders: "/sales-orders",
