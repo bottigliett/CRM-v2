@@ -556,8 +556,10 @@ export default function OrganizationsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div><span className="font-medium">Codice BDT:</span> <span className="font-mono">{selected.code || "-"}</span></div>
                   <div><span className="font-medium">Settore:</span> {selected.industry || "-"}</div>
+                  <div><span className="font-medium">Ragione Sociale:</span> {selected.denomination || "-"}</div>
                   <div><span className="font-medium">Telefono:</span> {selected.phone?.replace(/\//g, ' ') || "-"}</div>
                   <div><span className="font-medium">Cellulare:</span> {selected.mobile || "-"}</div>
+                  {selected.otherPhone && <div><span className="font-medium">Altri Telefoni:</span> {selected.otherPhone}</div>}
                   <div><span className="font-medium">Email:</span> {selected.email || "-"}</div>
                   <div><span className="font-medium">PEC:</span> {selected.pec || "-"}</div>
                   <div><span className="font-medium">P.IVA:</span> <span className="font-mono">{selected.vatNumber || "-"}</span></div>
