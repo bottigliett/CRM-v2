@@ -1,8 +1,8 @@
 -- Migration: Add organization_notes table
 CREATE TABLE IF NOT EXISTS organization_notes (
-  id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  organization_id BIGINT UNSIGNED NOT NULL,
-  user_id        BIGINT UNSIGNED NULL,
+  id             INT NOT NULL AUTO_INCREMENT,
+  organization_id INT NOT NULL,
+  user_id        INT NULL,
   content        TEXT NOT NULL,
   created_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
