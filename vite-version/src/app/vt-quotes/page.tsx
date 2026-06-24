@@ -459,17 +459,20 @@ export default function VtQuotesPage() {
 <div class="page-wrapper">
   <div class="header">
     <div>
-      <div class="company">CONSULTECNO SRL</div>
+      <div class="company">Consultecno S.R.L.</div>
       <div class="company-info">
-        <span>Via Example 123 - 00100 Roma (RM)</span>
-        <span>P.IVA 01234567890</span>
-        <span>info@consultecno.it</span>
+        <span>Via Chiesolina 19</span>
+        <span>37066 Sommacampagna (VR) - Verona</span>
+        <span>Tel: 045/9990036</span>
       </div>
     </div>
-    <div class="quote-meta">
-      <div class="num">${quote.quoteNumber}</div>
-      <span>Data: ${new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
-      ${quote.validUntil ? `<span>Valido fino: ${new Date(quote.validUntil).toLocaleDateString("it-IT")}</span>` : ''}
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;">
+      <img src="/logo-consultecno.png" alt="Consultecno" style="max-height:18mm;max-width:50mm;object-fit:contain;" onerror="this.style.display='none'" />
+      <div class="quote-meta">
+        <div class="num">${quote.quoteNumber}</div>
+        <span>Data: ${new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
+        ${quote.validUntil ? `<span>Valido fino: ${new Date(quote.validUntil).toLocaleDateString("it-IT")}</span>` : ''}
+      </div>
     </div>
   </div>
 
@@ -518,7 +521,7 @@ export default function VtQuotesPage() {
   </div>` : ''}
 
   <div class="footer">
-    <div class="footer-text">Preventivo ${quote.quoteNumber} — Consultecno SRL</div>
+    <div class="footer-text">Preventivo ${quote.quoteNumber} — Consultecno S.R.L. | Via Chiesolina 19, 37066 Sommacampagna (VR) | Tel: 045/9990036</div>
   </div>
 </div>
 </body>

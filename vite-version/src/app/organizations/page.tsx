@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +26,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2, ExternalLink,
 } from "lucide-react"
 import { organizationsAPI, type Organization } from "@/lib/organizations-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
@@ -79,6 +80,7 @@ const emptyForm = {
 }
 
 export default function OrganizationsPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({ isActive: "true" })
@@ -596,6 +598,9 @@ export default function OrganizationsPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Chiudi</Button>
+              <Button variant="outline" onClick={() => { setIsPreviewOpen(false); if (selected) navigate(`/organizations/${selected.id}`) }}>
+                <ExternalLink className="mr-2 h-4 w-4" />Scheda completa
+              </Button>
               <Button onClick={() => { setIsPreviewOpen(false); if (selected) openEdit(selected) }}>Modifica</Button>
             </DialogFooter>
           </DialogContent>
