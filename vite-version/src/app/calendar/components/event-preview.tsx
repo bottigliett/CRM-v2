@@ -90,10 +90,18 @@ export function EventPreview({ event, open, onOpenChange, onEdit, onDelete }: Ev
               <div className="font-medium">
                 {format(event.date, 'EEEE d MMMM yyyy', { locale: it })}
               </div>
-              <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {event.time} • {event.duration}
-              </div>
+              {!event.allDay && (
+                <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {event.time}
+                  {event.endDate && (
+                    <> → {format(event.endDate, 'HH:mm')}</>
+                  )}
+                </div>
+              )}
+              {event.allDay && (
+                <div className="text-sm text-muted-foreground mt-1">Tutto il giorno</div>
+              )}
             </div>
           </div>
 

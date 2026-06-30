@@ -55,7 +55,7 @@ function convertAPIEvent(apiEvent: APIEvent): CalendarEvent {
     id: apiEvent.id,
     title: apiEvent.title,
     date: start,
-    endDate: apiEvent.isAllDay ? end : undefined,
+    endDate: end,
     time: format(start, 'HH:mm'),
     duration: `${Math.round((end.getTime() - start.getTime()) / (1000 * 60))} min`,
     type: (apiEvent.category?.name.toLowerCase() || 'event') as any,
