@@ -29,6 +29,7 @@ export const getOrganizations = async (req: Request, res: Response) => {
       nasContract = '',
       dateFrom = '',
       dateTo = '',
+      name = '',
     } = req.query;
 
     const where: any = {};
@@ -58,12 +59,8 @@ export const getOrganizations = async (req: Request, res: Response) => {
 
     // Column-level text filters
     if (code) where.code = { contains: code as string };
-    if (denomination) {
-      where.OR = [
-        { denomination: { contains: denomination as string } },
-        { name: { contains: denomination as string } },
-      ];
-    }
+    if (name) where.name = { contains: name as string };
+    if (denomination) where.denomination = { contains: denomination as string };
     if (phone) where.phone = { contains: phone as string };
     if (vatNumber) where.vatNumber = { contains: vatNumber as string };
     if (mobile) where.mobile = { contains: mobile as string };

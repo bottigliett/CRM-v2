@@ -156,7 +156,7 @@ const allNavGroups: NavGroup[] = [
         moduleName: "invoices",
       },
       {
-        title: "Magazzino",
+        title: "Catalogo",
         url: "/warehouse",
         icon: Warehouse,
         moduleName: "warehouse",

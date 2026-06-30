@@ -39,6 +39,7 @@ import {
 import { vtQuotesAPI, type VtQuote, type VtQuoteItem } from "@/lib/vt-quotes-api"
 import { productsAPI, type Product } from "@/lib/products-api"
 import { organizationsAPI } from "@/lib/organizations-api"
+import { salesOrdersAPI } from "@/lib/sales-orders-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
@@ -58,16 +59,17 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
 ]
 
 const DEFAULT_VISIBLE_IDS = new Set([
-  "quoteNumber", "subject", "organization", "stage", "assignedTo",
+  "quoteNumber", "subject", "organization", "stage", "assignedTo", "validUntil",
 ])
 
-const STAGES = ["Creato", "Scaduto", "Accettato", "Rifiutato"]
+const STAGES = ["Creato", "Scaduto", "Accettato", "Rifiutato", "Consegnato"]
 
 const STAGE_COLORS: Record<string, string> = {
-  "Creato":    "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  "Scaduto":   "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
-  "Accettato": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  "Rifiutato": "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  "Creato":     "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  "Scaduto":    "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  "Accettato":  "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "Rifiutato":  "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  "Consegnato": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -109,10 +111,14 @@ const emptyItem: FormItem = {
   quantity: "1", unitPrice: "0", discount: "0", total: 0,
 }
 
-const emptyForm: any = {
-  subject: "", organizationId: "", assignedToId: "", stage: "Creato",
-  validUntil: "", description: "", termsConditions: "",
-  items: [{ ...emptyItem }],
+function getEmptyForm(): any {
+  const d = new Date()
+  d.setDate(d.getDate() + 15)
+  return {
+    subject: "", organizationId: "", assignedToId: "", stage: "Creato",
+    validUntil: d.toISOString().split("T")[0], description: "", termsConditions: "",
+    items: [{ ...emptyItem }],
+  }
 }
 
 function calcItemTotal(item: FormItem): number {
@@ -208,7 +214,7 @@ export default function VtQuotesPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [selected, setSelected] = useState<VtQuote | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState<any>({ ...emptyForm })
+  const [formData, setFormData] = useState<any>(getEmptyForm())
   const [orgs, setOrgs] = useState<any[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
@@ -314,7 +320,7 @@ export default function VtQuotesPage() {
       await vtQuotesAPI.create(buildSubmitData())
       toast.success("Preventivo creato con successo!")
       setIsCreateOpen(false)
-      setFormData({ ...emptyForm, items: [{ ...emptyItem }] })
+      setFormData(getEmptyForm())
       loadData()
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
   }
@@ -323,11 +329,24 @@ export default function VtQuotesPage() {
     if (!selected || !formData.subject) { toast.error("L'oggetto è obbligatorio"); return }
     try {
       setSubmitting(true)
+      const wasConsegnato = selected.stage === "Consegnato"
       await vtQuotesAPI.update(selected.id, buildSubmitData())
       toast.success("Preventivo aggiornato!")
+      if (formData.stage === "Consegnato" && !wasConsegnato) {
+        try {
+          await salesOrdersAPI.create({
+            subject: formData.subject,
+            organizationId: formData.organizationId ? parseInt(formData.organizationId) : null,
+            quoteId: selected.id,
+            status: "Creato",
+            invoiceStatus: "Da Fatturare",
+          })
+          toast.success("Ordine creato automaticamente dal preventivo!")
+        } catch {}
+      }
       setIsEditOpen(false)
       setSelected(null)
-      setFormData({ ...emptyForm, items: [{ ...emptyItem }] })
+      setFormData(getEmptyForm())
       loadData()
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
   }
@@ -391,6 +410,7 @@ export default function VtQuotesPage() {
   // PDF Export
   const exportPDF = async (quote: VtQuote) => {
     const quoteItems = quote.items || []
+    const hasDiscount = quoteItems.some(i => i.discount > 0)
     const subtotal = quoteItems.reduce((sum, i) => sum + i.total, 0)
     const vat = subtotal * 0.22
     const total = subtotal + vat
@@ -431,7 +451,7 @@ export default function VtQuotesPage() {
           <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">${item.icon ? '&#x1F4E6; ' : ''}${item.itemName}</td>
           <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
           <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${item.unitPrice.toFixed(2)}</td>
-          <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.discount}%</td>
+          ${hasDiscount ? `<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.discount}%</td>` : ''}
           <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${item.total.toFixed(2)}</td>
         </tr>
       `).join("")
@@ -449,7 +469,7 @@ export default function VtQuotesPage() {
   .company { font-size:13px; font-weight:700; margin-bottom:2mm; }
   .company-info span { display:block; font-size:10px; color:#555; }
   .quote-meta { text-align:right; }
-  .quote-meta .num { font-size:16px; font-weight:700; color:#1a56db; }
+  .quote-meta .num { font-size:16px; font-weight:700; color:#000; }
   .quote-meta span { display:block; font-size:10px; color:#555; margin-top:1mm; }
   .section { margin-top:6mm; }
   .section-title { font-size:10px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm; }
@@ -484,6 +504,7 @@ export default function VtQuotesPage() {
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;">
       ${logoImg}
       <div class="quote-meta">
+        <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1mm;">Preventivo</div>
         <div class="num">${quote.quoteNumber}</div>
         <span>Data: ${new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
         ${quote.validUntil ? `<span>Valido fino: ${new Date(quote.validUntil).toLocaleDateString("it-IT")}</span>` : ''}
@@ -508,11 +529,11 @@ export default function VtQuotesPage() {
     <table>
       <thead>
         <tr>
-          <th style="width:40%">Voce</th>
+          <th style="${hasDiscount ? 'width:40%' : 'width:48%'}">Voce</th>
           <th style="width:10%">Qtà</th>
-          <th style="width:18%">Prezzo Unit.</th>
-          <th style="width:12%">Sconto</th>
-          <th style="width:20%">Totale</th>
+          <th style="${hasDiscount ? 'width:18%' : 'width:20%'}">Prezzo Unit.</th>
+          ${hasDiscount ? '<th style="width:12%">Sconto</th>' : ''}
+          <th style="${hasDiscount ? 'width:20%' : 'width:22%'}">Totale</th>
         </tr>
       </thead>
       <tbody>
@@ -531,7 +552,7 @@ export default function VtQuotesPage() {
 
   ${quote.termsConditions ? `
   <div class="terms">
-    <div class="section-title">Termini e Condizioni</div>
+    <div class="section-title">Condizioni di pagamento</div>
     <div class="terms-text">${quote.termsConditions}</div>
   </div>` : ''}
 
@@ -632,8 +653,8 @@ export default function VtQuotesPage() {
           </Popover>
         </div>
         <div>
-          <Label>Valido fino a</Label>
-          <Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} />
+          <Label>Valido fino a *</Label>
+          <Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} required />
         </div>
       </div>
 
@@ -643,7 +664,7 @@ export default function VtQuotesPage() {
         <Textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} />
       </div>
       <div>
-        <Label>Termini e Condizioni</Label>
+        <Label>Condizioni di pagamento</Label>
         <Textarea value={formData.termsConditions} onChange={e => setFormData({ ...formData, termsConditions: e.target.value })} rows={2} />
       </div>
 
@@ -755,7 +776,7 @@ export default function VtQuotesPage() {
             </h1>
             <p className="text-muted-foreground">{totalCount} preventivi totali</p>
           </div>
-          <Button onClick={() => { setFormData({ ...emptyForm, items: [{ ...emptyItem }] }); setIsCreateOpen(true) }}>
+          <Button onClick={() => { setFormData(getEmptyForm()); setIsCreateOpen(true) }}>
             <Plus className="mr-2 h-4 w-4" />Nuovo Preventivo
           </Button>
         </div>

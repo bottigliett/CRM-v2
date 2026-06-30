@@ -6,9 +6,10 @@ import { CalendarMain } from "./calendar-main"
 import { EventForm } from "./event-form"
 import { EventPreview } from "./event-preview"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { type CalendarEvent } from "../types"
 import { useCalendar } from "../use-calendar"
-import { usersAPI } from "@/lib/users-api"
+import { usersAPI, type User } from "@/lib/users-api"
 
 interface CalendarProps {
   events: CalendarEvent[]
@@ -18,6 +19,12 @@ interface CalendarProps {
 export function Calendar({ events, eventDates }: CalendarProps) {
   const calendar = useCalendar(events)
   const [hideSidebar, setHideSidebar] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string>("all")
+
+  useEffect(() => {
+    usersAPI.getAdminUsers().then(r => setUsers(r.data.users)).catch(() => {})
+  }, [])
 
   // Load sidebar preference
   useEffect(() => {
@@ -39,10 +46,11 @@ export function Calendar({ events, eventDates }: CalendarProps) {
     loadPreferences()
   }, [])
 
-  // Filter events based on hidden categories
+  // Filter events based on hidden categories and selected user
   const filteredEvents = calendar.events.filter(event => {
-    // Hide events that belong to hidden categories
-    return !event.categoryId || !calendar.hiddenCategories.has(event.categoryId)
+    if (event.categoryId && calendar.hiddenCategories.has(event.categoryId)) return false
+    if (selectedUserId !== "all" && event.assignedTo?.toString() !== selectedUserId) return false
+    return true
   })
 
   // Debug log to show filtering
@@ -55,6 +63,24 @@ export function Calendar({ events, eventDates }: CalendarProps) {
 
   return (
     <>
+      {users.length > 0 && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm text-muted-foreground">Responsabile:</span>
+          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <SelectTrigger className="w-[200px] h-8 text-sm">
+              <SelectValue placeholder="Tutti" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti</SelectItem>
+              {users.map(u => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.username}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="border rounded-lg bg-background relative">
         <div className="flex min-h-[800px]">
           {/* Desktop Sidebar - Hidden on mobile/tablet, shown on extra large screens */}

@@ -39,7 +39,8 @@ const PAGE_NAME = "organizations"
 const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "accountType",  label: "Tipo" },
   { id: "code",         label: "Codice BDT" },
-  { id: "denomination", label: "Ragione Sociale" },
+  { id: "orgName",      label: "Organizzazione" },
+  { id: "denomination", label: "Denominazione ufficio" },
   { id: "phone",        label: "Telefono" },
   { id: "createdAt",    label: "Data di Creazione" },
   { id: "vatNumber",    label: "P.IVA" },
@@ -59,7 +60,7 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
   { id: "isActive",     label: "Attivo" },
 ]
 
-const DEFAULT_VISIBLE_IDS = new Set(["accountType", "code", "denomination", "phone", "createdAt", "isActive"])
+const DEFAULT_VISIBLE_IDS = new Set(["accountType", "code", "orgName", "denomination", "phone", "createdAt", "isActive"])
 
 const ACCOUNT_TYPE_COLORS: Record<string, string> = {
   "SI Contratto": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -204,6 +205,7 @@ export default function OrganizationsPage() {
         industry: f.industry || undefined,
         accountType: f.accountType || undefined,
         code: f.code || undefined,
+        name: f.orgName || undefined,
         denomination: f.denomination || undefined,
         phone: f.phone || undefined,
         vatNumber: f.vatNumber || undefined,
@@ -304,8 +306,8 @@ export default function OrganizationsPage() {
       </TabsList>
       <TabsContent value="generale" className="space-y-4 mt-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Nome Organizzazione *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-          <div><Label>Ragione Sociale</Label><Input value={formData.denomination} onChange={e => setFormData({ ...formData, denomination: e.target.value })} /></div>
+          <div><Label>Organizzazione *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+          <div><Label>Denominazione ufficio</Label><Input value={formData.denomination} onChange={e => setFormData({ ...formData, denomination: e.target.value })} /></div>
           <div><Label>Codice BDT</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
           <div>
             <Label>Tipo</Label>
@@ -343,7 +345,7 @@ export default function OrganizationsPage() {
           <div><Label>CAP</Label><Input value={formData.billCode} onChange={e => setFormData({ ...formData, billCode: e.target.value })} /></div>
           <div><Label>Paese</Label><Input value={formData.billCountry} onChange={e => setFormData({ ...formData, billCountry: e.target.value })} /></div>
         </div>
-        <h4 className="font-medium mt-4">Indirizzo Spedizione</h4>
+        <h4 className="font-medium mt-4">Indirizzo punto vendita</h4>
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Via</Label><Input value={formData.shipStreet} onChange={e => setFormData({ ...formData, shipStreet: e.target.value })} /></div>
           <div><Label>Città</Label><Input value={formData.shipCity} onChange={e => setFormData({ ...formData, shipCity: e.target.value })} /></div>
@@ -376,7 +378,8 @@ export default function OrganizationsPage() {
       case "accountType":
         return <TableCell key={columnId}>{item.accountType ? <Badge className={ACCOUNT_TYPE_COLORS[item.accountType] || "bg-gray-100 text-gray-800"}>{item.accountType}</Badge> : "-"}</TableCell>
       case "code":         return <TableCell key={columnId} className="font-mono text-sm">{item.code || "-"}</TableCell>
-      case "denomination": return <TableCell key={columnId} className="font-medium">{item.denomination || item.name}</TableCell>
+      case "orgName":      return <TableCell key={columnId} className="font-medium">{item.name}</TableCell>
+      case "denomination": return <TableCell key={columnId}>{item.denomination || "-"}</TableCell>
       case "phone":        return <TableCell key={columnId}>{item.phone?.replace(/\//g, ' ') || "-"}</TableCell>
       case "createdAt":    return <TableCell key={columnId} className="tabular-nums text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
       case "vatNumber":    return <TableCell key={columnId} className="font-mono text-sm">{item.vatNumber || "-"}</TableCell>
@@ -432,7 +435,8 @@ export default function OrganizationsPage() {
       default: {
         const placeholders: Record<string, string> = {
           code: "Codice...",
-          denomination: "Denominazione...",
+          orgName: "Organizzazione...",
+          denomination: "Denominazione ufficio...",
           phone: "Telefono...",
           createdAt: "gg/mm/aaaa",
           vatNumber: "P.IVA...",
@@ -556,9 +560,10 @@ export default function OrganizationsPage() {
             {selected && (
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
+                  <div><span className="font-medium">Organizzazione:</span> {selected.name || "-"}</div>
+                  <div><span className="font-medium">Denominazione ufficio:</span> {selected.denomination || "-"}</div>
                   <div><span className="font-medium">Codice BDT:</span> <span className="font-mono">{selected.code || "-"}</span></div>
                   <div><span className="font-medium">Settore:</span> {selected.industry || "-"}</div>
-                  <div><span className="font-medium">Ragione Sociale:</span> {selected.denomination || "-"}</div>
                   <div><span className="font-medium">Telefono:</span> {selected.phone?.replace(/\//g, ' ') || "-"}</div>
                   <div><span className="font-medium">Cellulare:</span> {selected.mobile || "-"}</div>
                   {selected.otherPhone && <div><span className="font-medium">Altri Telefoni:</span> {selected.otherPhone}</div>}

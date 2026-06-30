@@ -23,7 +23,7 @@ export interface ServiceContract {
   description: string | null;
   createdAt: string;
   updatedAt: string;
-  organization?: { id: number; name: string } | null;
+  organization?: { id: number; name: string; denomination: string | null; code: string | null; legalRep: string | null; shareholders: string | null } | null;
   assignedTo?: { id: number; username: string; firstName: string | null; lastName: string | null } | null;
 }
 

@@ -21,7 +21,7 @@ interface GeocodedOrg extends Organization {
 }
 
 // ── Geocode cache ──────────────────────────────────────────────
-const CACHE_KEY = 'crm_geocode_v3'
+const CACHE_KEY = 'crm_geocode_v4'
 function loadCache(): Record<string, [number, number] | null> {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') } catch { return {} }
 }
@@ -58,14 +58,14 @@ async function nominatim(params: string): Promise<[number, number] | null> {
 
 // ── Address extraction ─────────────────────────────────────────
 function getOrgGeoKey(org: Organization): { key: string; displayCity: string; searchFn: () => Promise<[number,number]|null> } | null {
-  // Try postal code first — much more reliable than city name in Nominatim
-  const cap = org.billCode?.trim().match(/^\d{5}$/)
-    ? org.billCode.trim()
-    : org.billState?.trim().match(/^\d{5}$/)
-    ? org.billState.trim()
+  // Use ship* fields (indirizzo punto vendita) for geocoding
+  const cap = org.shipCode?.trim().match(/^\d{5}$/)
+    ? org.shipCode.trim()
+    : org.shipState?.trim().match(/^\d{5}$/)
+    ? org.shipState.trim()
     : null
 
-  const city = org.billCity?.trim() || null
+  const city = org.shipCity?.trim() || null
 
   if (cap) {
     return {
@@ -82,8 +82,8 @@ function getOrgGeoKey(org: Organization): { key: string; displayCity: string; se
     }
   }
   // Last resort: use full street if it contains comma-separated data
-  if (org.billStreet?.includes(',')) {
-    const parts = org.billStreet.split(',').map(p => p.trim()).filter(Boolean)
+  if (org.shipStreet?.includes(',')) {
+    const parts = org.shipStreet.split(',').map(p => p.trim()).filter(Boolean)
     const streetCity = parts[1] ?? null
     const streetCap = parts[2]?.match(/^\d{5}$/) ? parts[2] : null
     if (streetCap) {

@@ -12,7 +12,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     startOfWeek.setDate(startOfWeek.getDate() - day + 1);
     startOfWeek.setHours(0, 0, 0, 0);
 
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const TECNOCASA_TYPE = 'Tecnocasa esteso';
 
     const [
       organizationsTotal,
@@ -21,10 +26,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       ticketsOpen,
       ticketsMonth,
       ticketsWeek,
-      contractsActive,
-      contractsValue,
+      contractsActiveTecnocasa,
+      contractsBlockedTecnocasa,
       quotesTotal,
       quotesMonth,
+      quotesCreato,
+      ordersDaFatturare,
       ordersTotal,
     ] = await Promise.all([
       prisma.organization.count(),
@@ -33,10 +40,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.helpDeskTicket.count({ where: { status: 'Aperto' } }),
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfMonth } } }),
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfWeek } } }),
-      prisma.serviceContract.count({ where: { status: 'Attivo' } }),
-      prisma.serviceContract.aggregate({ _sum: { contractValue: true }, where: { status: 'Attivo' } }),
+      prisma.serviceContract.count({ where: { status: 'Attivo', contractType: TECNOCASA_TYPE } }),
+      prisma.serviceContract.count({ where: { status: 'Blocco Amministrativo', contractType: TECNOCASA_TYPE } }),
       prisma.vtQuote.count(),
       prisma.vtQuote.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.vtQuote.count({ where: { stage: 'Creato' } }),
+      prisma.salesOrder.count({ where: { invoiceStatus: 'Da Fatturare' } }),
       prisma.salesOrder.count(),
     ]);
 
@@ -74,20 +83,36 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       orderBy: { _count: { id: 'desc' } },
     });
 
-    // Recent tickets (last 8, newest first)
-    const recentTickets = await prisma.helpDeskTicket.findMany({
+    // Events this week for "Agenda settimanale"
+    const weekEvents = await prisma.event.findMany({
+      where: { startDate: { gte: startOfWeek, lt: endOfWeek } },
+      orderBy: { startDate: 'asc' },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        startDate: true,
+        endDate: true,
+        allDay: true,
+        color: true,
+        assignedTo: { select: { id: true, firstName: true, lastName: true, username: true } },
+      },
+    });
+
+    // Preventivi in stato CREATO (newest first)
+    const quotesCreatiList = await prisma.vtQuote.findMany({
+      where: { stage: 'Creato' },
       take: 8,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        ticketNumber: true,
-        title: true,
-        status: true,
-        priority: true,
-        category: true,
+        quoteNumber: true,
+        subject: true,
+        stage: true,
+        validUntil: true,
         createdAt: true,
-        technicianName: true,
         organization: { select: { id: true, name: true, denomination: true } },
+        assignedTo: { select: { id: true, firstName: true, lastName: true, username: true } },
       },
     });
 
@@ -103,13 +128,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           byStatus: ticketsByStatus.map(s => ({ status: s.status || 'N/D', count: s._count.id })),
         },
         contracts: {
-          active: contractsActive,
-          totalValue: contractsValue._sum.contractValue || 0,
+          activeTecnocasa: contractsActiveTecnocasa,
+          blockedTecnocasa: contractsBlockedTecnocasa,
         },
-        quotes: { total: quotesTotal, thisMonth: quotesMonth },
-        orders: { total: ordersTotal },
+        quotes: { total: quotesTotal, thisMonth: quotesMonth, creato: quotesCreato },
+        orders: { total: ordersTotal, daFatturare: ordersDaFatturare },
         topOrgs,
-        recentTickets,
+        weekEvents,
+        quotesCreatiList,
       },
     });
   } catch (error: any) {

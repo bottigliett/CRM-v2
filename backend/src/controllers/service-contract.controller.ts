@@ -97,7 +97,7 @@ export const getServiceContracts = async (req: Request, res: Response) => {
     const contracts = await prisma.serviceContract.findMany({
       where,
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, denomination: true, code: true, legalRep: true, shareholders: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -150,7 +150,7 @@ export const getServiceContract = async (req: Request, res: Response) => {
     const contract = await prisma.serviceContract.findUnique({
       where: { id: parseInt(id) },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, denomination: true, code: true, legalRep: true, shareholders: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
     });
@@ -196,7 +196,7 @@ export const createServiceContract = async (req: Request, res: Response) => {
         description: data.description || null,
       },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, denomination: true, code: true, legalRep: true, shareholders: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
     });
@@ -242,7 +242,7 @@ export const updateServiceContract = async (req: Request, res: Response) => {
         description: data.description,
       },
       include: {
-        organization: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true, denomination: true, code: true, legalRep: true, shareholders: true } },
         assignedTo: { select: { id: true, username: true, firstName: true, lastName: true } },
       },
     });

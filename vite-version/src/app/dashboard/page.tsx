@@ -6,26 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Clock, Calendar as CalendarIcon, Loader2, Ticket,
-  TrendingUp, Building2, FileSignature, ArrowRight,
-  AlertCircle, CheckCircle2, BarChart3,
+  TrendingUp, FileSignature, ArrowRight,
+  AlertCircle, CheckCircle2, ShoppingCart,
 } from "lucide-react"
-import { eventsAPI, type Event } from "@/lib/events-api"
 import { api, type User } from "@/lib/api"
-import { format, addDays, endOfDay } from "date-fns"
+import { format } from "date-fns"
 import { it } from "date-fns/locale"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
-interface RecentTicket {
+interface WeekEvent {
   id: number
-  ticketNumber: string
   title: string
-  status: string
-  priority: string | null
-  category: string | null
+  startDate: string
+  endDate: string | null
+  allDay: boolean
+  color: string | null
+  assignedTo: { id: number; firstName: string | null; lastName: string | null; username: string } | null
+}
+
+interface QuoteCreato {
+  id: number
+  quoteNumber: string
+  subject: string
+  stage: string
+  validUntil: string | null
   createdAt: string
-  technicianName: string | null
-  organization?: { id: number; name: string; denomination: string | null } | null
+  organization: { id: number; name: string; denomination: string | null } | null
+  assignedTo: { id: number; firstName: string | null; lastName: string | null; username: string } | null
 }
 
 interface TopOrg {
@@ -41,11 +49,12 @@ interface DashboardStats {
     total: number; open: number; thisMonth: number; thisWeek: number
     byStatus: { status: string; count: number }[]
   }
-  contracts: { active: number; totalValue: number }
-  quotes: { total: number; thisMonth: number }
-  orders: { total: number }
+  contracts: { activeTecnocasa: number; blockedTecnocasa: number }
+  quotes: { total: number; thisMonth: number; creato: number }
+  orders: { total: number; daFatturare: number }
   topOrgs: TopOrg[]
-  recentTickets: RecentTicket[]
+  weekEvents: WeekEvent[]
+  quotesCreatiList: QuoteCreato[]
 }
 
 async function fetchDashboardStats(): Promise<DashboardStats> {
@@ -59,22 +68,13 @@ async function fetchDashboardStats(): Promise<DashboardStats> {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-function statusColor(status: string) {
-  const s = status.toLowerCase()
-  if (s === 'aperto') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-  if (s === 'chiuso') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-  if (s.includes('attesa')) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-  if (s.includes('lavora') || s.includes('progress')) return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+function quoteStatusColor(stage: string) {
+  const s = stage.toLowerCase()
+  if (s === 'creato') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+  if (s === 'consegnato') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+  if (s === 'accettato') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+  if (s === 'rifiutato') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
   return 'bg-muted text-muted-foreground'
-}
-
-function priorityDot(priority: string | null) {
-  if (!priority) return 'bg-muted-foreground/30'
-  const p = priority.toLowerCase()
-  if (p === 'alta' || p === 'urgente') return 'bg-red-500'
-  if (p === 'media') return 'bg-yellow-500'
-  if (p === 'bassa') return 'bg-green-500'
-  return 'bg-muted-foreground/30'
 }
 
 function relativeDate(date: string) {
@@ -89,35 +89,18 @@ function relativeDate(date: string) {
   return format(d, 'dd MMM', { locale: it })
 }
 
+function userName(u: { firstName: string | null; lastName: string | null; username: string } | null) {
+  if (!u) return null
+  return `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([])
-  const [loadingEvents, setLoadingEvents] = useState(true)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
 
-  useEffect(() => {
-    api.getCurrentUser().then(setCurrentUser).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    eventsAPI.getEvents({
-      startDate: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-      endDate: format(endOfDay(addDays(new Date(), 14)), 'yyyy-MM-dd'),
-      limit: 100,
-    }).then(res => {
-      if (res.success) {
-        const now = new Date()
-        setUpcomingEvents(
-          res.data.events
-            .filter(e => new Date(e.endDateTime) >= now)
-            .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime())
-            .slice(0, 4)
-        )
-      }
-    }).catch(() => {}).finally(() => setLoadingEvents(false))
-  }, [])
+  useEffect(() => { api.getCurrentUser().then(setCurrentUser).catch(() => {}) }, [])
 
   useEffect(() => {
     fetchDashboardStats()
@@ -125,10 +108,6 @@ export default function DashboardPage() {
       .catch(() => {})
       .finally(() => setLoadingStats(false))
   }, [])
-
-  const topStatus = stats?.tickets.byStatus
-    .filter(s => s.status !== 'Chiuso')
-    .sort((a, b) => b.count - a.count) ?? []
 
   return (
     <BaseLayout>
@@ -147,25 +126,20 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {loadingStats ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 5 }).map((_, i) => (
               <Card key={i}><CardContent className="p-5 h-24 animate-pulse bg-muted/40 rounded-xl" /></Card>
             ))
           ) : (
             <>
               {/* Ticket aperti */}
-              <Card
-                className="cursor-pointer hover:bg-accent/40 transition-colors"
-                onClick={() => navigate('/helpdesk')}
-              >
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/helpdesk')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ticket Aperti</p>
-                      <p className="text-3xl font-bold mt-1 text-red-600 dark:text-red-400">
-                        {stats?.tickets.open ?? 0}
-                      </p>
+                      <p className="text-3xl font-bold mt-1 text-red-600 dark:text-red-400">{stats?.tickets.open ?? 0}</p>
                     </div>
                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
                       <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -176,10 +150,7 @@ export default function DashboardPage() {
               </Card>
 
               {/* Questa settimana */}
-              <Card
-                className="cursor-pointer hover:bg-accent/40 transition-colors"
-                onClick={() => navigate('/helpdesk')}
-              >
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/helpdesk')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
@@ -194,45 +165,51 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* Contratti attivi */}
-              <Card
-                className="cursor-pointer hover:bg-accent/40 transition-colors"
-                onClick={() => navigate('/service-contracts')}
-              >
+              {/* Contratti Tecnocasa Attivi */}
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Contratti Attivi</p>
-                      <p className="text-3xl font-bold mt-1 text-green-600 dark:text-green-400">
-                        {stats?.contracts.active ?? 0}
-                      </p>
+                      <p className="text-3xl font-bold mt-1 text-green-600 dark:text-green-400">{stats?.contracts.activeTecnocasa ?? 0}</p>
                     </div>
                     <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                       <FileSignature className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {(stats?.contracts.totalValue ?? 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">Tecnocasa esteso</p>
                 </CardContent>
               </Card>
 
-              {/* Organizzazioni */}
-              <Card
-                className="cursor-pointer hover:bg-accent/40 transition-colors"
-                onClick={() => navigate('/organizations')}
-              >
+              {/* Blocco Amministrativo Tecnocasa */}
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Organizzazioni</p>
-                      <p className="text-3xl font-bold mt-1">{stats?.organizations.total ?? 0}</p>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Blocco Amm.</p>
+                      <p className="text-3xl font-bold mt-1 text-orange-600 dark:text-orange-400">{stats?.contracts.blockedTecnocasa ?? 0}</p>
                     </div>
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                      <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                      <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">+{stats?.organizations.thisMonth ?? 0} questo mese</p>
+                  <p className="text-xs text-muted-foreground mt-2">Tecnocasa esteso</p>
+                </CardContent>
+              </Card>
+
+              {/* Ordini da Fatturare */}
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/sales-orders')}>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Da Fatturare</p>
+                      <p className="text-3xl font-bold mt-1 text-purple-600 dark:text-purple-400">{stats?.orders.daFatturare ?? 0}</p>
+                    </div>
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                      <ShoppingCart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Ordini di vendita</p>
                 </CardContent>
               </Card>
             </>
@@ -242,16 +219,16 @@ export default function DashboardPage() {
         {/* ── Main grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Ultimi ticket — 2/3 */}
+          {/* Agenda settimanale — 2/3 */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Ticket className="h-4 w-4" />
-                  Ultimi Ticket
+                  <CalendarIcon className="h-4 w-4" />
+                  Agenda settimanale
                 </CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/helpdesk')} className="text-xs gap-1">
-                  Vedi tutti <ArrowRight className="h-3 w-3" />
+                <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} className="text-xs gap-1">
+                  Agenda completa <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
             </CardHeader>
@@ -260,31 +237,38 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : !stats?.recentTickets.length ? (
+              ) : !stats?.weekEvents.length ? (
                 <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
-                  Nessun ticket presente
+                  Nessun evento questa settimana
                 </div>
               ) : (
                 <div className="divide-y">
-                  {stats.recentTickets.map(t => (
+                  {stats.weekEvents.map(ev => (
                     <div
-                      key={t.id}
+                      key={ev.id}
                       className="flex items-start gap-3 px-6 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
-                      onClick={() => navigate('/helpdesk')}
+                      onClick={() => navigate('/calendar')}
                     >
-                      <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${priorityDot(t.priority)}`} />
+                      <div
+                        className="mt-1.5 w-2 h-2 rounded-full shrink-0"
+                        style={{ background: ev.color || '#3b82f6' }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{t.title}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {t.organization?.denomination || t.organization?.name || '—'}
-                          {t.technicianName ? ` · ${t.technicianName}` : ''}
+                        <p className="text-sm font-medium truncate">{ev.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {ev.assignedTo ? userName(ev.assignedTo) : '—'}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>
-                          {t.status}
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(ev.startDate), "EEE d MMM", { locale: it })}
                         </span>
-                        <span className="text-[11px] text-muted-foreground">{relativeDate(t.createdAt)}</span>
+                        {!ev.allDay && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(ev.startDate), "HH:mm")}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -328,15 +312,10 @@ export default function DashboardPage() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{org.orgName}</p>
                             <div className="mt-1 h-1 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-blue-500 rounded-full"
-                                style={{ width: `${(org.count / max) * 100}%` }}
-                              />
+                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(org.count / max) * 100}%` }} />
                             </div>
                           </div>
-                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0">
-                            {org.count}
-                          </span>
+                          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0">{org.count}</span>
                         </div>
                       )
                     })}
@@ -345,48 +324,47 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Prossimi eventi */}
+            {/* Preventivi in stato CREATO */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <CalendarIcon className="h-4 w-4" />
-                    Prossimi eventi
+                    <FileSignature className="h-4 w-4" />
+                    Preventivi
                   </CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/calendar')} className="text-xs gap-1">
-                    Agenda <ArrowRight className="h-3 w-3" />
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/vt-quotes')} className="text-xs gap-1">
+                    Vedi tutti <ArrowRight className="h-3 w-3" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="p-0 pb-2">
-                {loadingEvents ? (
+                {loadingStats ? (
                   <div className="flex items-center justify-center h-24">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
-                ) : upcomingEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-8">Nessun evento in programma</p>
+                ) : !stats?.quotesCreatiList.length ? (
+                  <p className="text-xs text-muted-foreground text-center py-8">Nessun preventivo in stato Creato</p>
                 ) : (
                   <div>
-                    {upcomingEvents.map(event => (
+                    {stats.quotesCreatiList.map(q => (
                       <div
-                        key={event.id}
+                        key={q.id}
                         className="flex items-start gap-3 px-4 py-2.5 hover:bg-muted/40 cursor-pointer"
-                        onClick={() => navigate('/calendar')}
+                        onClick={() => navigate('/vt-quotes')}
                       >
-                        <div
-                          className="w-1 self-stretch rounded-full shrink-0 mt-0.5"
-                          style={{ background: event.color || event.category?.color || '#3b82f6' }}
-                        />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{event.title}</p>
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                            <CalendarIcon className="h-3 w-3 shrink-0" />
-                            {format(new Date(event.startDateTime), "EEE d MMM", { locale: it })}
-                            {!event.isAllDay && (
-                              <><Clock className="h-3 w-3 shrink-0" />{format(new Date(event.startDateTime), "HH:mm")}</>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-muted-foreground">{q.quoteNumber}</span>
+                            <Badge className={`text-[10px] px-1.5 py-0 ${quoteStatusColor(q.stage)}`}>{q.stage}</Badge>
                           </div>
+                          <p className="text-sm truncate mt-0.5">
+                            {q.organization?.denomination || q.organization?.name || q.subject}
+                          </p>
+                          {q.assignedTo && (
+                            <p className="text-xs text-muted-foreground truncate">{userName(q.assignedTo)}</p>
+                          )}
                         </div>
+                        <span className="text-[11px] text-muted-foreground shrink-0">{relativeDate(q.createdAt)}</span>
                       </div>
                     ))}
                   </div>

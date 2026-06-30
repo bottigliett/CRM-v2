@@ -274,7 +274,7 @@ export default function WarehousePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Warehouse className="h-6 w-6" />Magazzino
+              <Warehouse className="h-6 w-6" />Catalogo
             </h1>
             <p className="text-muted-foreground">{totalCount} prodotti/servizi totali</p>
           </div>

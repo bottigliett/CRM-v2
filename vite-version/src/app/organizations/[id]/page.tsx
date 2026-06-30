@@ -257,8 +257,8 @@ export default function OrganizationDetailPage() {
               <Card>
                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="h-4 w-4" />Anagrafica</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                  <Field label="Nome organizzazione" value={org.name} />
-                  <Field label="Ragione Sociale" value={org.denomination} />
+                  <Field label="Organizzazione" value={org.name} />
+                  <Field label="Denominazione ufficio" value={org.denomination} />
                   <Field label="Codice BDT" value={org.code} mono />
                   <Field label="P.IVA" value={org.vatNumber} mono />
                   <Field label="Codice Univoco (SDI)" value={org.uniqueCode} mono />
@@ -291,7 +291,7 @@ export default function OrganizationDetailPage() {
                   )}
                   {(org.shipStreet || org.shipCity) && (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Spedizione</p>
+                      <p className="text-xs text-muted-foreground mb-1">Indirizzo punto vendita</p>
                       <p className="text-sm">{[org.shipStreet, org.shipCity, org.shipState, org.shipCode, org.shipCountry].filter(Boolean).join(", ")}</p>
                     </div>
                   )}

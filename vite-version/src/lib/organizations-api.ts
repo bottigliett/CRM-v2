@@ -70,6 +70,7 @@ export interface GetOrganizationsParams {
   nasContract?: string;
   dateFrom?: string;
   dateTo?: string;
+  name?: string;
 }
 
 class OrganizationsAPI {
@@ -105,6 +106,7 @@ class OrganizationsAPI {
     if (params.nasContract) qp.append('nasContract', params.nasContract);
     if (params.dateFrom) qp.append('dateFrom', params.dateFrom);
     if (params.dateTo) qp.append('dateTo', params.dateTo);
+    if (params.name) qp.append('name', params.name);
 
     const url = `${API_BASE_URL}/organizations${qp.toString() ? `?${qp.toString()}` : ''}`;
     const response = await fetch(url, { headers: this.getAuthHeader() });
