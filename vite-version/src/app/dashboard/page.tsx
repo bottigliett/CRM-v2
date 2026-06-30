@@ -237,13 +237,13 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-center h-40">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : !stats?.weekEvents.length ? (
+              ) : !stats?.weekEvents?.length ? (
                 <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
                   Nessun evento questa settimana
                 </div>
               ) : (
                 <div className="divide-y">
-                  {stats.weekEvents.map(ev => (
+                  {(stats.weekEvents ?? []).map(ev => (
                     <div
                       key={ev.id}
                       className="flex items-start gap-3 px-6 py-3 hover:bg-muted/40 cursor-pointer transition-colors"
@@ -296,12 +296,12 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-center h-32">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
-                ) : !stats?.topOrgs.length ? (
+                ) : !stats?.topOrgs?.length ? (
                   <p className="text-xs text-muted-foreground text-center py-8">Nessun dato</p>
                 ) : (
                   <div>
-                    {stats.topOrgs.map((org, i) => {
-                      const max = stats.topOrgs[0]?.count || 1
+                    {(stats.topOrgs ?? []).map((org, i) => {
+                      const max = stats.topOrgs?.[0]?.count || 1
                       return (
                         <div
                           key={org.orgId}
@@ -342,11 +342,11 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-center h-24">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
-                ) : !stats?.quotesCreatiList.length ? (
+                ) : !stats?.quotesCreatiList?.length ? (
                   <p className="text-xs text-muted-foreground text-center py-8">Nessun preventivo in stato Creato</p>
                 ) : (
                   <div>
-                    {stats.quotesCreatiList.map(q => (
+                    {(stats.quotesCreatiList ?? []).map(q => (
                       <div
                         key={q.id}
                         className="flex items-start gap-3 px-4 py-2.5 hover:bg-muted/40 cursor-pointer"
