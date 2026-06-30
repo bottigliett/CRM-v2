@@ -86,20 +86,30 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     });
 
     // Events this week for "Agenda settimanale"
-    const weekEvents = await prisma.event.findMany({
-      where: { startDate: { gte: startOfWeek, lt: endOfWeek } },
-      orderBy: { startDate: 'asc' },
+    const weekEventsRaw = await prisma.event.findMany({
+      where: { startDateTime: { gte: startOfWeek, lt: endOfWeek } },
+      orderBy: { startDateTime: 'asc' },
       take: 10,
       select: {
         id: true,
         title: true,
-        startDate: true,
-        endDate: true,
-        allDay: true,
+        startDateTime: true,
+        endDateTime: true,
+        isAllDay: true,
         color: true,
-        assignedTo: { select: { id: true, firstName: true, lastName: true, username: true } },
+        assignedUser: { select: { id: true, firstName: true, lastName: true, username: true } },
       },
     });
+
+    const weekEvents = weekEventsRaw.map(e => ({
+      id: e.id,
+      title: e.title,
+      startDate: e.startDateTime.toISOString(),
+      endDate: e.endDateTime ? e.endDateTime.toISOString() : null,
+      allDay: e.isAllDay,
+      color: e.color,
+      assignedTo: e.assignedUser,
+    }));
 
     // Preventivi in stato CREATO (newest first)
     const quotesCreatiList = await prisma.vtQuote.findMany({
