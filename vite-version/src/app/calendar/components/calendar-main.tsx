@@ -466,37 +466,6 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
           )
         })}
 
-        {/* Popup "tutti gli eventi del giorno" */}
-        {dayExpandDialog && (
-          <Dialog open={!!dayExpandDialog} onOpenChange={() => setDayExpandDialog(null)}>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>
-                  {format(dayExpandDialog.day, 'EEEE d MMMM', { locale: it })}
-                </DialogTitle>
-                <DialogDescription>
-                  {dayExpandDialog.events.length} eventi
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-1 max-h-72 overflow-y-auto mt-1">
-                {dayExpandDialog.events.map(ev => (
-                  <div
-                    key={ev.id}
-                    className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent"
-                    onClick={() => {
-                      setDayExpandDialog(null)
-                      handleEventClick(ev)
-                    }}
-                  >
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
-                    <span className="text-xs text-muted-foreground w-10 shrink-0">{ev.time}</span>
-                    <span className="text-sm truncate">{ev.title}</span>
-                  </div>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
     )
   }
@@ -1207,6 +1176,36 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Popup tutti gli eventi del giorno (overflow +N) */}
+      <Dialog open={!!dayExpandDialog} onOpenChange={(open) => { if (!open) setDayExpandDialog(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {dayExpandDialog && format(dayExpandDialog.day, 'EEEE d MMMM', { locale: it })}
+            </DialogTitle>
+            <DialogDescription>
+              {dayExpandDialog?.events.length} eventi
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-72 overflow-y-auto mt-1">
+            {dayExpandDialog?.events.map(ev => (
+              <div
+                key={ev.id}
+                className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent"
+                onClick={() => {
+                  setDayExpandDialog(null)
+                  handleEventClick(ev)
+                }}
+              >
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ev.color }} />
+                <span className="text-xs text-muted-foreground w-10 shrink-0">{ev.time}</span>
+                <span className="text-sm truncate">{ev.title}</span>
+              </div>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
