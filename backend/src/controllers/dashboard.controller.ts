@@ -17,7 +17,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const TECNOCASA_TYPE = 'Tecnocasa esteso';
+    // Case-insensitive substring match to handle old uppercase DB values
+    // e.g. "TECNOCASA ESTESO", "^TECNOCASA ESTESO^", or ["TECNOCASA ESTESO"]
+    const TECNOCASA_FILTER = { contains: 'Tecnocasa esteso' };
 
     const [
       organizationsTotal,
@@ -40,8 +42,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.helpDeskTicket.count({ where: { status: 'Aperto' } }),
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfMonth } } }),
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfWeek } } }),
-      prisma.serviceContract.count({ where: { status: 'Attivo', contractType: TECNOCASA_TYPE } }),
-      prisma.serviceContract.count({ where: { status: 'Blocco Amministrativo', contractType: TECNOCASA_TYPE } }),
+      prisma.serviceContract.count({ where: { status: 'Attivo', contractType: TECNOCASA_FILTER } }),
+      prisma.serviceContract.count({ where: { status: 'Blocco Amministrativo', contractType: TECNOCASA_FILTER } }),
       prisma.vtQuote.count(),
       prisma.vtQuote.count({ where: { createdAt: { gte: startOfMonth } } }),
       prisma.vtQuote.count({ where: { stage: 'Creato' } }),
