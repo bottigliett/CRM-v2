@@ -450,11 +450,11 @@ export default function ServiceContractsPage() {
 
         {stats && (
           <div className="flex gap-3">
-            <Card className="w-40">
+            <Card className="w-60">
               <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-xs font-medium text-muted-foreground">Contratti Attivi</CardTitle></CardHeader>
               <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{stats.activeContracts}</p></CardContent>
             </Card>
-            <Card className="w-40">
+            <Card className="w-60">
               <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" />In Scadenza (30gg)</CardTitle></CardHeader>
               <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{stats.expiringSoon}</p></CardContent>
             </Card>
