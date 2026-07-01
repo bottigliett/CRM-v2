@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useLocation } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -82,10 +83,21 @@ const emptyForm: any = {
 }
 
 export default function ServiceContractsPage() {
+  const location = useLocation()
   const [items, setItems] = useState<ServiceContract[]>([])
   const [loading, setLoading] = useState(true)
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+
+  // Pre-populate filters from URL query params (e.g. from dashboard card clicks)
+  const initialFilters = (() => {
+    const p = new URLSearchParams(location.search)
+    const f: Record<string, string> = {}
+    if (p.get('status')) f.status = p.get('status')!
+    if (p.get('contractType')) f.contractType = p.get('contractType')!
+    return f
+  })()
+
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(initialFilters)
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>(initialFilters)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)

@@ -166,7 +166,7 @@ export default function DashboardPage() {
               </Card>
 
               {/* Contratti Tecnocasa Attivi */}
-              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts')}>
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts?status=Attivo&contractType=Tecnocasa+esteso')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
@@ -182,7 +182,7 @@ export default function DashboardPage() {
               </Card>
 
               {/* Blocco Amministrativo Tecnocasa */}
-              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts')}>
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/service-contracts?status=Blocco+Amministrativo')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
