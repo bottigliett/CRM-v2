@@ -493,19 +493,24 @@ export default function ServiceContractsPage() {
                 <TableRow><TableCell colSpan={columns.filter(c => isColVisible(c.id)).length + 1} className="text-center py-8 text-muted-foreground">Nessun contratto trovato</TableCell></TableRow>
               ) : items.map(item => (
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => { setSelected(item); setIsPreviewOpen(true) }}>
-                  {isColVisible("contractNumber")  && <TableCell className="font-mono text-sm">{item.contractNumber}</TableCell>}
-                  {isColVisible("contractType")    && <TableCell>{item.contractType || "-"}</TableCell>}
-                  {isColVisible("orgName")         && <TableCell className="font-medium">{item.organization?.name || "-"}</TableCell>}
-                  {isColVisible("organization")    && <TableCell>{item.organization?.denomination || "-"}</TableCell>}
-                  {isColVisible("orgCode")         && <TableCell className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>}
-                  {isColVisible("legalRep")        && <TableCell>{item.organization?.legalRep || "-"}</TableCell>}
-                  {isColVisible("shareholders")    && <TableCell className="max-w-[160px] truncate">{item.organization?.shareholders || "-"}</TableCell>}
-                  {isColVisible("status")          && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
-                  {isColVisible("contractValue")   && <TableCell>{formatCurrency(item.contractValue)}</TableCell>}
-                  {isColVisible("startDate")       && <TableCell>{formatDate(item.startDate)}</TableCell>}
-                  {isColVisible("dueDate")         && <TableCell>{formatDate(item.dueDate)}</TableCell>}
-                  {isColVisible("nextInvoiceDate") && <TableCell>{formatDate(item.nextInvoiceDate)}</TableCell>}
-                  {isColVisible("subject")         && <TableCell className="max-w-[200px] truncate text-muted-foreground text-sm">{item.subject || "-"}</TableCell>}
+                  {columns.filter(c => isColVisible(c.id)).map(c => {
+                    switch (c.id) {
+                      case "contractNumber":  return <TableCell key={c.id} className="font-mono text-sm">{item.contractNumber}</TableCell>
+                      case "contractType":   return <TableCell key={c.id}>{item.contractType || "-"}</TableCell>
+                      case "orgName":        return <TableCell key={c.id} className="font-medium">{item.organization?.name || "-"}</TableCell>
+                      case "organization":   return <TableCell key={c.id}>{item.organization?.denomination || "-"}</TableCell>
+                      case "orgCode":        return <TableCell key={c.id} className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>
+                      case "legalRep":       return <TableCell key={c.id}>{item.organization?.legalRep || "-"}</TableCell>
+                      case "shareholders":   return <TableCell key={c.id} className="max-w-[160px] truncate">{item.organization?.shareholders || "-"}</TableCell>
+                      case "status":         return <TableCell key={c.id}><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>
+                      case "contractValue":  return <TableCell key={c.id}>{formatCurrency(item.contractValue)}</TableCell>
+                      case "startDate":      return <TableCell key={c.id}>{formatDate(item.startDate)}</TableCell>
+                      case "dueDate":        return <TableCell key={c.id}>{formatDate(item.dueDate)}</TableCell>
+                      case "nextInvoiceDate":return <TableCell key={c.id}>{formatDate(item.nextInvoiceDate)}</TableCell>
+                      case "subject":        return <TableCell key={c.id} className="max-w-[200px] truncate text-muted-foreground text-sm">{item.subject || "-"}</TableCell>
+                      default:               return null
+                    }
+                  })}
                   <TableCell onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
