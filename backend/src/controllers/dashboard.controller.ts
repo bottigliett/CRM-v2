@@ -43,7 +43,15 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfMonth } } }),
       prisma.helpDeskTicket.count({ where: { createdAt: { gte: startOfWeek } } }),
       prisma.serviceContract.count({ where: { status: 'Attivo', contractType: TECNOCASA_FILTER } }),
-      prisma.serviceContract.count({ where: { status: 'Blocco Amministrativo' } }),
+      prisma.serviceContract.count({
+        where: {
+          status: 'Blocco Amministrativo',
+          OR: [
+            { contractValue: 650 },
+            { subject: { contains: 'Contratto Annuo Assistenza Tecnica' } },
+          ],
+        },
+      }),
       prisma.vtQuote.count(),
       prisma.vtQuote.count({ where: { createdAt: { gte: startOfMonth } } }),
       prisma.vtQuote.count({ where: { stage: 'Creato' } }),
