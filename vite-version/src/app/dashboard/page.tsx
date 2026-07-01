@@ -193,7 +193,7 @@ export default function DashboardPage() {
                       <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Tecnocasa esteso</p>
+                  <p className="text-xs text-muted-foreground mt-2">Contratti di assistenza</p>
                 </CardContent>
               </Card>
 
