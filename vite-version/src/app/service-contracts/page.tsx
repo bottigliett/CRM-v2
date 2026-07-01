@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, TrendingUp, AlertTriangle,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, AlertTriangle,
   ChevronsUpDown, Check, Download,
 } from "lucide-react"
 import {
@@ -449,18 +449,14 @@ export default function ServiceContractsPage() {
         </div>
 
         {stats && (
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Contratti Attivi</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{stats.activeContracts}</p></CardContent>
+          <div className="flex gap-3">
+            <Card className="w-40">
+              <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-xs font-medium text-muted-foreground">Contratti Attivi</CardTitle></CardHeader>
+              <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{stats.activeContracts}</p></CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1"><TrendingUp className="h-4 w-4" />Valore Totale</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{formatCurrency(stats.totalValue)}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-4 w-4" />In Scadenza (30gg)</CardTitle></CardHeader>
-              <CardContent><p className="text-2xl font-bold">{stats.expiringSoon}</p></CardContent>
+            <Card className="w-40">
+              <CardHeader className="pb-1 pt-3 px-4"><CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" />In Scadenza (30gg)</CardTitle></CardHeader>
+              <CardContent className="px-4 pb-3"><p className="text-2xl font-bold">{stats.expiringSoon}</p></CardContent>
             </Card>
           </div>
         )}
