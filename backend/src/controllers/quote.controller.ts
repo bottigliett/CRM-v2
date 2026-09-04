@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { sendClientQuoteSharedEmail } from '../services/email.service';
+import { hashPassword } from '../utils/password';
 
 /**
  * Helper: Parse JSON fields in quote response
@@ -344,6 +345,7 @@ export const createQuote = async (req: Request, res: Response) => {
 
     // Gestione accesso momentaneo
     if (enableTemporaryAccess && temporaryPassword) {
+      const hashedTempPassword = await hashPassword(temporaryPassword);
       // Cerca ClientAccess esistente per questo contatto
       let clientAccess = await prisma.clientAccess.findFirst({
         where: {
@@ -376,7 +378,7 @@ export const createQuote = async (req: Request, res: Response) => {
             username: finalUsername,
             accessType: 'QUOTE_ONLY',
             linkedQuoteId: quote.id,
-            temporaryPassword: temporaryPassword,
+            temporaryPassword: hashedTempPassword,
             isActive: true,
             emailVerified: false,
           },
@@ -387,7 +389,7 @@ export const createQuote = async (req: Request, res: Response) => {
           where: { id: clientAccess.id },
           data: {
             linkedQuoteId: quote.id,
-            temporaryPassword: temporaryPassword,
+            temporaryPassword: hashedTempPassword,
             isActive: true,
           },
         });

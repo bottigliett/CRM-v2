@@ -15,7 +15,7 @@ import { authenticate } from '../middleware/auth';
 const router = Router();
 
 // Public routes
-router.post('/register', register);
+// router.post('/register', register); // DISABLED: registration must be admin-only. Use create-admin.ts script or re-enable behind authenticate+role check.
 router.post('/login', login);
 router.post('/password-reset/request', requestPasswordReset);
 router.post('/password-reset/confirm', resetPassword);

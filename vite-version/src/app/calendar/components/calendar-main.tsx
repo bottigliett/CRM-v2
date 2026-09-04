@@ -75,9 +75,12 @@ interface CalendarMainProps {
   currentView?: CalendarView
   onViewChange?: (view: CalendarView) => void
   hideSidebar?: boolean
+  startHour?: number
+  endHour?: number
+  showWeekends?: boolean
 }
 
-export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, onEventClick, onTimeSlotClick, currentView, onViewChange, hideSidebar = false }: CalendarMainProps) {
+export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, onEventClick, onTimeSlotClick, currentView, onViewChange, hideSidebar = false, startHour: propStartHour = 7, endHour: propEndHour = 22, showWeekends: propShowWeekends = true }: CalendarMainProps) {
   const [dayExpandDialog, setDayExpandDialog] = useState<{ day: Date; events: CalendarEvent[] } | null>(null)
   const navigateTo = useNavigate()
   // Convert JSON events to CalendarEvent objects with proper Date objects, fallback to imported data
@@ -474,10 +477,12 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 })
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
     const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd })
-    const filteredDays = workWeekOnly ? daysInWeek.filter(day => day.getDay() !== 0 && day.getDay() !== 6) : daysInWeek
+    const filteredDays = workWeekOnly
+      ? daysInWeek.filter(day => day.getDay() !== 0 && day.getDay() !== 6)
+      : (propShowWeekends ? daysInWeek : daysInWeek.filter(day => day.getDay() !== 0 && day.getDay() !== 6))
 
-    const startHour = 7
-    const endHour = 22
+    const startHour = propStartHour
+    const endHour = propEndHour
     const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => i + startHour)
     const minutesPerHour = 60
     const pixelsPerMinute = 1
@@ -808,8 +813,8 @@ export function CalendarMain({ selectedDate, onDateSelect, onMenuClick, events, 
   }
 
   const renderDayView = () => {
-    const startHour = 7
-    const endHour = 22
+    const startHour = propStartHour
+    const endHour = propEndHour
     const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => i + startHour)
     const pixelsPerMinute = 1.5
 

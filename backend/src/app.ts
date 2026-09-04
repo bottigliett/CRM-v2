@@ -42,6 +42,7 @@ import productRoutes from './routes/product.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { initializeUploadsDirectory } from './utils/file-upload';
+import { loginLimiter, activationLimiter } from './middleware/rate-limit';
 
 // Load .env from backend root directory (not from dist/)
 const envPath = path.join(__dirname, '../.env');
@@ -63,9 +64,22 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 
+// Security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0'); // modern browsers: use CSP instead
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize uploads directory
@@ -78,13 +92,13 @@ app.get('/health', (req, res) => {
 
 // Routes
 // ACTIVATION ROUTES - Must be FIRST to avoid middleware blocking
-app.use('/api/activate', activateRoutes);
+app.use('/api/activate', activationLimiter, activateRoutes);
 
 // ATTACHMENT ROUTES - Must be before any /api router with router.use(authenticate)
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/client/attachments', clientAttachmentRouter);
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', loginLimiter, authRoutes);
 app.use('/api', userRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/leads', leadRoutes);
@@ -101,7 +115,7 @@ app.use('/api/quotes', quoteRoutes);
 app.use('/api', projectTaskRoutes); // Project task routes (/api/quotes/:quoteId/tasks)
 app.use('/api/client-access', clientAccessRoutes);
 app.use('/api/client-auth', clientAuthRoutes);
-app.use('/api/public', publicRoutes); // Public endpoints (workaround for 401 issue)
+app.use('/api/public', activationLimiter, publicRoutes); // Public endpoints (workaround for 401 issue)
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/admin/notifications', adminNotificationRoutes);
 app.use('/api/announcements', announcementRoutes);

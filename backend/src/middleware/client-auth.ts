@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../utils/jwt';
 
 /**
  * CLIENT JWT PAYLOAD
@@ -37,9 +38,7 @@ export const authenticateClient = (
     }
 
     const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET || 'fallback-secret-key';
-
-    const decoded = jwt.verify(token, secret) as ClientJwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as ClientJwtPayload;
 
     // IMPORTANTE: Verifica che sia un token CLIENT, non ADMIN
     if (decoded.type !== 'CLIENT') {

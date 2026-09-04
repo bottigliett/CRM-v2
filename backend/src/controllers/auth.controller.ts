@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { hashPassword, comparePassword } from '../utils/password';
-import { generateToken } from '../utils/jwt';
+import { generateToken, JWT_SECRET } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -281,8 +281,7 @@ export const login = async (req: Request, res: Response) => {
 
       // Controlla se usa password temporanea (accesso momentaneo)
       if (client.temporaryPassword) {
-        // Password temporanea è in chiaro, confronto diretto
-        isPasswordValid = password === client.temporaryPassword;
+        isPasswordValid = await comparePassword(password, client.temporaryPassword);
       } else if (client.passwordHash) {
         // Password normale con hash
         isPasswordValid = await comparePassword(password, client.passwordHash);
@@ -374,7 +373,7 @@ export const login = async (req: Request, res: Response) => {
           accessType: client.accessType,
           type: 'CLIENT', // IMPORTANTE: distingui tipo utente
         },
-        process.env.JWT_SECRET || 'fallback-secret-key',
+        JWT_SECRET,
         { expiresIn: '7d' }
       );
 

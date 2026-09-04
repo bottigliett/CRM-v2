@@ -117,6 +117,11 @@ export function InvoicePreviewDialog({
   )
 }
 
+function esc(str: string | null | undefined): string {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function getInvoicePreviewHTML(data: any): string {
   const paymentBank = data.paymentBank || 'REVOLUT BANK UAB';
   const paymentIban = data.paymentIban || 'LT95 3250 0482 6617 5203';
@@ -144,11 +149,11 @@ function getInvoicePreviewHTML(data: any): string {
           <div style="justify-self: end; max-width: 78mm; width: 100%;">
             <div style="display: grid; grid-template-columns: 1fr auto; column-gap: 10mm;">
               <div>Fattura numero</div>
-              <div style="text-align: right; white-space: nowrap;">${data.invoiceNumber}</div>
+              <div style="text-align: right; white-space: nowrap;">${esc(data.invoiceNumber)}</div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr auto; column-gap: 10mm;">
               <div>Data</div>
-              <div style="text-align: right; white-space: nowrap;">${data.invoiceDate}</div>
+              <div style="text-align: right; white-space: nowrap;">${esc(data.invoiceDate)}</div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr auto; column-gap: 10mm;">
               <div>Scadenza</div>
@@ -160,16 +165,16 @@ function getInvoicePreviewHTML(data: any): string {
         <!-- CLIENTE -->
         <div style="margin-top: 18mm;">
           <h2 style="margin: 0 0 2mm 0; font-size: 12px; font-weight: 500;">Cliente</h2>
-          <span style="display: block;">${data.clientName}</span>
-          ${data.clientPIva ? `<span style="display: block;">P.IVA ${data.clientPIva}</span>` : ''}
-          ${data.clientCF ? `<span style="display: block;">C.F. ${data.clientCF}</span>` : ''}
-          ${data.clientAddress ? `<span style="display: block;">${data.clientAddress}</span>` : ''}
+          <span style="display: block;">${esc(data.clientName)}</span>
+          ${data.clientPIva ? `<span style="display: block;">P.IVA ${esc(data.clientPIva)}</span>` : ''}
+          ${data.clientCF ? `<span style="display: block;">C.F. ${esc(data.clientCF)}</span>` : ''}
+          ${data.clientAddress ? `<span style="display: block;">${esc(data.clientAddress)}</span>` : ''}
         </div>
 
         <!-- OGGETTO -->
         <div style="margin-top: 18mm;">
           <h2 style="margin: 0 0 2mm 0; font-size: 12px; font-weight: 500;">Oggetto</h2>
-          <p style="margin: 0;">${data.subject}</p>
+          <p style="margin: 0;">${esc(data.subject)}</p>
         </div>
 
         <!-- SERVIZI TABLE -->
@@ -193,10 +198,10 @@ function getInvoicePreviewHTML(data: any): string {
               ${data.services && data.services.length > 0 ?
                 data.services.map((service: any) => `
                   <tr>
-                    <td style="border-bottom: 1px solid #000; padding: 2mm 0;">${service.description}</td>
-                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: center; white-space: nowrap;">${service.quantity}</td>
-                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: center; white-space: nowrap;">${data.vatPercentage}%</td>
-                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: right; white-space: nowrap;">${service.unitPrice} EUR</td>
+                    <td style="border-bottom: 1px solid #000; padding: 2mm 0;">${esc(service.description)}</td>
+                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: center; white-space: nowrap;">${esc(String(service.quantity))}</td>
+                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: center; white-space: nowrap;">${esc(String(data.vatPercentage))}%</td>
+                    <td style="border-bottom: 1px solid #000; padding: 2mm 0; text-align: right; white-space: nowrap;">${esc(String(service.unitPrice))} EUR</td>
                   </tr>
                 `).join('')
               : ''}
@@ -205,7 +210,7 @@ function getInvoicePreviewHTML(data: any): string {
 
           <div style="display: grid; grid-template-columns: 1fr auto; margin-top: 10mm;">
             <div>Totale</div>
-            <div style="text-align: right;">${data.total} EUR</div>
+            <div style="text-align: right;">${esc(String(data.total))} EUR</div>
           </div>
         </div>
       </div>
@@ -214,17 +219,17 @@ function getInvoicePreviewHTML(data: any): string {
       <div style="margin-top: 20mm;">
         <h2 style="margin: 0 0 2mm 0; font-size: 12px; font-weight: 500;">Informazioni per il pagamento</h2>
         <div style="display: grid; grid-template-columns: 38mm 1fr; column-gap: 6mm; margin-bottom: 12mm;">
-          <div>Scadenze</div><div style="white-space: pre-line;">${isImmediate ? 'Immediato' : data.dueDate}: ${data.total} EUR</div>
-          <div>Beneficiario</div><div style="white-space: pre-line;">${paymentBeneficiary}</div>
-          <div>IBAN</div><div style="white-space: pre-line;">${paymentIban}</div>
-          <div>Banca</div><div style="white-space: pre-line;">${paymentBank}</div>
-          ${paymentBic ? `<div>BIC</div><div style="white-space: pre-line;">${paymentBic}</div>` : ''}
-          ${paymentSdi ? `<div>SDI</div><div style="white-space: pre-line;">${paymentSdi}</div>` : ''}
+          <div>Scadenze</div><div style="white-space: pre-line;">${isImmediate ? 'Immediato' : esc(data.dueDate)}: ${esc(String(data.total))} EUR</div>
+          <div>Beneficiario</div><div style="white-space: pre-line;">${esc(paymentBeneficiary)}</div>
+          <div>IBAN</div><div style="white-space: pre-line;">${esc(paymentIban)}</div>
+          <div>Banca</div><div style="white-space: pre-line;">${esc(paymentBank)}</div>
+          ${paymentBic ? `<div>BIC</div><div style="white-space: pre-line;">${esc(paymentBic)}</div>` : ''}
+          ${paymentSdi ? `<div>SDI</div><div style="white-space: pre-line;">${esc(paymentSdi)}</div>` : ''}
         </div>
 
         <h2 style="margin: 0 0 2mm 0; font-size: 12px; font-weight: 500;">Annotazioni</h2>
         <p style="margin: 0; width: 50%; font-size: 9px;">
-          ${data.fiscalNotes ? data.fiscalNotes : `${data.isVatZero ? 'IVA 0% - Operazione non soggetta a IVA ai sensi della legge 190/2014.<br><br>' : ''}Questo documento non costituisce fattura fiscale, che sarà emessa al pagamento.`}
+          ${data.fiscalNotes ? esc(data.fiscalNotes) : `${data.isVatZero ? 'IVA 0% - Operazione non soggetta a IVA ai sensi della legge 190/2014.<br><br>' : ''}Questo documento non costituisce fattura fiscale, che sarà emessa al pagamento.`}
         </p>
       </div>
     </div>

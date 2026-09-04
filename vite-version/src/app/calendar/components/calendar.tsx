@@ -19,6 +19,9 @@ interface CalendarProps {
 export function Calendar({ events, eventDates }: CalendarProps) {
   const calendar = useCalendar(events)
   const [hideSidebar, setHideSidebar] = useState(false)
+  const [startHour, setStartHour] = useState(7)
+  const [endHour, setEndHour] = useState(22)
+  const [showWeekends, setShowWeekends] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>("all")
 
@@ -26,13 +29,20 @@ export function Calendar({ events, eventDates }: CalendarProps) {
     usersAPI.getAdminUsers().then(r => setUsers(r.data.users)).catch(() => {})
   }, [])
 
-  // Load sidebar preference
+  // Load all calendar preferences
   useEffect(() => {
     const loadPreferences = async () => {
       try {
         const response = await usersAPI.getCalendarPreferences()
-        if (response.success && response.data.hideSidebar !== undefined) {
-          setHideSidebar(response.data.hideSidebar)
+        if (response.success && response.data) {
+          const prefs = response.data
+          setHideSidebar(prefs.hideSidebar ?? false)
+          setStartHour(prefs.defaultStartHour ?? 7)
+          setEndHour(prefs.defaultEndHour ?? 22)
+          setShowWeekends(prefs.showWeekends ?? true)
+          if (prefs.defaultView) {
+            calendar.setCurrentView(prefs.defaultView as any)
+          }
         }
       } catch (error) {
         // Fallback to localStorage
@@ -40,6 +50,9 @@ export function Calendar({ events, eventDates }: CalendarProps) {
         if (saved) {
           const prefs = JSON.parse(saved)
           setHideSidebar(prefs.hideSidebar ?? false)
+          setStartHour(prefs.defaultStartHour ?? 7)
+          setEndHour(prefs.defaultEndHour ?? 22)
+          setShowWeekends(prefs.showWeekends ?? true)
         }
       }
     }
@@ -111,6 +124,9 @@ export function Calendar({ events, eventDates }: CalendarProps) {
               currentView={calendar.currentView}
               onViewChange={calendar.setCurrentView}
               hideSidebar={hideSidebar}
+              startHour={startHour}
+              endHour={endHour}
+              showWeekends={showWeekends}
             />
           </div>
         </div>

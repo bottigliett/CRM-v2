@@ -245,17 +245,18 @@ export const routes: RouteConfig[] = [
     path: "/auth/sign-in-3",
     element: <AuthRoute><SignIn3 /></AuthRoute>
   },
+  // Registration disabled — redirect to login
   {
     path: "/auth/sign-up",
-    element: <AuthRoute><SignUp /></AuthRoute>
+    element: <Navigate to="/auth/sign-in" replace />
   },
   {
     path: "/auth/sign-up-2",
-    element: <AuthRoute><SignUp2 /></AuthRoute>
+    element: <Navigate to="/auth/sign-in" replace />
   },
   {
     path: "/auth/sign-up-3",
-    element: <AuthRoute><SignUp3 /></AuthRoute>
+    element: <Navigate to="/auth/sign-in" replace />
   },
   {
     path: "/auth/forgot-password",

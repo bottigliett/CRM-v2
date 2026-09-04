@@ -3,6 +3,8 @@ import prisma from '../config/database';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../utils/jwt';
+import { hashPassword } from '../utils/password';
 
 /**
  * Helper: Genera username da nome contatto
@@ -359,7 +361,7 @@ export const updateClientAccess = async (req: Request, res: Response) => {
         isActive,
         accessType,
         linkedQuoteId: linkedQuoteId !== undefined ? (linkedQuoteId ? parseInt(linkedQuoteId) : null) : undefined,
-        temporaryPassword: temporaryPassword !== undefined ? temporaryPassword : undefined,
+        temporaryPassword: temporaryPassword !== undefined ? (temporaryPassword ? await hashPassword(temporaryPassword) : null) : undefined,
         projectName,
         projectDescription,
         projectObjectives,
@@ -631,7 +633,6 @@ export const generatePreviewToken = async (req: Request, res: Response) => {
     }
 
     // Genera token JWT temporaneo (5 minuti)
-    const secret = process.env.JWT_SECRET || 'fallback-secret-key';
     const token = jwt.sign(
       {
         clientAccessId: clientAccess.id,
@@ -641,7 +642,7 @@ export const generatePreviewToken = async (req: Request, res: Response) => {
         type: 'CLIENT',
         preview: true, // Flag per indicare che è un preview token
       },
-      secret,
+      JWT_SECRET,
       { expiresIn: '5m' } // Scade dopo 5 minuti
     );
 

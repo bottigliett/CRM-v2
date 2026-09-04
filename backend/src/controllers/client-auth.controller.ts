@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendClientActivationCodeEmail } from '../services/email.service';
+import { JWT_SECRET } from '../utils/jwt';
 
 /**
  * CLIENT JWT PAYLOAD
@@ -20,10 +21,9 @@ interface ClientJwtPayload {
  * Generate Client JWT Token
  */
 function generateClientToken(payload: ClientJwtPayload): string {
-  const secret = process.env.JWT_SECRET || 'fallback-secret-key';
   return jwt.sign(
-    { ...payload, type: 'CLIENT' }, // Aggiungi type per distinguere da admin
-    secret,
+    { ...payload, type: 'CLIENT' },
+    JWT_SECRET,
     { expiresIn: '7d' }
   );
 }
