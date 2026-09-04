@@ -58,7 +58,7 @@ const DEFAULT_COLUMNS: ToggleColumnDef[] = [
 const DEFAULT_VISIBLE_IDS = new Set(["createdAt", "orgCode", "organization", "title", "assignedTo", "callType", "description", "status"])
 
 const STATUSES = ["Aperto", "In Corso", "In attesa risposta", "Chiuso"]
-const CALL_TYPES = ["Atelier", "Browser", "Tecnico", "Gestionale", "Server", "Hardware", "Software", "Rete", "Altro"]
+const CALL_TYPES = ["Browser", "Tecnico", "Gestionale", "Server", "Hardware", "Software", "Rete", "Altro"]
 const ORIGINS = ["Telefono", "Whatsapp", "Email", "Di persona", "Portale"]
 const STATUS_COLORS: Record<string, string> = {
   "Aperto":              "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",

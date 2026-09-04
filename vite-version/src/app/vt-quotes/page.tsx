@@ -40,6 +40,7 @@ import { vtQuotesAPI, type VtQuote, type VtQuoteItem } from "@/lib/vt-quotes-api
 import { productsAPI, type Product } from "@/lib/products-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { salesOrdersAPI } from "@/lib/sales-orders-api"
+import { usersAPI, type User } from "@/lib/users-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
 import { TablePagination } from "@/components/ui/table-pagination"
@@ -219,6 +220,7 @@ export default function VtQuotesPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [orgPopoverOpen, setOrgPopoverOpen] = useState(false)
   const [productPopovers, setProductPopovers] = useState<Record<number, boolean>>({})
+  const [adminUsers, setAdminUsers] = useState<User[]>([])
 
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 })
@@ -229,6 +231,7 @@ export default function VtQuotesPage() {
       })))).catch(() => {})
     productsAPI.getAll({ limit: 1000, isActive: 'true' })
       .then(r => setProducts(r.data.products)).catch(() => {})
+    usersAPI.getAdminUsers().then(r => setAdminUsers(r.data.users)).catch(() => {})
   }, [])
 
   const loadData = useCallback(async (page = 1) => {
@@ -655,6 +658,19 @@ export default function VtQuotesPage() {
         <div>
           <Label>Valido fino a *</Label>
           <Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} required />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Assegnato a</Label>
+          <Select value={formData.assignedToId?.toString() || ""} onValueChange={v => setFormData({ ...formData, assignedToId: v || "" })}>
+            <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Nessuno</SelectItem>
+              {adminUsers.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

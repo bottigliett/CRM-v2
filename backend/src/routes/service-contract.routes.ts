@@ -5,6 +5,8 @@ import {
   createServiceContract,
   updateServiceContract,
   deleteServiceContract,
+  getContractTypes,
+  renameContractType,
 } from '../controllers/service-contract.controller';
 import { authenticate } from '../middleware/auth';
 
@@ -12,6 +14,8 @@ const router = express.Router();
 
 router.use(authenticate);
 
+router.get('/types', getContractTypes);
+router.put('/types/rename', renameContractType);
 router.get('/', getServiceContracts);
 router.get('/:id', getServiceContract);
 router.post('/', createServiceContract);

@@ -100,6 +100,20 @@ class ServiceContractsAPI {
     return response.json();
   }
 
+  async getTypes(): Promise<{ success: boolean; data: { name: string; count: number }[] }> {
+    const response = await fetch(`${API_BASE_URL}/service-contracts/types`, { headers: this.getAuthHeader() });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Errore'); }
+    return response.json();
+  }
+
+  async renameType(oldName: string, newName: string) {
+    const response = await fetch(`${API_BASE_URL}/service-contracts/types/rename`, {
+      method: 'PUT', headers: this.getAuthHeader(), body: JSON.stringify({ oldName, newName }),
+    });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Errore'); }
+    return response.json();
+  }
+
   async delete(id: number) {
     const response = await fetch(`${API_BASE_URL}/service-contracts/${id}`, {
       method: 'DELETE', headers: this.getAuthHeader(),

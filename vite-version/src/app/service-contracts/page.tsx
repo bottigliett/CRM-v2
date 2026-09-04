@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, AlertTriangle,
-  ChevronsUpDown, Check, Download,
+  ChevronsUpDown, Check, Download, Settings,
 } from "lucide-react"
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -65,7 +65,7 @@ const DEFAULT_VISIBLE_IDS = new Set([
 ])
 
 const STATUSES = ["Attivo", "In attesa fatturazione", "Scaduto", "Non attivo", "Blocco Amministrativo", "In attesa pagamento"]
-const CONTRACT_TYPES = ["ASSISTENZA TECNICA", "Tecnocasa esteso", "BACKUP ANNUALE", "BACKUP DROPBOX", "Backup CLOUD", "HOSTING CRM", "ALTRO"]
+const DEFAULT_CONTRACT_TYPES = ["ASSISTENZA TECNICA", "Tecnocasa esteso", "BACKUP ANNUALE", "BACKUP DROPBOX", "Backup CLOUD", "HOSTING CRM", "ALTRO"]
 
 const STATUS_COLORS: Record<string, string> = {
   "Attivo":                  "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -84,8 +84,10 @@ const emptyForm: any = {
 
 export default function ServiceContractsPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [items, setItems] = useState<ServiceContract[]>([])
   const [loading, setLoading] = useState(true)
+  const [contractTypes, setContractTypes] = useState<string[]>(DEFAULT_CONTRACT_TYPES)
 
   // Pre-populate filters from URL query params (e.g. from dashboard card clicks)
   const initialFilters = (() => {
@@ -210,6 +212,9 @@ export default function ServiceContractsPage() {
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 })
       .then(r => setOrgs(r.data.organizations.map((o: any) => ({ id: o.id, name: o.name, denomination: o.denomination || "" }))))
+      .catch(() => {})
+    serviceContractsAPI.getTypes()
+      .then(r => { if (r.data.length > 0) setContractTypes(r.data.map((t: any) => t.name)) })
       .catch(() => {})
   }, [])
 
@@ -346,7 +351,7 @@ export default function ServiceContractsPage() {
             <Label>Tipo contratto</Label>
             <Select value={formData.contractType} onValueChange={v => setFormData({ ...formData, contractType: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <SelectContent>{contractTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div>
@@ -439,6 +444,9 @@ export default function ServiceContractsPage() {
             <p className="text-muted-foreground">{totalCount} contratti totali</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigate("/service-contracts/settings")} title="Gestione tipi contratto">
+              <Settings className="h-4 w-4" />
+            </Button>
             <Button variant="outline" onClick={exportCSV}>
               <Download className="mr-2 h-4 w-4" />Esporta CSV
             </Button>
@@ -474,7 +482,7 @@ export default function ServiceContractsPage() {
               </TableRow>
               <TableRow>
                 {columns.filter(c => isColVisible(c.id)).map(c => {
-                  if (c.id === "contractType") return <TableHead key={`f-${c.id}`} className="p-1"><Select value={columnFilters.contractType || ""} onValueChange={v => updateColumnFilter("contractType", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{CONTRACT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></TableHead>
+                  if (c.id === "contractType") return <TableHead key={`f-${c.id}`} className="p-1"><Select value={columnFilters.contractType || ""} onValueChange={v => updateColumnFilter("contractType", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{contractTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></TableHead>
                   if (c.id === "status") return <TableHead key={`f-${c.id}`} className="p-1"><Select value={columnFilters.status || ""} onValueChange={v => updateColumnFilter("status", v === "all" ? "" : v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Stato" /></SelectTrigger><SelectContent><SelectItem value="all">Tutti</SelectItem>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></TableHead>
                   const placeholders: Record<string, string> = { contractNumber: "Numero...", orgName: "Organizzazione...", organization: "Denominazione...", orgCode: "Codice...", legalRep: "Legale rapp...", shareholders: "Compagine...", contractValue: "Valore...", startDate: "gg/mm/aaaa", dueDate: "gg/mm/aaaa", nextInvoiceDate: "gg/mm/aaaa", subject: "Info..." }
                   return <TableHead key={`f-${c.id}`} className="p-1"><Input className="h-8 text-xs" placeholder={placeholders[c.id] || "Filtra..."} value={columnFilters[c.id] || ""} onChange={e => updateColumnFilter(c.id, e.target.value)} /></TableHead>

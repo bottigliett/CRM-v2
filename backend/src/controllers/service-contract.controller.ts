@@ -254,6 +254,44 @@ export const updateServiceContract = async (req: Request, res: Response) => {
   }
 };
 
+// Get distinct contract types with counts
+export const getContractTypes = async (_req: Request, res: Response) => {
+  try {
+    const types = await prisma.$queryRaw<{ contractType: string; count: bigint }[]>`
+      SELECT contract_type as "contractType", COUNT(*) as count
+      FROM service_contracts
+      WHERE contract_type IS NOT NULL AND contract_type != ''
+      GROUP BY contract_type
+      ORDER BY count DESC
+    `;
+    res.json({
+      success: true,
+      data: types.map(t => ({ name: t.contractType, count: Number(t.count) })),
+    });
+  } catch (error: any) {
+    console.error('Error fetching contract types:', error);
+    res.status(500).json({ success: false, message: 'Errore nel recupero dei tipi contratto', error: error.message });
+  }
+};
+
+// Rename a contract type across all contracts
+export const renameContractType = async (req: Request, res: Response) => {
+  try {
+    const { oldName, newName } = req.body;
+    if (!oldName || !newName) {
+      return res.status(400).json({ success: false, message: 'oldName e newName sono obbligatori' });
+    }
+    const result = await prisma.serviceContract.updateMany({
+      where: { contractType: oldName },
+      data: { contractType: newName },
+    });
+    res.json({ success: true, message: `${result.count} contratti aggiornati`, data: { updated: result.count } });
+  } catch (error: any) {
+    console.error('Error renaming contract type:', error);
+    res.status(500).json({ success: false, message: 'Errore nella rinomina del tipo contratto', error: error.message });
+  }
+};
+
 // Delete contract
 export const deleteServiceContract = async (req: Request, res: Response) => {
   try {

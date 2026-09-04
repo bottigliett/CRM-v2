@@ -424,6 +424,7 @@ export default function SalesOrdersPage() {
                             <th className="text-left p-2 font-medium">Voce</th>
                             <th className="text-center p-2 font-medium w-16">Qtà</th>
                             <th className="text-right p-2 font-medium w-28">Prezzo unit.</th>
+                            <th className="text-right p-2 font-medium w-20">Sconto</th>
                             <th className="text-right p-2 font-medium w-24">Totale</th>
                           </tr>
                         </thead>
@@ -433,13 +434,14 @@ export default function SalesOrdersPage() {
                               <td className="p-2">{it.itemName}</td>
                               <td className="p-2 text-center">{it.quantity}</td>
                               <td className="p-2 text-right">€ {it.unitPrice.toFixed(2)}</td>
+                              <td className="p-2 text-right">{it.discount ? `${it.discount}%` : "-"}</td>
                               <td className="p-2 text-right font-medium">€ {it.total.toFixed(2)}</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot className="bg-muted/30 border-t">
                           <tr>
-                            <td colSpan={3} className="p-2 text-right font-medium">Totale (+ IVA 22%)</td>
+                            <td colSpan={4} className="p-2 text-right font-medium">Totale (+ IVA 22%)</td>
                             <td className="p-2 text-right font-bold">
                               € {(quoteItems.reduce((s, i) => s + i.total, 0) * 1.22).toFixed(2)}
                             </td>

@@ -154,7 +154,7 @@ export default function DashboardPage() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Questa settimana</p>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Ticket questa settimana</p>
                       <p className="text-3xl font-bold mt-1">{stats?.tickets.thisWeek ?? 0}</p>
                     </div>
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                       <CheckCircle2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">€650 / Assistenza Tecnica</p>
+                  <p className="text-xs text-muted-foreground mt-2">Tecnocasa</p>
                 </CardContent>
               </Card>
 
