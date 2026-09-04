@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -130,6 +131,7 @@ function calcItemTotal(item: FormItem): number {
 }
 
 export default function VtQuotesPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<VtQuote[]>([])
   const [loading, setLoading] = useState(true)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
@@ -225,7 +227,7 @@ export default function VtQuotesPage() {
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 })
       .then(r => setOrgs(r.data.organizations.map((o: any) => ({
-        id: o.id, name: o.denomination || o.name,
+        id: o.id, name: o.name, denomination: o.denomination || "",
         billStreet: o.billStreet, billCity: o.billCity, billState: o.billState,
         billCode: o.billCode, billCountry: o.billCountry, vatNumber: o.vatNumber,
       })))).catch(() => {})
@@ -618,24 +620,24 @@ export default function VtQuotesPage() {
         </div>
       </div>
 
-      {/* Organization combobox */}
+      {/* Organization dual fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Organizzazione</Label>
+          <Label>Denominazione ufficio</Label>
           <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
                 <span className="truncate">
                   {formData.organizationId
-                    ? orgs.find(o => o.id.toString() === formData.organizationId)?.name ?? "Seleziona..."
+                    ? (() => { const o = orgs.find(o => o.id.toString() === formData.organizationId); return o ? (o.denomination || o.name) : "Seleziona..." })()
                     : "Seleziona..."}
                 </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0" align="start">
+            <PopoverContent className="w-[420px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Cerca organizzazione..." />
+                <CommandInput placeholder="Cerca per denominazione o ragione sociale..." />
                 <CommandList>
                   <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
                   <CommandGroup>
@@ -644,9 +646,12 @@ export default function VtQuotesPage() {
                       <span className="text-muted-foreground italic">Nessuna</span>
                     </CommandItem>
                     {orgs.map(o => (
-                      <CommandItem key={o.id} value={o.name} onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}>
+                      <CommandItem key={o.id} value={`${o.denomination} ${o.name}`} onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}>
                         <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
-                        {o.name}
+                        <div>
+                          <div className="text-sm">{o.denomination || o.name}</div>
+                          {o.denomination && <div className="text-xs text-muted-foreground">{o.name}</div>}
+                        </div>
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -655,6 +660,13 @@ export default function VtQuotesPage() {
             </PopoverContent>
           </Popover>
         </div>
+        <div>
+          <Label>Organizzazione (ragione sociale)</Label>
+          <Input value={orgs.find(o => o.id.toString() === formData.organizationId)?.name || ""} disabled className="bg-muted/50" placeholder="Seleziona una denominazione ufficio..." />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Valido fino a *</Label>
           <Input type="date" value={formData.validUntil} onChange={e => setFormData({ ...formData, validUntil: e.target.value })} required />
@@ -792,9 +804,14 @@ export default function VtQuotesPage() {
             </h1>
             <p className="text-muted-foreground">{totalCount} preventivi totali</p>
           </div>
-          <Button onClick={() => { setFormData(getEmptyForm()); setIsCreateOpen(true) }}>
-            <Plus className="mr-2 h-4 w-4" />Nuovo Preventivo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigate("/vt-quotes/settings")} title="Gestione campi">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => { setFormData(getEmptyForm()); setIsCreateOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" />Nuovo Preventivo
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -832,7 +849,7 @@ export default function VtQuotesPage() {
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => openPreview(item)}>
                   {isColVisible("quoteNumber")  && <TableCell className="font-mono text-sm">{item.quoteNumber}</TableCell>}
                   {isColVisible("subject")      && <TableCell className="font-medium">{item.subject}</TableCell>}
-                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
+                  {isColVisible("organization") && <TableCell>{item.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/organizations/${item.organization!.id}`) }}>{item.organization.name}</span> : "-"}</TableCell>}
                   {isColVisible("stage")        && <TableCell><Badge className={STAGE_COLORS[item.stage] || ""}>{item.stage}</Badge></TableCell>}
                   {isColVisible("assignedTo")   && <TableCell>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>}
                   {isColVisible("validUntil")   && <TableCell>{formatDate(item.validUntil)}</TableCell>}
@@ -912,7 +929,7 @@ export default function VtQuotesPage() {
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div><span className="font-medium text-muted-foreground">Oggetto:</span><br />{selected.subject}</div>
                   <div><span className="font-medium text-muted-foreground">Stadio:</span><br /><Badge className={STAGE_COLORS[selected.stage] || ""}>{selected.stage}</Badge></div>
-                  <div><span className="font-medium text-muted-foreground">Organizzazione:</span><br />{selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium text-muted-foreground">Organizzazione:</span><br />{selected.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => navigate(`/organizations/${selected.organization!.id}`)}>{selected.organization.denomination || selected.organization.name}</span> : "-"}</div>
                   <div><span className="font-medium text-muted-foreground">Assegnato a:</span><br />{selected.assignedTo ? `${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username : "-"}</div>
                   <div><span className="font-medium text-muted-foreground">Valido fino a:</span><br />{formatDate(selected.validUntil)}</div>
                   {selected.description && (

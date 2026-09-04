@@ -26,8 +26,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2, ExternalLink,
+  Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Building2, ExternalLink, Download, AlertTriangle,
 } from "lucide-react"
+import jsPDF from "jspdf"
 import { organizationsAPI, type Organization } from "@/lib/organizations-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
 import { toast } from "sonner"
@@ -84,8 +85,10 @@ export default function OrganizationsPage() {
   const navigate = useNavigate()
   const [items, setItems] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({ isActive: "true", accountType: "SI Contratto" })
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({ isActive: "true", accountType: "SI Contratto" })
+  const defaultFilters = { isActive: "true", accountType: "SI Contratto" }
+  const savedFilters = (() => { try { const s = localStorage.getItem("org_filters"); return s ? JSON.parse(s) : null } catch { return null } })()
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(savedFilters || defaultFilters)
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>(savedFilters || defaultFilters)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -96,6 +99,7 @@ export default function OrganizationsPage() {
   const updateColumnFilter = useCallback((colId: string, value: string) => {
     setColumnFilters(prev => {
       const next = { ...prev, [colId]: value }
+      try { localStorage.setItem("org_filters", JSON.stringify(next)) } catch {}
       if (SELECT_FILTER_COLS.has(colId)) {
         setDebouncedFilters(d => ({ ...d, [colId]: value }))
         setCurrentPage(1)
@@ -276,6 +280,75 @@ export default function OrganizationsPage() {
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
   }
 
+  const [duplicateWarning, setDuplicateWarning] = useState<any[]>([])
+  const dupCheckRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const checkDuplicates = useCallback((name: string) => {
+    if (dupCheckRef.current) clearTimeout(dupCheckRef.current)
+    if (!name || name.length < 3) { setDuplicateWarning([]); return }
+    dupCheckRef.current = setTimeout(async () => {
+      try {
+        const res = await organizationsAPI.getAll({ limit: 5, orgName: name })
+        const matches = (res.data.organizations || [])
+          .filter((o: any) => !selected || o.id !== selected.id)
+        setDuplicateWarning(matches.slice(0, 3))
+      } catch { setDuplicateWarning([]) }
+    }, 500)
+  }, [selected])
+
+  const fillFromDuplicate = (dup: any) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      name: dup.name || prev.name,
+      denomination: dup.denomination || prev.denomination,
+      billStreet: dup.billStreet || prev.billStreet,
+      billCity: dup.billCity || prev.billCity,
+      billState: dup.billState || prev.billState,
+      billCode: dup.billCode || prev.billCode,
+      billCountry: dup.billCountry || prev.billCountry,
+      legalRep: dup.legalRep || prev.legalRep,
+      vatNumber: dup.vatNumber || prev.vatNumber,
+      uniqueCode: dup.uniqueCode || prev.uniqueCode,
+      pec: dup.pec || prev.pec,
+      email: dup.email || prev.email,
+      phone: dup.phone || prev.phone,
+    }))
+    setDuplicateWarning([])
+    toast.success("Campi compilati dal duplicato")
+  }
+
+  const generatePDF = (org: Organization) => {
+    const doc = new jsPDF()
+    const lm = 20; let y = 25
+    doc.setFontSize(18); doc.text(org.denomination || org.name, lm, y); y += 8
+    if (org.denomination) { doc.setFontSize(11); doc.setTextColor(100); doc.text(org.name, lm, y); y += 6; doc.setTextColor(0) }
+    if (org.accountType) { doc.setFontSize(10); doc.text(`Tipo: ${org.accountType}`, lm, y); y += 5 }
+    if (org.code) { doc.text(`Codice BDT: ${org.code}`, lm, y); y += 5 }
+    y += 4; doc.setDrawColor(200); doc.line(lm, y, 190, y); y += 8
+
+    const section = (title: string, fields: [string, string | undefined][]) => {
+      const valid = fields.filter(([, v]) => v)
+      if (!valid.length) return
+      doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.text(title, lm, y); y += 6
+      doc.setFontSize(10); doc.setFont("helvetica", "normal")
+      valid.forEach(([label, val]) => {
+        if (y > 270) { doc.addPage(); y = 20 }
+        doc.text(`${label}: ${val}`, lm, y); y += 5
+      })
+      y += 4
+    }
+
+    section("Contatti", [["Telefono", org.phone?.replace(/\//g, ' ')], ["Cellulare", org.mobile], ["Altri telefoni", org.otherPhone], ["Email", org.email], ["PEC", org.pec]])
+    section("Dati Fiscali", [["P.IVA", org.vatNumber], ["Cod. Univoco", org.uniqueCode], ["Settore", org.industry]])
+    section("Indirizzo Fatturazione", [[" ", [org.billStreet, org.billCity, org.billState, org.billCode, org.billCountry].filter(Boolean).join(', ') || undefined]])
+    section("Indirizzo Spedizione", [[" ", [org.shipStreet, org.shipCity, org.shipState, org.shipCode, org.shipCountry].filter(Boolean).join(', ') || undefined]])
+    section("Banca", [["Banca", org.bankName], ["IBAN", org.iban]])
+    section("Riferimenti", [["Legale Rappresentante", org.legalRep], ["Coordinatrice", org.coordinator], ["Compagine Sociale", org.shareholders]])
+    section("IT", [["Dispositivi", org.devices], ["Info NAS", org.nasInfo], ["Contratto NAS", org.nasContract]])
+    if (org.description) { section("Note", [["Descrizione", org.description]]) }
+
+    doc.save(`anagrafica_${(org.denomination || org.name).replace(/\s+/g, '_')}.pdf`)
+  }
+
   const openEdit = (item: Organization) => {
     setSelected(item)
     setFormData({
@@ -305,9 +378,24 @@ export default function OrganizationsPage() {
         <TabsTrigger value="dettagli">Dettagli</TabsTrigger>
       </TabsList>
       <TabsContent value="generale" className="space-y-4 mt-4">
+        {duplicateWarning.length > 0 && (
+          <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-sm">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <span className="font-medium text-amber-800 dark:text-amber-200">Possibile duplicato trovato. Compila i campi da:</span>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {duplicateWarning.map((dup: any) => (
+                  <Button key={dup.id} variant="outline" size="sm" className="h-7 text-xs border-amber-300 dark:border-amber-700" onClick={() => fillFromDuplicate(dup)}>
+                    {dup.denomination || dup.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Organizzazione *</Label><Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-          <div><Label>Denominazione ufficio</Label><Input value={formData.denomination} onChange={e => setFormData({ ...formData, denomination: e.target.value })} /></div>
+          <div><Label>Organizzazione *</Label><Input value={formData.name} onChange={e => { setFormData({ ...formData, name: e.target.value }); checkDuplicates(e.target.value) }} /></div>
+          <div><Label>Denominazione ufficio</Label><Input value={formData.denomination} onChange={e => { setFormData({ ...formData, denomination: e.target.value }); checkDuplicates(e.target.value) }} /></div>
           <div><Label>Codice BDT</Label><Input value={formData.code} onChange={e => setFormData({ ...formData, code: e.target.value })} /></div>
           <div>
             <Label>Tipo</Label>
@@ -603,6 +691,7 @@ export default function OrganizationsPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Chiudi</Button>
+              {selected && <Button variant="outline" onClick={() => generatePDF(selected)}><Download className="mr-2 h-4 w-4" />PDF Anagrafica</Button>}
               <Button variant="outline" onClick={() => { setIsPreviewOpen(false); if (selected) navigate(`/organizations/${selected.id}`) }}>
                 <ExternalLink className="mr-2 h-4 w-4" />Scheda completa
               </Button>

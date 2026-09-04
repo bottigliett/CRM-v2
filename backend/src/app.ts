@@ -40,6 +40,8 @@ import vtQuoteRoutes from './routes/vt-quote.routes';
 import salesOrderRoutes from './routes/sales-order.routes';
 import productRoutes from './routes/product.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import fieldValuesRoutes from './routes/field-values.routes';
+import contractAttachmentRoutes from './routes/contract-attachment.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { initializeUploadsDirectory } from './utils/file-upload';
 import { loginLimiter, activationLimiter } from './middleware/rate-limit';
@@ -129,6 +131,8 @@ app.use('/api/vt-quotes', vtQuoteRoutes);
 app.use('/api/sales-orders', salesOrderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/field-values', fieldValuesRoutes);
+app.use('/api/service-contracts', contractAttachmentRoutes);
 
 // Client-specific routes (require client authentication)
 app.use('/api/client/tickets', clientTicketRouter);

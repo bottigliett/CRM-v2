@@ -74,6 +74,7 @@ model User {
   assignedServiceContracts ServiceContract[] @relation("ServiceContractAssigned")
   assignedVtQuotes       VtQuote[]           @relation("VtQuoteAssigned")
   assignedSalesOrders    SalesOrder[]        @relation("SalesOrderAssigned")
+  contractAttachments    ContractAttachment[] @relation("ContractAttachmentUploader")
 
   @@map("users")
 }
@@ -1565,10 +1566,30 @@ model ServiceContract {
   organization      Organization? @relation(fields: [organizationId], references: [id])
   assignedTo        User?         @relation("ServiceContractAssigned", fields: [assignedToId], references: [id])
 
+  attachments     ContractAttachment[]
+
   @@index([status])
   @@index([organizationId])
   @@index([assignedToId])
   @@map("service_contracts")
+}
+
+model ContractAttachment {
+  id               Int       @id @default(autoincrement())
+  contractId       Int       @map("contract_id")
+  fileName         String    @map("file_name")
+  originalFileName String    @map("original_file_name")
+  fileSize         Int       @map("file_size")
+  mimeType         String    @map("mime_type")
+  storagePath      String    @map("storage_path")
+  uploadedById     Int?      @map("uploaded_by_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  contract         ServiceContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  uploadedBy       User?           @relation("ContractAttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([contractId])
+  @@map("contract_attachments")
 }
 
 model VtQuote {

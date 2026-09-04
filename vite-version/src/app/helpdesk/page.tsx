@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, Headset,
-  ChevronsUpDown, Check,
+  ChevronsUpDown, Check, Settings,
 } from "lucide-react"
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -74,6 +74,7 @@ const emptyForm: any = {
 
 export default function HelpDeskPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [items, setItems] = useState<HelpDeskTicket[]>([])
   const [loading, setLoading] = useState(true)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
@@ -410,7 +411,7 @@ export default function HelpDeskPage() {
     switch (columnId) {
       case "createdAt":    return <TableCell key={columnId} className="tabular-nums text-sm">{new Date(item.createdAt).toLocaleDateString("it-IT")}</TableCell>
       case "orgCode":      return <TableCell key={columnId} className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>
-      case "organization": return <TableCell key={columnId}>{item.organization?.denomination || item.organization?.name || "-"}</TableCell>
+      case "organization": return <TableCell key={columnId}>{item.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/organizations/${item.organization!.id}`) }}>{item.organization.denomination || item.organization.name}</span> : "-"}</TableCell>
       case "title":        return <TableCell key={columnId} className="font-medium">{item.title}</TableCell>
       case "assignedTo":   return <TableCell key={columnId}>{item.assignedTo ? `${item.assignedTo.firstName || ""} ${item.assignedTo.lastName || ""}`.trim() || item.assignedTo.username : "-"}</TableCell>
       case "callType":     return <TableCell key={columnId}>{item.callType || "-"}</TableCell>
@@ -475,9 +476,14 @@ export default function HelpDeskPage() {
             <h1 className="text-2xl font-bold flex items-center gap-2"><Headset className="h-6 w-6" />Assistenza Clienti</h1>
             <p className="text-muted-foreground">{totalCount} ticket totali</p>
           </div>
-          <Button onClick={() => { setFormData({ ...emptyForm }); setIsCreateOpen(true) }}>
-            <Plus className="mr-2 h-4 w-4" />Nuovo Ticket
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigate("/helpdesk/settings")} title="Gestione campi">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => { setFormData({ ...emptyForm }); setIsCreateOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" />Nuovo Ticket
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -563,7 +569,7 @@ export default function HelpDeskPage() {
                   <div><span className="font-medium">Data:</span> {new Date(selected.createdAt).toLocaleDateString("it-IT")}</div>
                   <div><span className="font-medium">Tipo Chiamata:</span> {selected.callType || "-"}</div>
                   <div><span className="font-medium">Codice Ufficio:</span> <span className="font-mono">{selected.organization?.code || "-"}</span></div>
-                  <div><span className="font-medium">Denominazione Uff.:</span> {selected.organization?.denomination || selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium">Denominazione Uff.:</span> {selected.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => navigate(`/organizations/${selected.organization!.id}`)}>{selected.organization.denomination || selected.organization.name}</span> : "-"}</div>
                   <div><span className="font-medium">Settore:</span> {selected.organization?.industry || "-"}</div>
                   <div><span className="font-medium">Origine:</span> {selected.ticketOrigin || "-"}</div>
                   {selected.assignedTo && <div><span className="font-medium">Assegnato a:</span> {`${selected.assignedTo.firstName || ""} ${selected.assignedTo.lastName || ""}`.trim() || selected.assignedTo.username}</div>}

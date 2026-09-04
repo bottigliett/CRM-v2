@@ -114,6 +114,37 @@ class ServiceContractsAPI {
     return response.json();
   }
 
+  async getAttachments(contractId: number) {
+    const response = await fetch(`${API_BASE_URL}/service-contracts/${contractId}/attachments`, { headers: this.getAuthHeader() });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Errore'); }
+    return response.json();
+  }
+
+  async uploadAttachment(contractId: number, files: File[]) {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Non autenticato');
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    const response = await fetch(`${API_BASE_URL}/service-contracts/${contractId}/attachments`, {
+      method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData,
+    });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Errore'); }
+    return response.json();
+  }
+
+  async deleteAttachment(attachmentId: number) {
+    const response = await fetch(`${API_BASE_URL}/service-contracts/attachments/${attachmentId}`, {
+      method: 'DELETE', headers: this.getAuthHeader(),
+    });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.message || 'Errore'); }
+    return response.json();
+  }
+
+  getAttachmentUrl(attachmentId: number) {
+    const token = localStorage.getItem('auth_token');
+    return `${API_BASE_URL}/service-contracts/attachments/${attachmentId}?token=${token}`;
+  }
+
   async delete(id: number) {
     const response = await fetch(`${API_BASE_URL}/service-contracts/${id}`, {
       method: 'DELETE', headers: this.getAuthHeader(),

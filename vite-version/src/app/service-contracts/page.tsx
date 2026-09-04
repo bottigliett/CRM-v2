@@ -27,13 +27,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, FileSignature, AlertTriangle,
-  ChevronsUpDown, Check, Download, Settings,
+  ChevronsUpDown, Check, Download, Settings, Paperclip, Upload, ExternalLink, X,
 } from "lucide-react"
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import jsPDF from "jspdf"
 import { serviceContractsAPI, type ServiceContract } from "@/lib/service-contracts-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { userPreferencesAPI } from "@/lib/user-preferences-api"
@@ -208,6 +209,35 @@ export default function ServiceContractsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState<any>({ ...emptyForm })
   const [orgs, setOrgs] = useState<{ id: number; name: string; denomination: string }[]>([])
+  const [attachments, setAttachments] = useState<any[]>([])
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const loadAttachments = async (contractId: number) => {
+    try {
+      const res = await serviceContractsAPI.getAttachments(contractId)
+      setAttachments(res.data || [])
+    } catch { setAttachments([]) }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selected || !e.target.files?.length) return
+    setUploadingFile(true)
+    try {
+      await serviceContractsAPI.uploadAttachment(selected.id, Array.from(e.target.files))
+      toast.success("File caricato")
+      loadAttachments(selected.id)
+    } catch (err: any) { toast.error(err.message) }
+    finally { setUploadingFile(false); if (fileInputRef.current) fileInputRef.current.value = '' }
+  }
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    try {
+      await serviceContractsAPI.deleteAttachment(attachmentId)
+      toast.success("Allegato eliminato")
+      if (selected) loadAttachments(selected.id)
+    } catch (err: any) { toast.error(err.message) }
+  }
 
   useEffect(() => {
     organizationsAPI.getAll({ limit: 1000 })
@@ -249,6 +279,11 @@ export default function ServiceContractsPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  useEffect(() => {
+    if (isPreviewOpen && selected) loadAttachments(selected.id)
+    else setAttachments([])
+  }, [isPreviewOpen, selected])
 
   const handleCreate = async () => {
     try {
@@ -341,6 +376,81 @@ export default function ServiceContractsPage() {
 
   const formatCurrency = (v: number | null) =>
     v != null ? `€ ${v.toLocaleString("it-IT", { minimumFractionDigits: 2 })}` : "-"
+
+  const generateContractPDF = (c: ServiceContract) => {
+    const doc = new jsPDF()
+    const lm = 20; const rm = 190; let y = 20
+    const org = c.organization as any
+
+    // Header
+    doc.setFontSize(18); doc.setFont("helvetica", "bold")
+    doc.text("CONTRATTO DI SERVIZIO", lm, y); y += 10
+    doc.setFontSize(11); doc.setFont("helvetica", "normal"); doc.setTextColor(100)
+    doc.text(`N. ${c.contractNumber} — ${c.contractType || ''}`, lm, y); y += 4
+    doc.setDrawColor(50); doc.setLineWidth(0.5); doc.line(lm, y, rm, y); y += 10
+    doc.setTextColor(0)
+
+    // Field helper
+    const field = (label: string, val: string | null | undefined) => {
+      if (!val) return
+      if (y > 270) { doc.addPage(); y = 20 }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(120)
+      doc.text(label.toUpperCase(), lm, y); y += 4
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(0)
+      doc.text(val, lm, y); y += 7
+    }
+
+    const section = (title: string) => {
+      if (y > 260) { doc.addPage(); y = 20 }
+      y += 3; doc.setDrawColor(200); doc.line(lm, y, rm, y); y += 6
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text(title, lm, y); y += 8
+    }
+
+    // Dati contratto
+    section("Dati Contratto")
+    field("Stato", c.status)
+    field("Valore contrattuale", formatCurrency(c.contractValue))
+    field("Data inizio", formatDate(c.startDate))
+    field("Data scadenza", formatDate(c.dueDate))
+    field("Prossima fatturazione", formatDate(c.nextInvoiceDate))
+
+    // Dati organizzazione
+    if (org) {
+      section("Dati Organizzazione")
+      field("Ragione Sociale", org.name)
+      field("Denominazione Ufficio", org.denomination)
+      field("Codice BDT", org.code)
+      field("P.IVA", org.vatNumber)
+      field("Codice Univoco (SDI)", org.uniqueCode)
+      field("PEC", org.pec)
+      field("Email", org.email)
+      field("Telefono", org.phone)
+      field("Legale Rappresentante", org.legalRep)
+      field("Compagine Sociale", org.shareholders)
+      const addr = [org.billStreet, org.billCity, org.billState, org.billCode, org.billCountry].filter(Boolean).join(', ')
+      field("Indirizzo Fatturazione", addr || null)
+    }
+
+    // Info aggiuntive
+    if (c.subject) {
+      section("Informazioni Aggiuntive")
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10)
+      const lines = doc.splitTextToSize(c.subject, rm - lm)
+      lines.forEach((line: string) => {
+        if (y > 275) { doc.addPage(); y = 20 }
+        doc.text(line, lm, y); y += 5
+      })
+    }
+
+    // Footer
+    y = Math.max(y + 15, 250)
+    if (y > 260) { doc.addPage(); y = 240 }
+    doc.setDrawColor(200); doc.line(lm, y, rm, y); y += 8
+    doc.setFontSize(8); doc.setTextColor(150)
+    doc.text(`Documento generato il ${new Date().toLocaleDateString("it-IT")}`, lm, y)
+
+    doc.save(`contratto_${c.contractNumber || 'N'}.pdf`)
+  }
 
   const renderForm = () => {
     const selectedOrg = orgs.find(o => o.id.toString() === formData.organizationId)
@@ -501,7 +611,7 @@ export default function ServiceContractsPage() {
                     switch (c.id) {
                       case "contractNumber":  return <TableCell key={c.id} className="font-mono text-sm">{item.contractNumber}</TableCell>
                       case "contractType":   return <TableCell key={c.id}>{item.contractType || "-"}</TableCell>
-                      case "orgName":        return <TableCell key={c.id} className="font-medium">{item.organization?.name || "-"}</TableCell>
+                      case "orgName":        return <TableCell key={c.id} className="font-medium">{item.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/organizations/${item.organization!.id}`) }}>{item.organization.name}</span> : "-"}</TableCell>
                       case "organization":   return <TableCell key={c.id}>{item.organization?.denomination || "-"}</TableCell>
                       case "orgCode":        return <TableCell key={c.id} className="font-mono text-sm">{item.organization?.code || "-"}</TableCell>
                       case "legalRep":       return <TableCell key={c.id}>{item.organization?.legalRep || "-"}</TableCell>
@@ -593,8 +703,8 @@ export default function ServiceContractsPage() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div><span className="font-medium text-muted-foreground">Tipo:</span><br />{selected.contractType || "-"}</div>
                 <div><span className="font-medium text-muted-foreground">Stato:</span><br /><Badge className={STATUS_COLORS[selected.status] || ""}>{selected.status}</Badge></div>
-                <div><span className="font-medium text-muted-foreground">Organizzazione:</span><br />{selected.organization?.name || "-"}</div>
-                <div><span className="font-medium text-muted-foreground">Denominazione ufficio:</span><br />{selected.organization?.denomination || "-"}</div>
+                <div><span className="font-medium text-muted-foreground">Organizzazione:</span><br />{selected.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => navigate(`/organizations/${selected.organization!.id}`)}>{selected.organization.name}</span> : "-"}</div>
+                <div><span className="font-medium text-muted-foreground">Denominazione ufficio:</span><br />{selected.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => navigate(`/organizations/${selected.organization!.id}`)}>{selected.organization.denomination || "-"}</span> : "-"}</div>
                 {selected.organization?.code && <div><span className="font-medium text-muted-foreground">Codice BDT:</span><br /><span className="font-mono">{selected.organization.code}</span></div>}
                 {selected.organization?.legalRep && <div><span className="font-medium text-muted-foreground">Legale rappresentante:</span><br />{selected.organization.legalRep}</div>}
                 <div><span className="font-medium text-muted-foreground">Valore:</span><br />{formatCurrency(selected.contractValue)}</div>
@@ -609,8 +719,40 @@ export default function ServiceContractsPage() {
                 )}
               </div>
             )}
+            {/* Allegati */}
+            {selected && (
+              <div className="border-t pt-3 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" />Allegati ({attachments.length})</span>
+                  <div>
+                    <input ref={fileInputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" className="hidden" onChange={handleFileUpload} />
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile}>
+                      {uploadingFile ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Upload className="mr-1 h-3 w-3" />}Carica
+                    </Button>
+                  </div>
+                </div>
+                {attachments.length > 0 ? (
+                  <div className="space-y-1">
+                    {attachments.map((att: any) => (
+                      <div key={att.id} className="flex items-center justify-between text-xs bg-muted/50 rounded px-2.5 py-1.5 group">
+                        <a href={serviceContractsAPI.getAttachmentUrl(att.id)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline truncate flex-1">
+                          <ExternalLink className="h-3 w-3 shrink-0" />{att.originalFileName}
+                        </a>
+                        <span className="text-muted-foreground mx-2 shrink-0">{(att.fileSize / 1024).toFixed(0)} KB</span>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteAttachment(att.id)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nessun allegato. Carica PDF o documenti.</p>
+                )}
+              </div>
+            )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>Chiudi</Button>
+              {selected && <Button variant="outline" onClick={() => generateContractPDF(selected)}><Download className="mr-2 h-4 w-4" />PDF</Button>}
               <Button onClick={() => { setIsPreviewOpen(false); if (selected) openEdit(selected) }}>Modifica</Button>
             </DialogFooter>
           </DialogContent>

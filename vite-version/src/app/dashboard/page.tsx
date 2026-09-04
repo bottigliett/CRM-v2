@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Clock, Calendar as CalendarIcon, Loader2, Ticket,
   TrendingUp, FileSignature, ArrowRight,
-  AlertCircle, CheckCircle2, ShoppingCart,
+  AlertCircle, CheckCircle2, ShoppingCart, FileText,
 } from "lucide-react"
 import { api, type User } from "@/lib/api"
 import { format } from "date-fns"
@@ -47,6 +47,7 @@ interface DashboardStats {
   organizations: { total: number; thisMonth: number }
   tickets: {
     total: number; open: number; thisMonth: number; thisWeek: number
+    closedWeek: number; closedMonth: number; closedYear: number
     byStatus: { status: string; count: number }[]
   }
   contracts: { activeTecnocasa: number; blockedTecnocasa: number }
@@ -126,9 +127,9 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           {loadingStats ? (
-            Array.from({ length: 5 }).map((_, i) => (
+            Array.from({ length: 6 }).map((_, i) => (
               <Card key={i}><CardContent className="p-5 h-24 animate-pulse bg-muted/40 rounded-xl" /></Card>
             ))
           ) : (
@@ -210,6 +211,22 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">Ordini di vendita</p>
+                </CardContent>
+              </Card>
+
+              {/* Preventivi Creati */}
+              <Card className="cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => navigate('/vt-quotes')}>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Preventivi Creati</p>
+                      <p className="text-3xl font-bold mt-1 text-cyan-600 dark:text-cyan-400">{stats?.quotes.creato ?? 0}</p>
+                    </div>
+                    <div className="p-2 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg">
+                      <FileText className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">+{stats?.quotes.thisMonth ?? 0} questo mese</p>
                 </CardContent>
               </Card>
             </>
@@ -319,6 +336,38 @@ export default function DashboardPage() {
                         </div>
                       )
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Ticket chiusi */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Ticket chiusi
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {loadingStats ? (
+                  <div className="flex items-center justify-center h-16">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats?.tickets.closedWeek ?? 0}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Settimana</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats?.tickets.closedMonth ?? 0}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Mese</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats?.tickets.closedYear ?? 0}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Anno</p>
+                    </div>
                   </div>
                 )}
               </CardContent>

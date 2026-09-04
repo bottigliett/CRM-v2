@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,7 +32,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import {
   Plus, MoreHorizontal, Edit, Trash2, Loader2, Eye, ShoppingCart,
-  ChevronsUpDown, Check,
+  ChevronsUpDown, Check, Settings,
 } from "lucide-react"
 import { salesOrdersAPI, type SalesOrder } from "@/lib/sales-orders-api"
 import { vtQuotesAPI, type VtQuoteItem } from "@/lib/vt-quotes-api"
@@ -70,6 +71,7 @@ const emptyForm: any = {
 }
 
 export default function SalesOrdersPage() {
+  const navigate = useNavigate()
   const [items, setItems] = useState<SalesOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
@@ -239,7 +241,7 @@ export default function SalesOrdersPage() {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label>Organizzazione</Label>
+          <Label>Denominazione ufficio</Label>
           <Popover open={orgPopoverOpen} onOpenChange={setOrgPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
@@ -247,9 +249,9 @@ export default function SalesOrdersPage() {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[380px] p-0" align="start">
+            <PopoverContent className="w-[420px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Cerca organizzazione..." />
+                <CommandInput placeholder="Cerca per denominazione o ragione sociale..." />
                 <CommandList>
                   <CommandEmpty>Nessuna organizzazione trovata.</CommandEmpty>
                   <CommandGroup>
@@ -264,9 +266,9 @@ export default function SalesOrdersPage() {
                         onSelect={() => { setFormData({ ...formData, organizationId: o.id.toString() }); setOrgPopoverOpen(false) }}
                       >
                         <Check className={cn("mr-2 h-4 w-4", formData.organizationId === o.id.toString() ? "opacity-100" : "opacity-0")} />
-                        <div className="flex flex-col">
-                          <span>{o.denomination || o.name}</span>
-                          {o.denomination && <span className="text-xs text-muted-foreground">{o.name}</span>}
+                        <div>
+                          <div className="text-sm">{o.denomination || o.name}</div>
+                          {o.denomination && <div className="text-xs text-muted-foreground">{o.name}</div>}
                         </div>
                       </CommandItem>
                     ))}
@@ -276,6 +278,12 @@ export default function SalesOrdersPage() {
             </PopoverContent>
           </Popover>
         </div>
+        <div>
+          <Label>Organizzazione (ragione sociale)</Label>
+          <Input value={orgs.find(o => o.id.toString() === formData.organizationId)?.name || ""} disabled className="bg-muted/50" placeholder="Seleziona una denominazione ufficio..." />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Stato fatturazione</Label>
           <Select value={formData.invoiceStatus} onValueChange={v => setFormData({ ...formData, invoiceStatus: v })}>
@@ -301,9 +309,14 @@ export default function SalesOrdersPage() {
             <h1 className="text-2xl font-bold flex items-center gap-2"><ShoppingCart className="h-6 w-6" />Ordini di Vendita</h1>
             <p className="text-muted-foreground">{totalCount} ordini totali</p>
           </div>
-          <Button onClick={() => { setFormData({ ...emptyForm }); setIsCreateOpen(true) }}>
-            <Plus className="mr-2 h-4 w-4" />Nuovo Ordine
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigate("/sales-orders/settings")} title="Gestione campi">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => { setFormData({ ...emptyForm }); setIsCreateOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" />Nuovo Ordine
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -345,7 +358,7 @@ export default function SalesOrdersPage() {
                 <TableRow key={item.id} className="cursor-pointer" onClick={() => openPreview(item)}>
                   {isColVisible("orderNumber") && <TableCell className="font-mono text-sm">{item.orderNumber}</TableCell>}
                   {isColVisible("subject") && <TableCell className="font-medium">{item.subject}</TableCell>}
-                  {isColVisible("organization") && <TableCell>{item.organization?.name || "-"}</TableCell>}
+                  {isColVisible("organization") && <TableCell>{item.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/organizations/${item.organization!.id}`) }}>{item.organization.name}</span> : "-"}</TableCell>}
                   {isColVisible("status") && <TableCell><Badge className={STATUS_COLORS[item.status] || ""}>{item.status}</Badge></TableCell>}
                   {isColVisible("invoiceStatus") && <TableCell>{item.invoiceStatus || "-"}</TableCell>}
                   {isColVisible("dueDate") && <TableCell>{formatDate(item.dueDate)}</TableCell>}
@@ -406,7 +419,7 @@ export default function SalesOrdersPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><span className="font-medium">Oggetto:</span> {selected.subject}</div>
                   <div><span className="font-medium">Stato:</span> <Badge className={STATUS_COLORS[selected.status] || ""}>{selected.status}</Badge></div>
-                  <div><span className="font-medium">Organizzazione:</span> {selected.organization?.name || "-"}</div>
+                  <div><span className="font-medium">Organizzazione:</span> {selected.organization ? <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer" onClick={() => navigate(`/organizations/${selected.organization!.id}`)}>{selected.organization.denomination || selected.organization.name}</span> : "-"}</div>
                   <div><span className="font-medium">Fatturazione:</span> {selected.invoiceStatus || "-"}</div>
                   <div><span className="font-medium">Scadenza:</span> {formatDate(selected.dueDate)}</div>
                   <div><span className="font-medium">Preventivo collegato:</span> {selected.quote?.quoteNumber || "-"}</div>

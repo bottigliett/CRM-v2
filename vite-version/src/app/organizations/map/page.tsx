@@ -12,7 +12,7 @@ import { AnnouncementBanner } from '@/components/announcement-banner'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { useSidebarConfig } from '@/hooks/use-sidebar-config'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MapPin, Loader2, Building2 } from 'lucide-react'
+import { MapPin, Loader2, Building2, Search } from 'lucide-react'
 
 interface GeocodedOrg extends Organization {
   lat: number
@@ -122,6 +122,7 @@ export default function OrganizationsMapPage() {
   const [geocoded, setGeocoded] = useState<GeocodedOrg[]>([])
   const [loading, setLoading] = useState(true)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
+  const [mapSearch, setMapSearch] = useState('')
 
   // Inject marker CSS once
   useEffect(() => {
@@ -269,8 +270,16 @@ export default function OrganizationsMapPage() {
       if (!m[o.displayCity]) m[o.displayCity] = { count: 0, key: gk.key }
       m[o.displayCity].count++
     }
-    return Object.entries(m).sort((a, b) => b[1].count - a[1].count).slice(0, 50)
+    const all = Object.entries(m).sort((a, b) => b[1].count - a[1].count)
+    if (!mapSearch.trim()) return all.slice(0, 50)
+    const q = mapSearch.toLowerCase()
+    return all.filter(([city]) => city.toLowerCase().includes(q))
   })()
+
+  // Org name search results
+  const orgResults = mapSearch.trim().length >= 2
+    ? geocoded.filter(o => (o.denomination || o.name).toLowerCase().includes(mapSearch.toLowerCase())).slice(0, 10)
+    : []
 
   const flyTo = (key: string) => {
     const c = cityCoords.current[key]
@@ -329,8 +338,41 @@ export default function OrganizationsMapPage() {
           </div>
         </div>
 
+        <div className="px-3 py-2 border-b border-slate-800">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+            <input
+              type="text"
+              value={mapSearch}
+              onChange={e => setMapSearch(e.target.value)}
+              placeholder="Cerca città o agenzia..."
+              className="w-full bg-slate-800 text-xs text-slate-200 placeholder:text-slate-500 rounded-md pl-8 pr-3 py-2 border border-slate-700 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
         <ScrollArea className="flex-1">
           <div className="py-1.5">
+            {orgResults.length > 0 && (
+              <>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider px-4 py-1.5">Agenzie</p>
+                {orgResults.map(org => (
+                  <button
+                    key={org.id}
+                    onClick={() => leafletMap.current?.flyTo([org.lat, org.lng], 15, { duration: 1.2 })}
+                    className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-slate-800 transition-colors text-left group"
+                  >
+                    <Building2 className="h-3 w-3 text-blue-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-slate-300 truncate block group-hover:text-white">{org.denomination || org.name}</span>
+                      <span className="text-[10px] text-slate-500 truncate block">{org.displayCity}</span>
+                    </div>
+                  </button>
+                ))}
+                <div className="border-b border-slate-800 my-1" />
+              </>
+            )}
+            {cityRanking.length > 0 && mapSearch.trim() && <p className="text-[10px] text-slate-500 uppercase tracking-wider px-4 py-1.5">Città</p>}
             {cityRanking.map(([city, { count, key }], i) => (
               <button
                 key={city}

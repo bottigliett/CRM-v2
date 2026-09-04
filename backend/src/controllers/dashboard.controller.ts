@@ -15,6 +15,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
 
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Case-insensitive substring match to handle old uppercase DB values
@@ -35,6 +36,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       quotesCreato,
       ordersDaFatturare,
       ordersTotal,
+      ticketsClosedWeek,
+      ticketsClosedMonth,
+      ticketsClosedYear,
     ] = await Promise.all([
       prisma.organization.count(),
       prisma.organization.count({ where: { createdAt: { gte: startOfMonth } } }),
@@ -57,6 +61,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.vtQuote.count({ where: { stage: 'Creato' } }),
       prisma.salesOrder.count({ where: { invoiceStatus: 'Da Fatturare' } }),
       prisma.salesOrder.count(),
+      prisma.helpDeskTicket.count({ where: { status: 'Chiuso', createdAt: { gte: startOfWeek } } }),
+      prisma.helpDeskTicket.count({ where: { status: 'Chiuso', createdAt: { gte: startOfMonth } } }),
+      prisma.helpDeskTicket.count({ where: { status: 'Chiuso', createdAt: { gte: startOfYear } } }),
     ]);
 
     // Most active orgs: ticket count in last 30 days
@@ -146,6 +153,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           thisMonth: ticketsMonth,
           thisWeek: ticketsWeek,
           byStatus: ticketsByStatus.map(s => ({ status: s.status || 'N/D', count: s._count.id })),
+          closedWeek: ticketsClosedWeek,
+          closedMonth: ticketsClosedMonth,
+          closedYear: ticketsClosedYear,
         },
         contracts: {
           activeTecnocasa: contractsActiveTecnocasa,
