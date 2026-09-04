@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Pencil, Loader2, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Pencil, Loader2, AlertTriangle, ChevronRight, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
@@ -17,17 +17,34 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { serviceContractsAPI } from "@/lib/service-contracts-api"
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table"
+import { serviceContractsAPI, type ServiceContract } from "@/lib/service-contracts-api"
 
 interface ContractType {
   name: string
   count: number
 }
 
+const STATUS_COLORS: Record<string, string> = {
+  "Attivo":                  "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  "Scaduto":                 "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  "Non attivo":              "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+  "In attesa fatturazione":  "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  "Blocco Amministrativo":   "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+  "In attesa pagamento":     "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+}
+
 export default function ServiceContractSettingsPage() {
   const navigate = useNavigate()
   const [types, setTypes] = useState<ContractType[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Detail view state
+  const [selectedType, setSelectedType] = useState<ContractType | null>(null)
+  const [typeContracts, setTypeContracts] = useState<ServiceContract[]>([])
+  const [loadingContracts, setLoadingContracts] = useState(false)
 
   // Rename state
   const [renameTarget, setRenameTarget] = useState<ContractType | null>(null)
@@ -49,7 +66,31 @@ export default function ServiceContractSettingsPage() {
 
   useEffect(() => { loadTypes() }, [])
 
-  const openRename = (t: ContractType) => {
+  const openDetail = async (t: ContractType) => {
+    setSelectedType(t)
+    setTypeContracts([])
+    setLoadingContracts(true)
+    try {
+      const res = await serviceContractsAPI.getAll({ contractType: t.name, limit: 500 })
+      setTypeContracts(res.data.contracts)
+    } catch (err: any) {
+      toast.error(err.message || "Errore nel caricamento contratti")
+    } finally {
+      setLoadingContracts(false)
+    }
+  }
+
+  const openRename = (t: ContractType, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSelectedType(null)
+    setRenameTarget(t)
+    setNewName(t.name)
+  }
+
+  const openRenameFromDetail = () => {
+    if (!selectedType) return
+    const t = selectedType
+    setSelectedType(null)
     setRenameTarget(t)
     setNewName(t.name)
   }
@@ -76,11 +117,13 @@ export default function ServiceContractSettingsPage() {
     }
   }
 
+  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString("it-IT") : "-"
+  const formatCurrency = (v: number | null) => v != null ? `€ ${v.toLocaleString("it-IT", { minimumFractionDigits: 2 })}` : "-"
   const totalContracts = types.reduce((s, t) => s + t.count, 0)
 
   return (
     <BaseLayout>
-      <div className="flex flex-col gap-6 p-6 max-w-4xl">
+      <div className="flex flex-col gap-6 p-6 max-w-5xl">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/service-contracts")}>
             <ArrowLeft className="h-5 w-5" />
@@ -105,25 +148,97 @@ export default function ServiceContractSettingsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {types.map(t => (
-              <Card key={t.name} className="group">
+              <Card key={t.name} className="group cursor-pointer hover:bg-accent/40 transition-colors" onClick={() => openDetail(t)}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{t.name}</p>
                     <Badge variant="secondary" className="mt-1">{t.count} contratt{t.count === 1 ? "o" : "i"}</Badge>
                   </div>
-                  <Button
-                    variant="ghost" size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                    onClick={() => openRename(t)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost" size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => openRename(t, e)}
+                      title="Rinomina"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
       </div>
+
+      {/* Detail dialog — contracts list */}
+      <Dialog open={!!selectedType} onOpenChange={open => { if (!open) setSelectedType(null) }}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedType?.name}
+              <Badge variant="secondary">{selectedType?.count} contratt{selectedType?.count === 1 ? "o" : "i"}</Badge>
+            </DialogTitle>
+            <DialogDescription>
+              Contratti associati a questo tipo. La rinomina aggiornerà tutti questi contratti.
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingContracts ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : typeContracts.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Nessun contratto trovato</p>
+          ) : (
+            <div className="rounded-md border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Numero</TableHead>
+                    <TableHead>Organizzazione</TableHead>
+                    <TableHead>Stato</TableHead>
+                    <TableHead className="text-right">Valore</TableHead>
+                    <TableHead>Inizio</TableHead>
+                    <TableHead>Scadenza</TableHead>
+                    <TableHead className="w-10"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {typeContracts.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-mono text-sm">{c.contractNumber}</TableCell>
+                      <TableCell>{c.organization?.denomination || c.organization?.name || "-"}</TableCell>
+                      <TableCell><Badge className={STATUS_COLORS[c.status] || ""}>{c.status}</Badge></TableCell>
+                      <TableCell className="text-right">{formatCurrency(c.contractValue)}</TableCell>
+                      <TableCell>{formatDate(c.startDate)}</TableCell>
+                      <TableCell>{formatDate(c.dueDate)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={() => navigate(`/service-contracts?contractType=${encodeURIComponent(selectedType!.name)}`)}
+                          title="Apri nella lista contratti"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setSelectedType(null)}>Chiudi</Button>
+            <Button variant="outline" onClick={openRenameFromDetail}>
+              <Pencil className="mr-2 h-4 w-4" />Rinomina tipo
+            </Button>
+            <Button onClick={() => navigate(`/service-contracts?contractType=${encodeURIComponent(selectedType!.name)}`)}>
+              <ExternalLink className="mr-2 h-4 w-4" />Vedi nella lista
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rename dialog */}
       <Dialog open={!!renameTarget && !confirmRename} onOpenChange={open => { if (!open) setRenameTarget(null) }}>
