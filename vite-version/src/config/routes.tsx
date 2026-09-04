@@ -40,6 +40,7 @@ const OrganizationsMap = lazy(() => import('@/app/organizations/map/page'))
 const HelpDesk = lazy(() => import('@/app/helpdesk/page'))
 const ServiceContracts = lazy(() => import('@/app/service-contracts/page'))
 const ServiceContractSettings = lazy(() => import('@/app/service-contracts/settings/page'))
+const ServiceContractTypeDetail = lazy(() => import('@/app/service-contracts/settings/type-detail'))
 const VtQuotes = lazy(() => import('@/app/vt-quotes/page'))
 const SalesOrders = lazy(() => import('@/app/sales-orders/page'))
 const WarehousePage = lazy(() => import('@/app/warehouse/page'))
@@ -207,6 +208,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/service-contracts/settings",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="service_contracts"><ServiceContractSettings /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/service-contracts/settings/type/:typeName",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="service_contracts"><ServiceContractTypeDetail /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/vt-quotes",
