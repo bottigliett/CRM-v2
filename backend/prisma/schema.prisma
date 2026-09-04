@@ -749,8 +749,8 @@ model UserPagePreference {
   typeFilter String? @map("type_filter") // "LEAD", "PROSPECT", "CLIENT", "COMPANY", "PERSON", ""
 
   // Column preferences (JSON serialized)
-  columnOrder      String? @map("column_order")      // JSON array: ["accountType","code","denomination",...]
-  columnVisibility String? @map("column_visibility") // JSON object: {"accountType":true,"code":false,...}
+  columnOrder      String? @map("column_order") @db.Text      // JSON array: ["accountType","code","denomination",...]
+  columnVisibility String? @map("column_visibility") @db.Text // JSON object: {"accountType":true,"code":false,...}
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
