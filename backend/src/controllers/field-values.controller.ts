@@ -45,7 +45,7 @@ export const getFieldValues = async (req: Request, res: Response) => {
 
     // Use raw query with known-safe column names (whitelisted above)
     const results = await prisma.$queryRawUnsafe<{ value: string; count: bigint }[]>(
-      `SELECT "${dbColumn}" as value, COUNT(*) as count FROM "${table}" WHERE "${dbColumn}" IS NOT NULL AND "${dbColumn}" != '' GROUP BY "${dbColumn}" ORDER BY count DESC`
+      `SELECT \`${dbColumn}\` as value, COUNT(*) as count FROM \`${table}\` WHERE \`${dbColumn}\` IS NOT NULL AND \`${dbColumn}\` != '' GROUP BY \`${dbColumn}\` ORDER BY count DESC`
     );
 
     res.json({
