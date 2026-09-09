@@ -15,6 +15,16 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+function getClientIp(req: Request): string {
+  // Behind Nginx: use X-Forwarded-For (real client IP)
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const first = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+    return first.trim();
+  }
+  return req.ip || req.socket.remoteAddress || 'unknown';
+}
+
 /**
  * Simple in-memory rate limiter.
  * @param windowMs - Time window in milliseconds
@@ -22,7 +32,7 @@ setInterval(() => {
  */
 export function rateLimit(windowMs: number, maxRequests: number) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const ip = getClientIp(req);
     const key = `${ip}:${req.baseUrl}`;
     const now = Date.now();
     const entry = store.get(key);
@@ -46,8 +56,7 @@ export function rateLimit(windowMs: number, maxRequests: number) {
   };
 }
 
-// Presets
-// ponytail: global lock per IP, per-route buckets if needed
-export const authLimiter = rateLimit(15 * 60 * 1000, 20); // 20 requests per 15 min
-export const loginLimiter = rateLimit(15 * 60 * 1000, 10); // 10 login attempts per 15 min
-export const activationLimiter = rateLimit(15 * 60 * 1000, 10); // 10 activation attempts per 15 min
+// Presets — per real client IP now, not shared proxy IP
+export const authLimiter = rateLimit(15 * 60 * 1000, 500); // 500 requests per 15 min per IP
+export const loginLimiter = rateLimit(15 * 60 * 1000, 200); // 200 login attempts per 15 min per IP
+export const activationLimiter = rateLimit(15 * 60 * 1000, 100); // 100 activation attempts per 15 min per IP

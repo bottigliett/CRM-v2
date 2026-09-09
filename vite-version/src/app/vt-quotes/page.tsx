@@ -676,10 +676,10 @@ export default function VtQuotesPage() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Assegnato a</Label>
-          <Select value={formData.assignedToId?.toString() || ""} onValueChange={v => setFormData({ ...formData, assignedToId: v || "" })}>
+          <Select value={formData.assignedToId?.toString() || "__none__"} onValueChange={v => setFormData({ ...formData, assignedToId: v === "__none__" ? "" : v })}>
             <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Nessuno</SelectItem>
+              <SelectItem value="__none__">Nessuno</SelectItem>
               {adminUsers.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.firstName} {u.lastName}</SelectItem>)}
             </SelectContent>
           </Select>
