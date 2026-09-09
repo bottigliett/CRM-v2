@@ -158,7 +158,99 @@ export default function VtQuoteCreatePage() {
   const total = subtotal + vat
 
   const selectedOrg = orgs.find(o => o.id.toString() === formData.organizationId)
+  const orgName = selectedOrg?.name || ""
   const orgAddress = selectedOrg ? [selectedOrg.billStreet, selectedOrg.billCity, selectedOrg.billState, selectedOrg.billCode, selectedOrg.billCountry].filter(Boolean).join(", ") : ""
+  const orgVat = selectedOrg?.vatNumber || ""
+
+  // Build the exact same HTML used in exportPDF for the live preview
+  const previewHTML = (() => {
+    const itemsHTML = validItems.map((item: FormItem) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">${item.icon ? '&#x1F4E6; ' : ''}${item.itemName}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${(parseFloat(item.unitPrice) || 0).toFixed(2)}</td>
+        ${hasDiscount ? `<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.discount}%</td>` : ''}
+        <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${(item.total || 0).toFixed(2)}</td>
+      </tr>
+    `).join("")
+
+    return `
+<div class="page-wrapper">
+  <div class="header">
+    <div>
+      <div class="company">Consultecno S.R.L.</div>
+      <div class="company-info">
+        <span>Via Chiesolina 19</span>
+        <span>37066 Sommacampagna (VR) - Verona</span>
+        <span>Tel: 045/9990036</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;">
+      <img src="/logo-consultecno.png" alt="Consultecno" style="max-height:18mm;max-width:50mm;object-fit:contain;" />
+      <div class="quote-meta">
+        <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1mm;">Preventivo</div>
+        <div class="num">BOZZA</div>
+        <span>Data: ${new Date().toLocaleDateString("it-IT")}</span>
+        ${formData.validUntil ? `<span>Valido fino: ${fmtDate(formData.validUntil)}</span>` : ''}
+      </div>
+    </div>
+  </div>
+
+  ${selectedOrg ? `
+  <div class="section">
+    <div class="section-title">Cliente</div>
+    <div class="client-name">${orgName}</div>
+    ${orgVat ? `<div class="client-detail">P.IVA ${orgVat}</div>` : ''}
+    ${orgAddress ? `<div class="client-detail">${orgAddress}</div>` : ''}
+  </div>` : ''}
+
+  ${formData.subject ? `
+  <div class="section">
+    <div class="section-title">Oggetto</div>
+    <div style="font-size:12px;font-weight:500;">${formData.subject}</div>
+    ${formData.description ? `<div style="font-size:10px;color:#555;margin-top:1mm;">${formData.description}</div>` : ''}
+  </div>` : ''}
+
+  ${validItems.length > 0 ? `
+  <div class="section">
+    <table>
+      <thead>
+        <tr>
+          <th style="${hasDiscount ? 'width:40%' : 'width:48%'}">Voce</th>
+          <th style="width:10%">Qtà</th>
+          <th style="${hasDiscount ? 'width:18%' : 'width:20%'}">Prezzo Unit.</th>
+          ${hasDiscount ? '<th style="width:12%">Sconto</th>' : ''}
+          <th style="${hasDiscount ? 'width:20%' : 'width:22%'}">Totale</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHTML}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="totals-box">
+        <div class="totals-row"><span>Subtotale</span><span>€ ${subtotal.toFixed(2)}</span></div>
+        <div class="totals-row"><span>IVA 22%</span><span>€ ${vat.toFixed(2)}</span></div>
+        <div class="totals-row grand"><span>Totale</span><span>€ ${total.toFixed(2)}</span></div>
+      </div>
+    </div>
+  </div>` : `
+  <div class="section" style="text-align:center;padding:20px 0;color:#9ca3af;font-size:11px;border:1px dashed #d1d5db;border-radius:4px;">
+    Aggiungi voci al preventivo per vedere l'anteprima
+  </div>`}
+
+  ${formData.termsConditions ? `
+  <div class="terms">
+    <div class="section-title">Condizioni di pagamento</div>
+    <div class="terms-text">${formData.termsConditions}</div>
+  </div>` : ''}
+
+  <div class="footer">
+    <div class="footer-text">Preventivo BOZZA — Consultecno S.R.L. | Via Chiesolina 19, 37066 Sommacampagna (VR) | Tel: 045/9990036</div>
+  </div>
+</div>`
+  })()
 
   const buildSubmitData = () => ({
     ...formData,
@@ -390,111 +482,45 @@ export default function VtQuoteCreatePage() {
             </div>
           </div>
 
-          {/* RIGHT — Live PDF preview */}
-          <div className="w-1/2 overflow-y-auto bg-muted/30 p-6">
-            <div className="sticky top-0">
-              <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                <FileText className="h-4 w-4" />
-                <span>Anteprima Preventivo</span>
-              </div>
-              {/* A4-like card */}
-              <div className="bg-white dark:bg-zinc-950 rounded-lg shadow-lg border p-8 text-black dark:text-zinc-100" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" }}>
-                {/* Header */}
-                <div className="flex justify-between mb-6">
-                  <div>
-                    <div className="text-sm font-bold">Consultecno S.R.L.</div>
-                    <div className="text-[10px] text-muted-foreground leading-relaxed">
-                      <span className="block">Via Chiesolina 19</span>
-                      <span className="block">37066 Sommacampagna (VR) - Verona</span>
-                      <span className="block">Tel: 045/9990036</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Preventivo</div>
-                    <div className="text-base font-bold text-muted-foreground/50">BOZZA</div>
-                    <div className="text-[10px] text-muted-foreground mt-1">Data: {new Date().toLocaleDateString("it-IT")}</div>
-                    {formData.validUntil && <div className="text-[10px] text-muted-foreground">Valido fino: {fmtDate(formData.validUntil)}</div>}
-                  </div>
-                </div>
-
-                {/* Client section */}
-                {selectedOrg && (
-                  <div className="mb-4">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cliente</div>
-                    <div className="text-xs font-semibold">{selectedOrg.denomination || selectedOrg.name}</div>
-                    {selectedOrg.vatNumber && <div className="text-[10px] text-muted-foreground">P.IVA {selectedOrg.vatNumber}</div>}
-                    {orgAddress && <div className="text-[10px] text-muted-foreground">{orgAddress}</div>}
-                  </div>
-                )}
-
-                {/* Subject */}
-                {formData.subject && (
-                  <div className="mb-4">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Oggetto</div>
-                    <div className="text-xs font-medium">{formData.subject}</div>
-                    {formData.description && <div className="text-[10px] text-muted-foreground mt-0.5">{formData.description}</div>}
-                  </div>
-                )}
-
-                {/* Items table */}
-                {validItems.length > 0 ? (
-                  <div className="mb-4">
-                    <table className="w-full text-[10px]">
-                      <thead>
-                        <tr className="bg-muted/50">
-                          <th className="text-left p-1.5 font-semibold uppercase text-[9px]" style={{ width: hasDiscount ? "40%" : "48%" }}>Voce</th>
-                          <th className="text-center p-1.5 font-semibold uppercase text-[9px]" style={{ width: "10%" }}>Qtà</th>
-                          <th className="text-right p-1.5 font-semibold uppercase text-[9px]" style={{ width: hasDiscount ? "18%" : "20%" }}>Prezzo Unit.</th>
-                          {hasDiscount && <th className="text-center p-1.5 font-semibold uppercase text-[9px]" style={{ width: "12%" }}>Sconto</th>}
-                          <th className="text-right p-1.5 font-semibold uppercase text-[9px]" style={{ width: hasDiscount ? "20%" : "22%" }}>Totale</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {validItems.map((item: FormItem, i: number) => (
-                          <tr key={i} className="border-b border-muted">
-                            <td className="p-1.5">
-                              <span className="flex items-center gap-1">
-                                {item.icon && ICON_MAP[item.icon]}
-                                {item.itemName}
-                              </span>
-                            </td>
-                            <td className="p-1.5 text-center">{item.quantity}</td>
-                            <td className="p-1.5 text-right">€ {(parseFloat(item.unitPrice) || 0).toFixed(2)}</td>
-                            {hasDiscount && <td className="p-1.5 text-center">{item.discount}%</td>}
-                            <td className="p-1.5 text-right">€ {(item.total || 0).toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    {/* Totals */}
-                    <div className="flex justify-end mt-3">
-                      <div className="w-48 text-[11px]">
-                        <div className="flex justify-between py-1"><span>Subtotale</span><span>€ {subtotal.toFixed(2)}</span></div>
-                        <div className="flex justify-between py-1"><span>IVA 22%</span><span>€ {vat.toFixed(2)}</span></div>
-                        <div className="flex justify-between py-1.5 font-bold text-xs border-t-2 border-foreground mt-1 pt-2"><span>Totale</span><span>€ {total.toFixed(2)}</span></div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-8 text-center text-[10px] text-muted-foreground border border-dashed rounded mb-4">
-                    Aggiungi voci al preventivo per vedere l'anteprima
-                  </div>
-                )}
-
-                {/* Terms */}
-                {formData.termsConditions && (
-                  <div className="mb-4">
-                    <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Condizioni di pagamento</div>
-                    <div className="text-[9px] text-muted-foreground whitespace-pre-wrap">{formData.termsConditions}</div>
-                  </div>
-                )}
-
-                {/* Footer */}
-                <div className="border-t pt-3 mt-auto">
-                  <div className="text-[9px] text-muted-foreground">Preventivo BOZZA — Consultecno S.R.L. | Via Chiesolina 19, 37066 Sommacampagna (VR) | Tel: 045/9990036</div>
-                </div>
-              </div>
+          {/* RIGHT — Live PDF preview (exact same HTML/CSS as exportPDF) */}
+          <div className="w-1/2 overflow-y-auto bg-muted/30 p-6 flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground self-start">
+              <FileText className="h-4 w-4" />
+              <span>Anteprima Preventivo</span>
+            </div>
+            <div className="w-full" style={{ maxWidth: "210mm" }}>
+              <style dangerouslySetInnerHTML={{ __html: `
+                .pdf-preview * { box-sizing:border-box; margin:0; padding:0; font-size:11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+                .pdf-preview { background:#fff; color:#000; }
+                .pdf-preview .page-wrapper { width:100%; min-height:297mm; padding:12mm; display:flex; flex-direction:column; }
+                .pdf-preview .header { display:flex; justify-content:space-between; margin-bottom:8mm; }
+                .pdf-preview .company { font-size:13px; font-weight:700; margin-bottom:2mm; }
+                .pdf-preview .company-info span { display:block; font-size:10px; color:#555; }
+                .pdf-preview .quote-meta { text-align:right; }
+                .pdf-preview .quote-meta .num { font-size:16px; font-weight:700; color:#000; }
+                .pdf-preview .quote-meta span { display:block; font-size:10px; color:#555; margin-top:1mm; }
+                .pdf-preview .section { margin-top:6mm; }
+                .pdf-preview .section-title { font-size:10px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm; }
+                .pdf-preview .client-name { font-size:12px; font-weight:600; }
+                .pdf-preview .client-detail { font-size:10px; color:#555; }
+                .pdf-preview table { width:100%; border-collapse:collapse; margin-top:4mm; }
+                .pdf-preview thead th { background:#f3f4f6; padding:6px 8px; font-size:9px; font-weight:600; text-transform:uppercase; text-align:left; border-bottom:2px solid #d1d5db; }
+                .pdf-preview thead th:nth-child(2) { text-align:center; }
+                .pdf-preview thead th:nth-child(3), .pdf-preview thead th:nth-child(5) { text-align:right; }
+                .pdf-preview thead th:nth-child(4) { text-align:center; }
+                .pdf-preview .totals { margin-top:4mm; display:flex; justify-content:flex-end; }
+                .pdf-preview .totals-box { width:55mm; }
+                .pdf-preview .totals-row { display:flex; justify-content:space-between; padding:2mm 0; font-size:11px; }
+                .pdf-preview .totals-row.grand { font-weight:700; font-size:13px; border-top:2px solid #000; padding-top:3mm; }
+                .pdf-preview .footer { margin-top:auto; padding-top:6mm; border-top:1px solid #e5e7eb; }
+                .pdf-preview .footer-text { font-size:9px; color:#6b7280; }
+                .pdf-preview .terms { margin-top:4mm; }
+                .pdf-preview .terms-text { font-size:9px; color:#555; white-space:pre-wrap; }
+              `}} />
+              <div
+                className="pdf-preview rounded-lg shadow-lg border"
+                dangerouslySetInnerHTML={{ __html: previewHTML }}
+              />
             </div>
           </div>
         </div>
