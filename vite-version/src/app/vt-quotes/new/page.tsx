@@ -17,16 +17,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import {
-  Plus, Loader2, X, ChevronsUpDown, Check, ArrowLeft,
+  Plus, Loader2, X, ChevronsUpDown, Check, ArrowLeft, Download,
   Monitor, Server, Shield, Cpu, HardDrive, Globe, Printer, Phone,
   Wifi, Cloud, Database, Lock, Mail, Settings, Wrench, Headphones,
   Camera, Laptop, Tablet, Smartphone, FileText,
 } from "lucide-react"
-import { vtQuotesAPI } from "@/lib/vt-quotes-api"
+import { vtQuotesAPI, type VtQuote } from "@/lib/vt-quotes-api"
 import { productsAPI, type Product } from "@/lib/products-api"
 import { organizationsAPI } from "@/lib/organizations-api"
 import { usersAPI, type User } from "@/lib/users-api"
 import { toast } from "sonner"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
 
 const STAGES = ["Creato", "Scaduto", "Accettato", "Rifiutato", "Consegnato"]
 
@@ -266,12 +268,207 @@ export default function VtQuoteCreatePage() {
     })),
   })
 
-  const handleCreate = async () => {
+  const exportPDF = async (quote: VtQuote) => {
+    const quoteItems = quote.items || []
+    const hasDsc = quoteItems.some(i => i.discount > 0)
+    const sub = quoteItems.reduce((s, i) => s + i.total, 0)
+    const v = sub * 0.22
+    const tot = sub + v
+
+    const o = quote.organization as any
+    const oName = o?.name || ""
+    const oAddr = [o?.billStreet, o?.billCity, o?.billState, o?.billCode, o?.billCountry].filter(Boolean).join(", ")
+    const oVat = o?.vatNumber || ""
+
+    const logoBase64 = await fetch('/logo-consultecno.png')
+      .then(r => r.blob())
+      .then(blob => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      }))
+      .catch(() => '')
+
+    const logoImg = logoBase64
+      ? `<img src="${logoBase64}" alt="Consultecno" style="max-height:18mm;max-width:50mm;object-fit:contain;" />`
+      : ''
+
+    const iframe = document.createElement("iframe")
+    iframe.style.position = "absolute"
+    iframe.style.left = "-9999px"
+    iframe.style.width = "210mm"
+    iframe.style.height = "297mm"
+    document.body.appendChild(iframe)
+
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+      if (!iframeDoc) throw new Error("Could not access iframe document")
+
+      const itemsHTML = quoteItems.map(item => `
+        <tr>
+          <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;">${item.icon ? '&#x1F4E6; ' : ''}${item.itemName}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${item.unitPrice.toFixed(2)}</td>
+          ${hasDsc ? `<td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.discount}%</td>` : ''}
+          <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">€ ${item.total.toFixed(2)}</td>
+        </tr>
+      `).join("")
+
+      iframeDoc.open()
+      iframeDoc.write(`<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; font-size:11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  body { background:#fff; color:#000; }
+  .page-wrapper { width:210mm; min-height:297mm; padding:12mm; display:flex; flex-direction:column; }
+  .header { display:flex; justify-content:space-between; margin-bottom:8mm; }
+  .company { font-size:13px; font-weight:700; margin-bottom:2mm; }
+  .company-info span { display:block; font-size:10px; color:#555; }
+  .quote-meta { text-align:right; }
+  .quote-meta .num { font-size:16px; font-weight:700; color:#000; }
+  .quote-meta span { display:block; font-size:10px; color:#555; margin-top:1mm; }
+  .section { margin-top:6mm; }
+  .section-title { font-size:10px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2mm; }
+  .client-name { font-size:12px; font-weight:600; }
+  .client-detail { font-size:10px; color:#555; }
+  table { width:100%; border-collapse:collapse; margin-top:4mm; }
+  thead th { background:#f3f4f6; padding:6px 8px; font-size:9px; font-weight:600; text-transform:uppercase; text-align:left; border-bottom:2px solid #d1d5db; }
+  thead th:nth-child(2) { text-align:center; }
+  thead th:nth-child(3),thead th:nth-child(5) { text-align:right; }
+  thead th:nth-child(4) { text-align:center; }
+  .totals { margin-top:4mm; display:flex; justify-content:flex-end; }
+  .totals-box { width:55mm; }
+  .totals-row { display:flex; justify-content:space-between; padding:2mm 0; font-size:11px; }
+  .totals-row.grand { font-weight:700; font-size:13px; border-top:2px solid #000; padding-top:3mm; }
+  .footer { margin-top:auto; padding-top:6mm; border-top:1px solid #e5e7eb; }
+  .footer-text { font-size:9px; color:#6b7280; }
+  .terms { margin-top:4mm; }
+  .terms-text { font-size:9px; color:#555; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="header">
+    <div>
+      <div class="company">Consultecno S.R.L.</div>
+      <div class="company-info">
+        <span>Via Chiesolina 19</span>
+        <span>37066 Sommacampagna (VR) - Verona</span>
+        <span>Tel: 045/9990036</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4mm;">
+      ${logoImg}
+      <div class="quote-meta">
+        <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1mm;">Preventivo</div>
+        <div class="num">${quote.quoteNumber}</div>
+        <span>Data: ${new Date(quote.createdAt).toLocaleDateString("it-IT")}</span>
+        ${quote.validUntil ? `<span>Valido fino: ${new Date(quote.validUntil).toLocaleDateString("it-IT")}</span>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Cliente</div>
+    <div class="client-name">${oName}</div>
+    ${oVat ? `<div class="client-detail">P.IVA ${oVat}</div>` : ''}
+    ${oAddr ? `<div class="client-detail">${oAddr}</div>` : ''}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Oggetto</div>
+    <div style="font-size:12px;font-weight:500;">${quote.subject}</div>
+    ${quote.description ? `<div style="font-size:10px;color:#555;margin-top:1mm;">${quote.description}</div>` : ''}
+  </div>
+
+  <div class="section">
+    <table>
+      <thead>
+        <tr>
+          <th style="${hasDsc ? 'width:40%' : 'width:48%'}">Voce</th>
+          <th style="width:10%">Qtà</th>
+          <th style="${hasDsc ? 'width:18%' : 'width:20%'}">Prezzo Unit.</th>
+          ${hasDsc ? '<th style="width:12%">Sconto</th>' : ''}
+          <th style="${hasDsc ? 'width:20%' : 'width:22%'}">Totale</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHTML}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="totals-box">
+        <div class="totals-row"><span>Subtotale</span><span>€ ${sub.toFixed(2)}</span></div>
+        <div class="totals-row"><span>IVA 22%</span><span>€ ${v.toFixed(2)}</span></div>
+        <div class="totals-row grand"><span>Totale</span><span>€ ${tot.toFixed(2)}</span></div>
+      </div>
+    </div>
+  </div>
+
+  ${quote.termsConditions ? `
+  <div class="terms">
+    <div class="section-title">Condizioni di pagamento</div>
+    <div class="terms-text">${quote.termsConditions}</div>
+  </div>` : ''}
+
+  <div class="footer">
+    <div class="footer-text">Preventivo ${quote.quoteNumber} — Consultecno S.R.L. | Via Chiesolina 19, 37066 Sommacampagna (VR) | Tel: 045/9990036</div>
+  </div>
+</div>
+</body>
+</html>`)
+      iframeDoc.close()
+
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      const content = iframeDoc.querySelector(".page-wrapper") as HTMLElement
+      if (!content) throw new Error("PDF content not found")
+
+      const canvas = await html2canvas(content, {
+        scale: 1.5, useCORS: true, logging: false, backgroundColor: "#ffffff",
+        windowWidth: content.scrollWidth, windowHeight: content.scrollHeight,
+      })
+
+      const pdf = new jsPDF("p", "mm", "a4")
+      const pdfWidth = 210
+      const pdfHeight = 297
+      const imgData = canvas.toDataURL("image/jpeg", 0.85)
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width
+
+      if (imgHeight > pdfHeight) {
+        const scaledWidth = (pdfHeight * canvas.width) / canvas.height
+        const xOffset = (pdfWidth - scaledWidth) / 2
+        pdf.addImage(imgData, "JPEG", xOffset, 0, scaledWidth, pdfHeight)
+      } else {
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeight)
+      }
+
+      pdf.save(`Preventivo_${quote.quoteNumber.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`)
+      toast.success("PDF esportato!")
+    } catch (err: any) {
+      console.error("PDF export error:", err)
+      toast.error("Errore nell'esportazione PDF")
+    } finally {
+      document.body.removeChild(iframe)
+    }
+  }
+
+  const handleCreate = async (download = false) => {
     if (!formData.subject) { toast.error("L'oggetto è obbligatorio"); return }
     try {
       setSubmitting(true)
-      await vtQuotesAPI.create(buildSubmitData())
+      const result = await vtQuotesAPI.create(buildSubmitData())
       toast.success("Preventivo creato con successo!")
+      if (download && result.data?.id) {
+        try {
+          const full = await vtQuotesAPI.getById(result.data.id)
+          await exportPDF(full.data as VtQuote)
+        } catch { toast.error("Preventivo creato, ma errore nel download PDF") }
+      }
       navigate("/vt-quotes")
     } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
   }
@@ -289,7 +486,11 @@ export default function VtQuoteCreatePage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate("/vt-quotes")}>Annulla</Button>
-            <Button onClick={handleCreate} disabled={submitting}>
+            <Button variant="outline" onClick={() => handleCreate(true)} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Download className="mr-2 h-4 w-4" />Crea e Scarica
+            </Button>
+            <Button onClick={() => handleCreate(false)} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crea Preventivo
             </Button>
           </div>
