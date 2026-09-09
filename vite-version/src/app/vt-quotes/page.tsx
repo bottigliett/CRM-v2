@@ -211,7 +211,6 @@ export default function VtQuotesPage() {
   }
   const isColVisible = (columnId: string) => visibleColumns[columnId] === true
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -317,18 +316,6 @@ export default function VtQuotesPage() {
       total: calcItemTotal(i),
     })),
   })
-
-  const handleCreate = async () => {
-    if (!formData.subject) { toast.error("L'oggetto è obbligatorio"); return }
-    try {
-      setSubmitting(true)
-      await vtQuotesAPI.create(buildSubmitData())
-      toast.success("Preventivo creato con successo!")
-      setIsCreateOpen(false)
-      setFormData(getEmptyForm())
-      loadData()
-    } catch (error: any) { toast.error(error.message) } finally { setSubmitting(false) }
-  }
 
   const handleEdit = async () => {
     if (!selected || !formData.subject) { toast.error("L'oggetto è obbligatorio"); return }
@@ -808,7 +795,7 @@ export default function VtQuotesPage() {
             <Button variant="outline" size="icon" onClick={() => navigate("/vt-quotes/settings")} title="Gestione campi">
               <Settings className="h-4 w-4" />
             </Button>
-            <Button onClick={() => { setFormData(getEmptyForm()); setIsCreateOpen(true) }}>
+            <Button onClick={() => navigate("/vt-quotes/new")}>
               <Plus className="mr-2 h-4 w-4" />Nuovo Preventivo
             </Button>
           </div>
@@ -882,23 +869,6 @@ export default function VtQuotesPage() {
           onPageChange={(page) => loadData(page)}
           onLimitChange={(newLimit) => { setLimit(newLimit); setCurrentPage(1) }}
         />
-
-        {/* Create */}
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nuovo Preventivo</DialogTitle>
-              <DialogDescription>Crea un nuovo preventivo con voci prodotto/servizio.</DialogDescription>
-            </DialogHeader>
-            {renderForm()}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annulla</Button>
-              <Button onClick={handleCreate} disabled={submitting}>
-                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crea
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Edit */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

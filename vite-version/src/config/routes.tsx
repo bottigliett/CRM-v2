@@ -43,6 +43,7 @@ const ServiceContracts = lazy(() => import('@/app/service-contracts/page'))
 const ServiceContractSettings = lazy(() => import('@/app/service-contracts/settings/page'))
 const ServiceContractTypeDetail = lazy(() => import('@/app/service-contracts/settings/type-detail'))
 const VtQuotes = lazy(() => import('@/app/vt-quotes/page'))
+const VtQuoteCreate = lazy(() => import('@/app/vt-quotes/new/page'))
 const VtQuotesSettings = lazy(() => import('@/app/vt-quotes/settings/page'))
 const SalesOrders = lazy(() => import('@/app/sales-orders/page'))
 const SalesOrdersSettings = lazy(() => import('@/app/sales-orders/settings/page'))
@@ -223,6 +224,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/vt-quotes",
     element: <ProtectedRoute><ModuleProtectedRoute moduleName="vt_quotes"><VtQuotes /></ModuleProtectedRoute></ProtectedRoute>
+  },
+  {
+    path: "/vt-quotes/new",
+    element: <ProtectedRoute><ModuleProtectedRoute moduleName="vt_quotes"><VtQuoteCreate /></ModuleProtectedRoute></ProtectedRoute>
   },
   {
     path: "/vt-quotes/settings",
